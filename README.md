@@ -27,9 +27,6 @@ Python >=3.8
 pip install krutrim-client
 ```
 
-> [!NOTE]
-> Once this package is [published to PyPI], this will become: `pip install --pre krutrim_client`
-
 ## Usage
 
 The full API of this library can be found in [api_examples.ipynb](api_examples.ipynb).
