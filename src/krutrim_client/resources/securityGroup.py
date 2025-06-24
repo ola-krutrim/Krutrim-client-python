@@ -576,9 +576,43 @@ class SecurityGroupResource(SyncAPIResource):
             cast_to=NoneType,
         )    
 
+    def delete_rule(
+        self,
+        securitygroupruleid: str,
+        *,
+        x_region : str,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> None:
+        """
+        Delete a Security Group Rule by ID
 
+        Args:
+          extra_headers: Send extra headers
 
+          extra_query: Add additional query parameters to the request
 
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not securitygroupruleid:
+            raise ValueError(
+                f"Expected a non-empty value for `securitygroupruleid` but received {securitygroupruleid!r}"
+            )
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._delete(
+            f"/securityGroup/v1/rule/{securitygroupruleid}",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=NoneType,
+        )
 
 
 
@@ -1119,6 +1153,45 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
             cast_to=NoneType,
         )
 
+
+    async def delete_rule(
+        self,
+        securitygroupruleid: str,
+        *,
+        x_region: str,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> None:
+        """
+        Delete a Security Group Rule by ID
+
+        Args:
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not securitygroupruleid:
+            raise ValueError(
+                f"Expected a non-empty value for `securitygroupruleid` but received {securitygroupruleid!r}"
+            )
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._delete(
+            f"/securityGroup/v1/rule/{securitygroupruleid}",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=NoneType,
+        )
+
     
 
 
@@ -1150,6 +1223,9 @@ class SecurityGroupResourceWithRawResponse:
             securityGroup.list_by_vpc,
         )
 
+        self.delete_rule = to_raw_response_wrapper(
+            securityGroup.delete_rule,
+        )
         
 
 
@@ -1183,7 +1259,9 @@ class AsyncSecurityGroupResourceWithRawResponse:
             securityGroup.list_by_vpc,
         )
         
-        
+        self.delete_rule = async_to_raw_response_wrapper(
+            securityGroup.delete_rule,
+        )
 
 
 class SecurityGroupResourceWithStreamingResponse:
@@ -1214,6 +1292,9 @@ class SecurityGroupResourceWithStreamingResponse:
             securityGroup.list_by_vpc,
         )
         
+        self.delete_rule = to_streamed_response_wrapper(
+            securityGroup.delete_rule,
+        )
 
 
 class AsyncSecurityGroupResourceWithStreamingResponse:
@@ -1243,6 +1324,9 @@ class AsyncSecurityGroupResourceWithStreamingResponse:
             securityGroup.list_by_vpc,
         )
 
+        self.delete_rule = async_to_streamed_response_wrapper(
+            securityGroup.delete_rule,
+        )
 
         
 

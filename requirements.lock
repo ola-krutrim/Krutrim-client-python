@@ -15,7 +15,7 @@ annotated-types==0.6.0
 anyio==4.4.0
     # via httpx
     # via krutrimClient
-certifi==2023.7.22
+certifi==2025.6.15
     # via httpcore
     # via httpx
 distro==1.8.0

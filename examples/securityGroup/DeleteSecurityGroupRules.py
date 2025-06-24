@@ -17,7 +17,13 @@ try:
         x_region = "Enter the region",
         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
+    print(f"Rule detached successfully")
+    delete_rule_resp = client.securityGroup.delete_rule(
+        securitygroupruleid  = "Enter the rule ID",
+        x_region = "Enter the region",
+         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
+    )   
 
-    print(f"Detached Successfully")
+    print(f"Rule deleted successfully")
 except Exception as e:
     print(f"Exception has occurred:  {e}")

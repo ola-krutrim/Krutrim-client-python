@@ -25,7 +25,7 @@ try:
         user_data = "",
         volumetype = "HNSS",
         qos = {},
-        security_groups = ["Enter the security group ID which you had recived while creating the VPC"],
+        security_groups = ["Enter the security group ID"],
         tags = [],
         timeout = 6000,
         x_region = "Enter the region",
