@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 import os
@@ -22,6 +20,8 @@ from ._types import (
 from ._utils import is_given, get_async_library
 from ._version import __version__
 from .resources import highlvlvpc, kbs, securityGroup, startStopVM, sshkey
+from .resources.kos import kos
+from .resources.kpod import kpod
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
 from ._exceptions import APIStatusError, KrutrimClientError
 from ._base_client import (
@@ -48,6 +48,10 @@ class KrutrimClient(SyncAPIClient):
     securityGroup: securityGroup.SecurityGroupResource
     startStopVM: startStopVM.StartStopResource
     sshkey :sshkey.SshkeysResource
+    kpod: kpod.KpodResource
+    kos: kos.KosResource
+    
+    
     with_raw_response: KrutrimClientWithRawResponse
     with_streaming_response: KrutrimClientWithStreamedResponse
 
@@ -110,8 +114,15 @@ class KrutrimClient(SyncAPIClient):
         self.securityGroup = securityGroup.SecurityGroupResource(self)
         self.startStopVM = startStopVM.StartStopResource(self)
         self.sshkey = sshkey.SshkeysResource(self)
+        self.kpod = kpod.KpodResource(self)
+        self.kos = kos.KosResource(self)
+        
+        
         self.with_raw_response = KrutrimClientWithRawResponse(self)
         self.with_streaming_response = KrutrimClientWithStreamedResponse(self)
+        
+
+        
 
     @property
     @override
@@ -220,10 +231,14 @@ class KrutrimClient(SyncAPIClient):
 
 class AsyncKrutrimClient(AsyncAPIClient):
     highlvlvpc: highlvlvpc.AsyncHighlvlvpcResource
-    kbs: kbs.KbsResource
-    securityGroup: securityGroup.SecurityGroupResource
-    startStopVM: startStopVM.StartStopResource
-    sshkey: sshkey.SshkeysResource
+    kbs: kbs.AsyncKbsResource
+    securityGroup: securityGroup.AsyncSecurityGroupResource
+    startStopVM: startStopVM.AsyncStartStopResource
+    sshkey: sshkey.AsyncSshkeysResource
+    kpod: kpod.AsyncKpodResource
+    kos: kos.AsyncKosResource 
+    
+    
     with_raw_response: AsyncKrutrimClientWithRawResponse
     with_streaming_response: AsyncKrutrimClientWithStreamedResponse
 
@@ -282,10 +297,14 @@ class AsyncKrutrimClient(AsyncAPIClient):
         )
 
         self.highlvlvpc = highlvlvpc.AsyncHighlvlvpcResource(self)
-        self.kbs: kbs.KbsResource(self)
-        self.securityGroup: securityGroup.SecurityGroupResource(self)
-        self.startStopVM: startStopVM.StartStopResource(self)
-        self.sshkey: sshkey.SshkeysResource(self)
+        self.kbs = kbs.AsyncKbsResource(self)
+        self.securityGroup: securityGroup.AsyncSecurityGroupResource(self)
+        self.startStopVM: startStopVM.AsyncStartStopResource(self)
+        self.sshkey: sshkey.AsyncSshkeysResource(self)
+        self.kpod = kpod.AsyncKpodResource(self)
+        self.kos = kos.AsyncKosResource(self) 
+        
+        
         self.with_raw_response = AsyncKrutrimClientWithRawResponse(self)
         self.with_streaming_response = AsyncKrutrimClientWithStreamedResponse(self)
 
@@ -401,6 +420,10 @@ class KrutrimClientWithRawResponse:
         self.securityGroup = securityGroup.SecurityGroupResourceWithRawResponse(client.securityGroup)
         self.startStopVM = startStopVM.StartStopResourceWithRawResponse(client.startStopVM)
         self.sshkey = sshkey.SshkeysResourceWithRawResponse(client.sshkey)
+        self.kpod = kpod.KpodResourceWithRawResponse(client.kpod)
+        self.kos =kos.KosResourceWithRawResponse(client.kos)
+        
+        
 
 
 class AsyncKrutrimClientWithRawResponse:
@@ -410,6 +433,10 @@ class AsyncKrutrimClientWithRawResponse:
         self.securityGroup = securityGroup.AsyncSecurityGroupResourceWithRawResponse(client.securityGroup)
         self.startStopVM = startStopVM.AsyncStartStopResourceWithRawResponse(client.startStopVM)
         self.sshkey = sshkey.AsyncSshkeysResourceWithRawResponse(client.sshkey)
+        self.kpod = kpod.AsyncKpodResourceWithRawResponse(client.kpod)
+        self.kos = kos.AsyncKosResourceWithRawResponse(client.kos)
+        
+       
 
 
 class KrutrimClientWithStreamedResponse:
@@ -419,7 +446,10 @@ class KrutrimClientWithStreamedResponse:
         self.securityGroup = securityGroup.SecurityGroupResourceWithStreamingResponse(client.securityGroup)
         self.startStopVM = startStopVM.StartStopResourceWithStreamingResponse(client.startStopVM)
         self.sshkey = sshkey.SshkeysResourceWithStreamingResponse(client.sshkey)
-
+        self.kpod = kpod.KpodResourceWithStreamingResponse(client.kpod)
+        self.kos = kos.KosResourceWithStreamingResponse(client.kos)
+        
+        
 
 class AsyncKrutrimClientWithStreamedResponse:
     def __init__(self, client: AsyncKrutrimClient) -> None:
@@ -428,7 +458,10 @@ class AsyncKrutrimClientWithStreamedResponse:
         self.securityGroup = securityGroup.AsyncSecurityGroupResourceWithStreamingResponse(client.securityGroup)
         self.startStopVM = startStopVM.AsyncStartStopResourceWithStreamingResponse(client.startStopVM)
         self.sshkey = sshkey.AsyncSshkeysResourceWithStreamingResponse(client.sshkey)
-
+        self.kpod = kpod.AsyncKpodResourceWithStreamingResponse(client.kpod)
+        self.kos = kos.AsyncKosResourceWithStreamingResponse(client.kos)
+        
+        
 
 Client = KrutrimClient
 

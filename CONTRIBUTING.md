@@ -63,7 +63,7 @@ If you’d like to use the repository from source, you can either install from g
 To install via git:
 
 ```sh
-$ pip install git+ssh://git@github.com/stainless-sdks/krutrim_client-python.git
+$ pip install git+ssh://git@github.com/ola-krutrim/Krutrim-client-python.git
 ```
 
 Alternatively, you can build from source and install the wheel file:
@@ -113,18 +113,3 @@ To format and fix all ruff issues automatically:
 ```sh
 $ ./scripts/format
 ```
-
-
-<!-- ## Publishing and releases
-
-Changes made to this repository via the automated release PR pipeline should publish to PyPI automatically. If
-the changes aren't made through the automated pipeline, you may want to make releases manually.
-
-### Publish with a GitHub workflow
-
-You can release to package managers by using [the `Publish PyPI` GitHub action](https://www.github.com/stainless-sdks/krutrim_client-python/actions/workflows/publish-pypi.yml). This requires a setup organization or repository secret to be set up.
-
-### Publish manually
-
-If you need to manually release a package, you can run the `bin/publish-pypi` script with a `PYPI_TOKEN` set on
-the environment. -->

@@ -33,6 +33,6 @@ try:
         x_region = "Enter the region"
         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
-    print(f"Successfully attached the security group rules:  {attach_security_group_rule_resp}")
+    print(f"Successfully attched the security group rules:  {attach_security_group_rule_resp}")
 except Exception as e:
     print(f"Error has occured: {e}")
