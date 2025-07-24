@@ -576,6 +576,7 @@ class SecurityGroupResource(SyncAPIResource):
             cast_to=NoneType,
         )    
 
+
     def delete_rule(
         self,
         securitygroupruleid: str,
@@ -613,6 +614,7 @@ class SecurityGroupResource(SyncAPIResource):
             ),
             cast_to=NoneType,
         )
+
 
 
 
@@ -1153,7 +1155,6 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
             cast_to=NoneType,
         )
 
-
     async def delete_rule(
         self,
         securitygroupruleid: str,
@@ -1192,8 +1193,6 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
             cast_to=NoneType,
         )
 
-    
-
 
 class SecurityGroupResourceWithRawResponse:
     def __init__(self, securityGroup: SecurityGroupResource) -> None:
@@ -1222,7 +1221,6 @@ class SecurityGroupResourceWithRawResponse:
         self.list_by_vpc = to_raw_response_wrapper(
             securityGroup.list_by_vpc,
         )
-
         self.delete_rule = to_raw_response_wrapper(
             securityGroup.delete_rule,
         )
@@ -1258,10 +1256,10 @@ class AsyncSecurityGroupResourceWithRawResponse:
         self.list_by_vpc = async_to_raw_response_wrapper(
             securityGroup.list_by_vpc,
         )
-        
         self.delete_rule = async_to_raw_response_wrapper(
             securityGroup.delete_rule,
         )
+        
 
 
 class SecurityGroupResourceWithStreamingResponse:
@@ -1291,7 +1289,6 @@ class SecurityGroupResourceWithStreamingResponse:
         self.list_by_vpc = to_streamed_response_wrapper(
             securityGroup.list_by_vpc,
         )
-        
         self.delete_rule = to_streamed_response_wrapper(
             securityGroup.delete_rule,
         )
@@ -1323,7 +1320,6 @@ class AsyncSecurityGroupResourceWithStreamingResponse:
         self.list_by_vpc = async_to_streamed_response_wrapper(
             securityGroup.list_by_vpc,
         )
-
         self.delete_rule = async_to_streamed_response_wrapper(
             securityGroup.delete_rule,
         )

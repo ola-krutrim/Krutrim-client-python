@@ -1,6 +1,6 @@
 [project]
 name = "krutrim_client"
-version = "0.1.1"
+version = "0.2.0"
 description = "The official Python library for the krutrim_client API"
 dynamic = ["readme"]
 license = {"file" = "LICENSE"}
@@ -34,8 +34,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ola-krutrim/Krutrim-Client-python"
-Repository = "https://github.com/ola-krutrim/Krutrim-Client-python"
+Homepage = "https://github.com/ola-krutrim/Krutrim-client-python"
+Repository = "https://github.com/ola-krutrim/Krutrim-client-python"
 
 
 [tool.rye]
