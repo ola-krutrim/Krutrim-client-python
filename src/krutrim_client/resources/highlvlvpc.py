@@ -24,6 +24,9 @@ from ..types.highlvlvpc import (
     highlvlvpc_retrieve_instance_params,
     highlvlvpc_list_instance_info_params,
     highlvlvpc_get_vpc_task_status_params,
+    highlvlvpc_create_image_params,
+    highlvlvpc_list_image_params,
+    highlvlvpc_delete_image_params,
     QosParam,
 )
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
@@ -47,6 +50,11 @@ from ..types.highlvlvpc.highlvlvpc_list_vpcs_response import HighlvlvpcListVpcsR
 from ..types.highlvlvpc.highlvlvpc_search_vpcs_response import HighlvlvpcSearchVpcsResponse
 from ..types.highlvlvpc.highlvlvpc_search_ports_response import HighlvlvpcSearchPortsResponse
 from ..types.highlvlvpc.highlvlvpc_search_networks_response import HighlvlvpcSearchNetworksResponse
+from ..types.highlvlvpc.highlvlvpc_create_image_response import HighlvlvpcCreateImageResponse
+from ..types.highlvlvpc.highlvlvpc_list_image_response import HighlvlvpcListImageResponse
+
+
+
 __all__ = ["HighlvlvpcResource", "AsyncHighlvlvpcResource"]
 
 
@@ -606,7 +614,87 @@ class HighlvlvpcResource(SyncAPIResource):
         if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
+    def validate_create_image_parameters(
+        self,
+        name: str,
+        instance_krn: str,
+        x_region: str,
+        timeout: float | NotGiven = NOT_GIVEN
+    ):
+        # Validate 'name' is a non-empty string
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("'name' must be a non-empty string.")
+        
+        # Validate 'instance_krn' is a non-empty string
+        if not isinstance(instance_krn, str) or not instance_krn.strip():
+            raise ValueError("'instance_krn' must be a non-empty string.")
+        
+        # Validate 'x_region' is either In-Bangalore-1 or In-Hyderabad-1
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
+        # Validate timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+        
+    def validate_list_image_parameters(
+        self,
+        *,
+        region_id: str,
+        
+    ) -> None:
+        """
+        Validate the parameters before making the list_image request.
+
+        Args:
+        region_id: The region ID for the search.
+        x_region: Optional region for advanced search.
+
+        Raises:
+        ValueError: If any of the required parameters are invalid.
+        """
+
+        # Check if region_id is provided and is a valid string
+        if not region_id or not isinstance(region_id, str):
+            raise ValueError("Invalid value for 'region_id'. It must be a non-empty string.")
+        
+        
+    def validate_delete_image_parameters(
+            self,
+            *,
+            snapshot_krn: str,
+            extra_headers: Headers | None = None,
+            extra_query: Query | None = None,
+            extra_body: Body | None = None
+        ) -> None:
+            """
+            Validate the parameters before making the DELETE request to delete an image.
+
+            Args:
+            snapshot_krn: The KRN of the image snapshot to delete.
+            extra_headers: Optional extra headers to send with the request.
+            extra_query: Optional extra query parameters.
+            extra_body: Optional extra body data for the request.
+
+            Raises:
+            ValueError: If any of the required parameters are invalid.
+            """
+
+            # Check if snapshot_krn is provided and valid
+            if not snapshot_krn or not isinstance(snapshot_krn, str):
+                raise ValueError("Invalid value for 'snapshot_krn'. It must be a non-empty string.")
+
+            # You can add additional checks for extra_headers, extra_query, and extra_body if needed
+            if extra_headers is not None and not isinstance(extra_headers, dict):
+                raise ValueError("Invalid value for 'extra_headers'. It must be a dictionary.")
+
+            if extra_query is not None and not isinstance(extra_query, dict):
+                raise ValueError("Invalid value for 'extra_query'. It must be a dictionary.")
+
+            if extra_body is not None and not isinstance(extra_body, dict):
+                raise ValueError("Invalid value for 'extra_body'. It must be a dictionary.")        
+
+            
 
 
     def create_instance(
@@ -1485,6 +1573,119 @@ class HighlvlvpcResource(SyncAPIResource):
             ),
             cast_to=HighlvlvpcSearchVpcsResponse,
         )
+    def create_image(
+        self,
+        *,
+        name: str,
+        instance_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+          
+    ) -> HighlvlvpcCreateImageResponse:
+
+        self.validate_create_image_parameters(
+        name=name,
+        instance_krn=instance_krn,
+        x_region=x_region,
+        
+)
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
+        body = maybe_transform(
+            {
+                "name": name,
+                "instance_krn": instance_krn,
+            },
+            highlvlvpc_create_image_params.HighlvlvpcCreateImageParams,
+        )
+
+        return self._post(
+            f"/vm/v1/instance/createimage/{instance_krn}",
+            body=body,
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                
+            ),
+            cast_to=HighlvlvpcCreateImageResponse,
+        )
+
+    def list_image(
+        self,
+        *,
+        region_id: str,
+        limit: Optional[int] = None,
+        page: Optional[int] = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | NotGiven = NOT_GIVEN,
+    ) -> HighlvlvpcListImageResponse:
+        
+        self.validate_list_image_parameters(
+        region_id=region_id,
+        
+    )
+        extra_headers = {**(extra_headers or {})}
+
+        query = maybe_transform(
+            {
+                "region_id": region_id,
+                "limit": limit,
+                "page": page,
+            },
+            highlvlvpc_list_image_params.HighlvlvpcListImageParams,
+        )
+
+        return self._get(
+            f"/vm/v1/image/{region_id}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=query,
+            ),
+            cast_to=HighlvlvpcListImageResponse,
+        )
+
+    def delete_image(
+        self,
+        *,
+        snapshot_krn: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+    ) -> None:
+        self.validate_delete_image_parameters(
+            snapshot_krn=snapshot_krn,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            
+        )
+        
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+    
+        query = maybe_transform(
+            {"snapshot_krn": snapshot_krn},
+            highlvlvpc_delete_image_params.HighlvlvpcDeleteImageParams,
+        )
+
+        return self._delete(
+            f"/vm/v1/image/{snapshot_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                query=query,
+            ),
+            cast_to=NoneType,  
+        )
 
 
 class AsyncHighlvlvpcResource(AsyncAPIResource):
@@ -1996,54 +2197,131 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
     
     async def validate_create_port_parameters(
-    self,
-    *,
-    floating_ip,
-    name,
-    network_id,
-    subnet_id,
-    vpc_id,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        *,
+        floating_ip,
+        name,
+        network_id,
+        subnet_id,
+        vpc_id,
+        x_region,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None
+        ):
+            # Required: floating_ip must be a boolean
+            if not isinstance(floating_ip, bool):
+                raise ValueError("'floating_ip' must be a boolean.")
+
+            # Required string parameters
+            for param_name, param_value in {
+                "name": name,
+                "network_id": network_id,
+                "subnet_id": subnet_id,
+                "vpc_id": vpc_id,
+            }.items():
+                if not isinstance(param_value, str) or not param_value:
+                    raise ValueError(f"'{param_name}' must be a non-empty string.")
+
+            # Optional: extra_headers must be a dictionary if provided
+            if extra_headers is not None and not isinstance(extra_headers, dict):
+                raise ValueError("'extra_headers' must be a dictionary if provided.")
+
+            # Optional: extra_query must be a dictionary if provided
+            if extra_query is not None and not isinstance(extra_query, dict):
+                raise ValueError("'extra_query' must be a dictionary if provided.")
+
+            # Optional: extra_body must be a dictionary if provided
+            if extra_body is not None and not isinstance(extra_body, dict):
+                raise ValueError("'extra_body' must be a dictionary if provided.")
+
+            # Optional: timeout must be float/int/httpx.Timeout if provided
+            if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
+                raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+
+            if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+                raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+    async def validate_create_image_parameters(
+        self,
+        name: str,
+        instance_krn: str,
+        x_region: str,
+        timeout: float | NotGiven = NOT_GIVEN
     ):
-        # Required: floating_ip must be a boolean
-        if not isinstance(floating_ip, bool):
-            raise ValueError("'floating_ip' must be a boolean.")
-
-        # Required string parameters
-        for param_name, param_value in {
-            "name": name,
-            "network_id": network_id,
-            "subnet_id": subnet_id,
-            "vpc_id": vpc_id,
-        }.items():
-            if not isinstance(param_value, str) or not param_value:
-                raise ValueError(f"'{param_name}' must be a non-empty string.")
-
-        # Optional: extra_headers must be a dictionary if provided
-        if extra_headers is not None and not isinstance(extra_headers, dict):
-            raise ValueError("'extra_headers' must be a dictionary if provided.")
-
-        # Optional: extra_query must be a dictionary if provided
-        if extra_query is not None and not isinstance(extra_query, dict):
-            raise ValueError("'extra_query' must be a dictionary if provided.")
-
-        # Optional: extra_body must be a dictionary if provided
-        if extra_body is not None and not isinstance(extra_body, dict):
-            raise ValueError("'extra_body' must be a dictionary if provided.")
-
-        # Optional: timeout must be float/int/httpx.Timeout if provided
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-
+        # Validate 'name' is a non-empty string
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("'name' must be a non-empty string.")
+        
+        # Validate 'instance_krn' is a non-empty string
+        if not isinstance(instance_krn, str) or not instance_krn.strip():
+            raise ValueError("'instance_krn' must be a non-empty string.")
+        
+        # Validate 'x_region' is either In-Bangalore-1 or In-Hyderabad-1
         if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
+        # Validate timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+        
+    async def validate_list_image_parameters(
+        self,
+        *,
+        region_id: str,
+        
+    ) -> None:
+        """
+        Validate the parameters before making the list_image request.
 
+        Args:
+        region_id: The region ID for the search.
+        x_region: Optional region for advanced search.
 
+        Raises:
+        ValueError: If any of the required parameters are invalid.
+        """
+
+        # Check if region_id is provided and is a valid string
+        if not region_id or not isinstance(region_id, str):
+            raise ValueError("Invalid value for 'region_id'. It must be a non-empty string.")
+        
+    async def validate_delete_image_parameters(
+            self,
+            *,
+            snapshot_krn: str,
+            extra_headers: Headers | None = None,
+            extra_query: Query | None = None,
+            extra_body: Body | None = None
+        ) -> None:
+            """
+            Validate the parameters before making the DELETE request to delete an image.
+
+            Args:
+            snapshot_krn: The KRN of the image snapshot to delete.
+            extra_headers: Optional extra headers to send with the request.
+            extra_query: Optional extra query parameters.
+            extra_body: Optional extra body data for the request.
+
+            Raises:
+            ValueError: If any of the required parameters are invalid.
+            """
+
+            # Check if snapshot_krn is provided and valid
+            if not snapshot_krn or not isinstance(snapshot_krn, str):
+                raise ValueError("Invalid value for 'snapshot_krn'. It must be a non-empty string.")
+
+            # You can add additional checks for extra_headers, extra_query, and extra_body if needed
+            if extra_headers is not None and not isinstance(extra_headers, dict):
+                raise ValueError("Invalid value for 'extra_headers'. It must be a dictionary.")
+
+            if extra_query is not None and not isinstance(extra_query, dict):
+                raise ValueError("Invalid value for 'extra_query'. It must be a dictionary.")
+
+            if extra_body is not None and not isinstance(extra_body, dict):
+                raise ValueError("Invalid value for 'extra_body'. It must be a dictionary.")     
+  
 
     async def create_instance(
         self,
@@ -2927,6 +3205,123 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             cast_to=HighlvlvpcSearchVpcsResponse,
         )
 
+    async def create_image(
+        self,
+        *,
+        name: str,
+        instance_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+          
+    ) -> HighlvlvpcCreateImageResponse:
+
+        self.validate_create_image_parameters(
+        name=name,
+        instance_krn=instance_krn,
+        x_region=x_region,
+        
+)
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
+        body = maybe_transform(
+            {
+                "name": name,
+                "instance_krn": instance_krn,
+            },
+            highlvlvpc_create_image_params.HighlvlvpcCreateImageParams,
+        )
+
+        return self._post(
+            f"/vm/v1/instance/createimage/{instance_krn}",
+            body=body,
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                
+            ),
+            cast_to=HighlvlvpcCreateImageResponse,
+        )
+
+    async def list_image(
+        self,
+        *,
+        region_id: str,
+        limit: Optional[int] = None,
+        page: Optional[int] = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | NotGiven = NOT_GIVEN,
+    ) -> HighlvlvpcListImageResponse:
+        
+        self.validate_list_image_parameters(
+        region_id=region_id,
+        
+    )
+
+        extra_headers = {**(extra_headers or {})}
+
+        query = maybe_transform(
+            {
+                "region_id": region_id,
+                "limit": limit,
+                "page": page,
+            },
+            highlvlvpc_list_image_params.HighlvlvpcListImageParams,
+        )
+
+        return self._get(
+            f"/vm/v1/image/{region_id}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=query,
+            ),
+            cast_to=HighlvlvpcListImageResponse,
+        )
+
+    async def delete_image(
+        self,
+        *,
+        snapshot_krn: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+    ) -> None:
+        
+        self.validate_delete_image_parameters(
+            snapshot_krn=snapshot_krn,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            
+        )
+
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+
+        query = maybe_transform(
+            {"snapshot_krn": snapshot_krn},
+            highlvlvpc_delete_image_params.HighlvlvpcDeleteImageParams,
+        )
+
+        return self._delete(
+            f"/vm/v1/image/{snapshot_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                query=query,
+            ),
+            cast_to=NoneType,  
+        )
+    
+
 
 class HighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: HighlvlvpcResource) -> None:
@@ -2977,7 +3372,16 @@ class HighlvlvpcResourceWithRawResponse:
         self.search_vpcs = to_raw_response_wrapper(
             highlvlvpc.search_vpcs,
         )
-
+        self.create_image = to_raw_response_wrapper(
+            highlvlvpc.create_image,
+        )
+        self.list_image = to_raw_response_wrapper(
+            highlvlvpc.list_image,
+        )
+        self.delete_image = to_raw_response_wrapper(
+            highlvlvpc.delete_image
+            
+        )
 
 class AsyncHighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: AsyncHighlvlvpcResource) -> None:
@@ -3028,6 +3432,17 @@ class AsyncHighlvlvpcResourceWithRawResponse:
         self.search_vpcs = async_to_raw_response_wrapper(
             highlvlvpc.search_vpcs,
         )
+        self.create_image = async_to_raw_response_wrapper(
+            highlvlvpc.create_image,
+        )
+        self.list_image = async_to_raw_response_wrapper(
+            highlvlvpc.list_image,
+        )
+        self.delete_image = async_to_raw_response_wrapper(
+            highlvlvpc.delete_image
+            
+        )
+
 
 
 class HighlvlvpcResourceWithStreamingResponse:
@@ -3079,6 +3494,18 @@ class HighlvlvpcResourceWithStreamingResponse:
         self.search_vpcs = to_streamed_response_wrapper(
             highlvlvpc.search_vpcs,
         )
+        self.create_image = to_streamed_response_wrapper(
+            highlvlvpc.create_image,
+        )
+        self.list_image = to_streamed_response_wrapper(
+            highlvlvpc.list_image,
+        )
+        self.delete_image = to_streamed_response_wrapper(
+            highlvlvpc.delete_image
+            
+        )
+
+
 
 
 class AsyncHighlvlvpcResourceWithStreamingResponse:
@@ -3130,3 +3557,14 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         self.search_vpcs = async_to_streamed_response_wrapper(
             highlvlvpc.search_vpcs,
         )
+        self.create_image = async_to_streamed_response_wrapper(
+            highlvlvpc.create_image,
+        )
+        self.list_image = async_to_streamed_response_wrapper(
+            highlvlvpc.list_image,
+        )
+        self.delete_image = async_to_streamed_response_wrapper(
+            highlvlvpc.delete_image
+            
+        )
+
