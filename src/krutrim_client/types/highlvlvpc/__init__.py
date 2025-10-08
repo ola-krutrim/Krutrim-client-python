@@ -29,6 +29,11 @@ from .highlvlvpc_create_image_response import HighlvlvpcCreateImageResponse as H
 from .highlvlvpc_list_image_params import HighlvlvpcListImageParams as HighlvlvpcListImageParams
 from .highlvlvpc_list_image_response import HighlvlvpcListImageResponse as HighlvlvpcListImageResponse
 from .highlvlvpc_delete_image_params import HighlvlvpcDeleteImageParams as HighlvlvpcDeleteImageParams
+from .highlvlvpc_delete_machine_image_params import HighlvlvpcImageParams as HighlvlvpcImageParams
+from .highlvlvpc_machine_s3_params import ImageMachineParams as ImageMachineParams
+from .highlvlvpc_machine_s3_response import ImageMachineResponse as ImageMachineResponse
+
+
 from .qos import Qos as Qos
 
 from .qos_params import QosParam as QosParam
