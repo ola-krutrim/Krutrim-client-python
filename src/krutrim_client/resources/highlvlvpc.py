@@ -6,6 +6,7 @@ from datetime import datetime
 from typing_extensions import Literal
 
 import httpx
+import os
 
 from typing import Dict
 
@@ -27,6 +28,9 @@ from ..types.highlvlvpc import (
     highlvlvpc_create_image_params,
     highlvlvpc_list_image_params,
     highlvlvpc_delete_image_params,
+    highlvlvpc_delete_machine_image_params,
+    highlvlvpc_machine_s3_params,
+    
     QosParam,
 )
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
@@ -52,6 +56,11 @@ from ..types.highlvlvpc.highlvlvpc_search_ports_response import HighlvlvpcSearch
 from ..types.highlvlvpc.highlvlvpc_search_networks_response import HighlvlvpcSearchNetworksResponse
 from ..types.highlvlvpc.highlvlvpc_create_image_response import HighlvlvpcCreateImageResponse
 from ..types.highlvlvpc.highlvlvpc_list_image_response import HighlvlvpcListImageResponse
+from ..types.highlvlvpc.highlvlvpc_delete_machine_image_response import HighlvlvpcDeleteImageResponse
+from ..types.highlvlvpc.highlvlvpc_machine_s3_response import ImageMachineResponse
+
+
+
 
 
 
@@ -692,9 +701,74 @@ class HighlvlvpcResource(SyncAPIResource):
                 raise ValueError("Invalid value for 'extra_query'. It must be a dictionary.")
 
             if extra_body is not None and not isinstance(extra_body, dict):
-                raise ValueError("Invalid value for 'extra_body'. It must be a dictionary.")        
+                raise ValueError("Invalid value for 'extra_body'. It must be a dictionary.")   
 
+    def validate_delete_machine_image_parameters(
+        self,
+        *,
+        image_krn: str,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None
+    ):
+        # Validate image_krn
+        if not isinstance(image_krn, str) or not image_krn:
+            raise ValueError("'image_krn' must be a non-empty string.")
+
+        # Validate optional headers, query, body
+        if extra_headers is not None and not isinstance(extra_headers, dict):
+            raise ValueError("'extra_headers' must be a dictionary if provided.")
+        if extra_query is not None and not isinstance(extra_query, dict):
+            raise ValueError("'extra_query' must be a dictionary if provided.")
+        if extra_body is not None and not isinstance(extra_body, dict):
+            raise ValueError("'extra_body' must be a dictionary if provided.")
+
+        # Validate timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+ 
             
+    def validate_upload_image_s3_parameters(
+        self,
+        x_region,
+        disk_format,
+        image,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None,
+    ):
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        if not isinstance(disk_format, str) or not disk_format.strip():
+            raise ValueError("'disk_format' must be a non-empty string.")
+
+        allowed_formats = {"qcow2", "vhd", "vhdx", "vmdk", "raw", "iso"}
+        if disk_format.lower() not in allowed_formats:
+            raise ValueError(f"'disk_format' must be one of: {', '.join(allowed_formats)}")
+
+        if not isinstance(image, str) or not image.strip():
+            raise ValueError("'image' must be a non-empty string (URL).")
+
+        if not (image.startswith("http://") or image.startswith("https://")):
+            raise ValueError("'image' must be a valid URL starting with http:// or https://.")
+
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+
+        if extra_headers is not None and not isinstance(extra_headers, dict):
+            raise ValueError("'extra_headers' must be a dictionary if provided.")
+
+        if extra_query is not None and not isinstance(extra_query, dict):
+            raise ValueError("'extra_query' must be a dictionary if provided.")
+
+        if extra_body is not None and not isinstance(extra_body, dict):
+            raise ValueError("'extra_body' must be a dictionary if provided.")
 
 
     def create_instance(
@@ -1688,6 +1762,116 @@ class HighlvlvpcResource(SyncAPIResource):
         )
 
 
+
+    def delete_machine_image(
+        self,
+        image_krn: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> HighlvlvpcDeleteImageResponse:
+        """
+        Delete a VM image.
+
+        Args:
+            image_krn: The full URN of the image to delete.
+            extra_headers: Additional request headers.
+            extra_query: Additional query parameters.
+            extra_body: Additional JSON properties.
+            timeout: Override the client-level default timeout for this request.
+
+        Returns:
+            HighlvlvpcDeleteImageResponse: success status + message.
+        """
+        self.validate_delete_machine_image_parameters(
+            image_krn=image_krn,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+        )
+
+        extra_headers = {
+            "Accept": "*/*",
+            **(extra_headers or {}),
+        }
+
+        self._delete(
+            f"/vm/v1/image/{image_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=NoneType,
+        )
+
+        return HighlvlvpcDeleteImageResponse(
+            success=True,
+            message=f"Image {image_krn} deleted successfully."
+        )
+
+    def upload_image_s3(
+        self,
+        x_region: str,
+        *,
+        disk_format: str,
+        image: str,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ImageMachineResponse:
+        """
+        Creates a new virtual machine image by providing an image URL and disk format.
+        This endpoint uses a multipart/form-data content type.
+
+        Args:
+          disk_format: The format of the disk image.
+
+          image: A URL to the image file.
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not x_region:
+            raise ValueError(f"Expected a non-empty value for `x_region` but received {x_region!r}")
+        # It should be noted that the actual Content-Type header that will be
+        # sent to the server will contain a `boundary` parameter, e.g.
+        # multipart/form-data; boundary=---abc--
+
+        
+        self.validate_upload_image_s3_parameters(
+            x_region, disk_format, image, extra_headers, extra_query, extra_body, timeout
+        )
+
+        extra_headers = {"Content-Type": "multipart/form-data", **(extra_headers or {})}
+        return self._post(
+            f"/vm/v1/image/bucket/{x_region}",
+            body=maybe_transform(
+                {
+                    "disk_format": disk_format,
+                    "image": image,
+                },
+                highlvlvpc_machine_s3_params.ImageMachineParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=ImageMachineResponse,
+        )
+
+           
 class AsyncHighlvlvpcResource(AsyncAPIResource):
     @cached_property
     def with_raw_response(self) -> AsyncHighlvlvpcResourceWithRawResponse:
@@ -2321,7 +2505,76 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
             if extra_body is not None and not isinstance(extra_body, dict):
                 raise ValueError("Invalid value for 'extra_body'. It must be a dictionary.")     
-  
+
+
+    async def validate_delete_machine_image_parameters(
+        image_krn: str,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None
+    ):
+        # Validate image_krn
+        if not isinstance(image_krn, str) or not image_krn:
+            raise ValueError("'image_krn' must be a non-empty string.")
+
+        # Validate optional headers, query, body
+        if extra_headers is not None and not isinstance(extra_headers, dict):
+            raise ValueError("'extra_headers' must be a dictionary if provided.")
+        if extra_query is not None and not isinstance(extra_query, dict):
+            raise ValueError("'extra_query' must be a dictionary if provided.")
+        if extra_body is not None and not isinstance(extra_body, dict):
+            raise ValueError("'extra_body' must be a dictionary if provided.")
+
+        # Validate timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+                
+    async def validate_upload_image_s3_parameters(
+        self,
+        x_region,
+        disk_format,
+        image,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None,
+    ):
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        if not isinstance(disk_format, str) or not disk_format.strip():
+            raise ValueError("'disk_format' must be a non-empty string.")
+
+        allowed_formats = {"qcow2", "vhd", "vhdx", "vmdk", "raw", "iso"}
+        if disk_format.lower() not in allowed_formats:
+            raise ValueError(f"'disk_format' must be one of: {', '.join(allowed_formats)}")
+
+        if not isinstance(image, str) or not image.strip():
+            raise ValueError("'image' must be a non-empty string (URL).")
+
+        if not (image.startswith("http://") or image.startswith("https://")):
+            raise ValueError("'image' must be a valid URL starting with http:// or https://.")
+
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+
+        if extra_headers is not None and not isinstance(extra_headers, dict):
+            raise ValueError("'extra_headers' must be a dictionary if provided.")
+
+        if extra_query is not None and not isinstance(extra_query, dict):
+            raise ValueError("'extra_query' must be a dictionary if provided.")
+
+        if extra_body is not None and not isinstance(extra_body, dict):
+            raise ValueError("'extra_body' must be a dictionary if provided.")
+
+
+
+
+
 
     async def create_instance(
         self,
@@ -3322,6 +3575,117 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         )
     
 
+    async def delete_machine_image(
+        self,
+        image_krn: str,
+        *,
+        x_account_id: str,
+        x_user: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> HighlvlvpcDeleteImageResponse:
+        """
+        Asynchronously delete a VM image.
+
+        Args:
+            image_krn: The full URN of the image to delete.
+            x_account_id: Account identifier (sent as a header).
+            x_user: User identifier (sent as a header).
+            extra_headers: Send extra headers.
+            extra_query: Add additional query parameters to the request.
+            extra_body: Add additional JSON properties to the request.
+            timeout: Override the client-level default timeout for this request.
+
+        Returns:
+            HighlvlvpcDeleteImageResponse: success status + message.
+        """
+        await self.validate_delete_machine_image_parameters(
+            image_krn=image_krn,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+        )
+
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        extra_headers.update({"x-account-id": x_account_id, "x-user": x_user})
+
+        # API returns 204, so no response body
+        await self._delete(
+            f"/vm/v1/image/{image_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=NoneType,
+        )
+
+        return HighlvlvpcDeleteImageResponse(
+            success=True,
+            message=f"Image {image_krn} deleted successfully."
+        )
+
+
+    async def upload_image_s3(
+        self,
+        x_region: str,
+        *,
+        disk_format: str,
+        image: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ImageMachineResponse:
+        """
+        Creates a new virtual machine image by providing an image URL and disk format.
+        This endpoint uses a multipart/form-data content type.
+
+        Args:
+        disk_format: The format of the disk image.
+        image: A URL to the image file.
+        extra_headers: Send extra headers
+        extra_query: Add additional query parameters to the request
+        extra_body: Add additional JSON properties to the request
+        timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not x_region:
+            raise ValueError(f"Expected a non-empty value for `x_region` but received {x_region!r}")
+
+        await self.validate_upload_image_s3_parameters(
+            x_region, disk_format, image, extra_headers, extra_query, extra_body, timeout
+        )
+        # Ensure multipart headers
+        extra_headers = {"Content-Type": "multipart/form-data", **(extra_headers or {})}
+
+        return await self._post(
+            f"/vm/v1/image/bucket/{x_region}",
+            body=maybe_transform(
+                {
+                    "disk_format": disk_format,
+                    "image": image,
+                },
+                highlvlvpc_machine_s3_params.ImageMachineParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=ImageMachineResponse,
+        )
+
+
+
+
+
+    
+
 
 class HighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: HighlvlvpcResource) -> None:
@@ -3382,6 +3746,13 @@ class HighlvlvpcResourceWithRawResponse:
             highlvlvpc.delete_image
             
         )
+        self.upload_image = to_raw_response_wrapper(
+            highlvlvpc.upload_image
+        )
+        self.delete_machine_image = to_raw_response_wrapper(
+            highlvlvpc.delete_machine_image
+        )
+
 
 class AsyncHighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: AsyncHighlvlvpcResource) -> None:
@@ -3440,8 +3811,15 @@ class AsyncHighlvlvpcResourceWithRawResponse:
         )
         self.delete_image = async_to_raw_response_wrapper(
             highlvlvpc.delete_image
-            
         )
+        self.upload_image = async_to_raw_response_wrapper(
+            highlvlvpc.upload_image
+        )
+        self.delete_machine_image = async_to_raw_response_wrapper(
+            highlvlvpc.delete_machine_image
+        )
+        
+
 
 
 
@@ -3502,8 +3880,15 @@ class HighlvlvpcResourceWithStreamingResponse:
         )
         self.delete_image = to_streamed_response_wrapper(
             highlvlvpc.delete_image
-            
         )
+        self.upload_image = to_streamed_response_wrapper(
+            highlvlvpc.upload_image
+        )
+        self.delete_machine_image = to_streamed_response_wrapper(
+            highlvlvpc.delete_machine_image
+        )
+        
+            
 
 
 
@@ -3565,6 +3950,11 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         )
         self.delete_image = async_to_streamed_response_wrapper(
             highlvlvpc.delete_image
-            
+        )
+        self.upload_image = async_to_streamed_response_wrapper(
+            highlvlvpc.upload_image
+        )
+        self.delete_machine_image = async_to_streamed_response_wrapper(
+            highlvlvpc.delete_machine_image
         )
 
