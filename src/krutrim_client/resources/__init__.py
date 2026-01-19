@@ -98,20 +98,16 @@ __all__ = [
     "AsyncSshkeysResourceWithRawResponse",
     "SshkeysResourceWithStreamingResponse",
     "AsyncSshkeysResourceWithStreamingResponse",
-<<<<<<< Updated upstream
     "DNSResource",
     "AsyncDNSResource",
     "DNSResourceWithRawResponse",
     "AsyncDNSResourceWithRawResponse",
     "DNSResourceWithStreamingResponse",
     "AsyncDNSResourceWithStreamingResponse",
-=======
     "CertsResource",
     "AsyncCertsResource",
     "CertsResourceWithRawResponse",
     "AsyncCertsResourceWithRawResponse",
     "CertsResourceWithStreamingResponse",
     "AsyncCertsResourceWithStreamingResponse",
-
->>>>>>> Stashed changes
 ]
