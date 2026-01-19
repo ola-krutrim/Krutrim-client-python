@@ -1,6 +1,6 @@
 [project]
 name = "krutrim_client"
-version = "0.4.0"
+version = "0.5.0"
 description = "The official Python library for the krutrim_client API"
 dynamic = ["readme"]
 license = {"file" = "LICENSE"}
