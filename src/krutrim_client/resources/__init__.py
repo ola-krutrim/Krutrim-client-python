@@ -44,6 +44,15 @@ from .sshkey import(
     AsyncSshkeysResourceWithStreamingResponse
 )
 
+from .kcm import (
+    CertsResource,
+    AsyncCertsResource,
+    CertsResourceWithRawResponse,
+    AsyncCertsResourceWithRawResponse,
+    CertsResourceWithStreamingResponse,
+    AsyncCertsResourceWithStreamingResponse,
+)
+
 
 from .dns import (
     DNSResource,
@@ -95,4 +104,10 @@ __all__ = [
     "AsyncDNSResourceWithRawResponse",
     "DNSResourceWithStreamingResponse",
     "AsyncDNSResourceWithStreamingResponse",
+    "CertsResource",
+    "AsyncCertsResource",
+    "CertsResourceWithRawResponse",
+    "AsyncCertsResourceWithRawResponse",
+    "CertsResourceWithStreamingResponse",
+    "AsyncCertsResourceWithStreamingResponse",
 ]
