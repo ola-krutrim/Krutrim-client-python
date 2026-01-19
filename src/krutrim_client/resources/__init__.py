@@ -45,6 +45,15 @@ from .sshkey import(
 )
 
 
+from .dns import (
+    DNSResource,
+    AsyncDNSResource,
+    DNSResourceWithRawResponse,
+    AsyncDNSResourceWithRawResponse,
+    DNSResourceWithStreamingResponse,
+    AsyncDNSResourceWithStreamingResponse,
+)
+
  
 
 
@@ -80,6 +89,10 @@ __all__ = [
     "AsyncSshkeysResourceWithRawResponse",
     "SshkeysResourceWithStreamingResponse",
     "AsyncSshkeysResourceWithStreamingResponse",
-    
-
+    "DNSResource",
+    "AsyncDNSResource",
+    "DNSResourceWithRawResponse",
+    "AsyncDNSResourceWithRawResponse",
+    "DNSResourceWithStreamingResponse",
+    "AsyncDNSResourceWithStreamingResponse",
 ]

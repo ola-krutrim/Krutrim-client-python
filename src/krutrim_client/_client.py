@@ -22,6 +22,18 @@ from ._version import __version__
 from .resources import highlvlvpc, kbs, securityGroup, startStopVM, sshkey
 from .resources.kos import kos
 from .resources.kpod import kpod
+from .resources.lb import lb
+from .resources.kks import kks
+from .resources.v1 import v1
+from .resources.v1 import record
+from .resources.v1.zone import zone
+from .resources.v1.zone import vpc
+from .resources.kks.clusters import clusters
+from .resources.kks.clusters import addons
+from .resources.kks.clusters import node_groups
+
+from .resources.kcm import certs
+from .resources.kcm import tags
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
 from ._exceptions import APIStatusError, KrutrimClientError
 from ._base_client import (
@@ -50,6 +62,17 @@ class KrutrimClient(SyncAPIClient):
     sshkey :sshkey.SshkeysResource
     kpod: kpod.KpodResource
     kos: kos.KosResource
+    lb: lb.HighlvlResource
+    kks: kks.KksResource
+    v1: v1.V1Resource
+    addons: addons.AddonsResource
+    clusters: clusters.ClustersResource
+    node_groups: node_groups.NodeGroupsResource  
+    record: record.RecordResource
+    vpc: vpc.VpcResource
+    zone: zone.ZoneResource  
+    certs: certs.CertsResource
+    tags: tags.TagsResource
     
     
     with_raw_response: KrutrimClientWithRawResponse
@@ -116,8 +139,18 @@ class KrutrimClient(SyncAPIClient):
         self.sshkey = sshkey.SshkeysResource(self)
         self.kpod = kpod.KpodResource(self)
         self.kos = kos.KosResource(self)
+        self.lb = lb.HighlvlResource(self)
+        self.certs = certs.CertsResource(self)
+        self.tags = tags.TagsResource(self)
         
-        
+        self.kks = kks.KksResource(self)
+        self.v1 = v1.V1Resource(self)
+        self.addons = addons.AddonsResource(self)    
+        self.clusters = clusters.ClustersResource(self)
+        self.node_groups = node_groups.NodeGroupsResource(self)
+        self.record = record.RecordResource(self)
+        self.zone = zone.ZoneResource(self)
+        self.vpc = vpc.VpcResource(self)
         self.with_raw_response = KrutrimClientWithRawResponse(self)
         self.with_streaming_response = KrutrimClientWithStreamedResponse(self)
         
@@ -237,7 +270,18 @@ class AsyncKrutrimClient(AsyncAPIClient):
     sshkey: sshkey.AsyncSshkeysResource
     kpod: kpod.AsyncKpodResource
     kos: kos.AsyncKosResource 
+    lb: lb.AsyncHighlvlResource
+    certs: certs.AsyncCertsResource
+    tags: tags.AsyncTagsResource
     
+    Kks: kks.AsyncKksResource
+    v1: v1.AsyncV1Resource
+    clusters: clusters.AsyncClustersResource
+    node_groups: node_groups.AsyncNodeGroupsResource
+    addons: addons.AsyncAddonsResource
+    record = record.AsyncRecordResource
+    zone =  zone.AsyncZoneResource
+    vpc = vpc.AsyncVpcResource  
     
     with_raw_response: AsyncKrutrimClientWithRawResponse
     with_streaming_response: AsyncKrutrimClientWithStreamedResponse
@@ -302,9 +346,19 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.startStopVM: startStopVM.AsyncStartStopResource(self)
         self.sshkey: sshkey.AsyncSshkeysResource(self)
         self.kpod = kpod.AsyncKpodResource(self)
-        self.kos = kos.AsyncKosResource(self) 
+        self.kos = kos.AsyncKosResource(self)
+        self.lb = lb.AsyncHighlvlResource(self)
+        self.certs = certs.AsyncCertsResource(self)
+        self.tags = tags.AsyncTagsResource(self)
         
-        
+        self.kks = kks.AsyncKksResource(self)
+        self.v1 = v1.AsyncV1Resource(self)
+        self.addons = addons.AsyncAddonsResource(self)
+        self.clusters = clusters.AsyncClustersResource(self)
+        self.node_groups = node_groups.AsyncNodeGroupsResource(self)
+        self.record = record.AsyncRecordResource(self)
+        self.vpc = vpc.AsyncVpcResource(self)
+        self.zone = zone.AsyncZoneResource(self)
         self.with_raw_response = AsyncKrutrimClientWithRawResponse(self)
         self.with_streaming_response = AsyncKrutrimClientWithStreamedResponse(self)
 
@@ -422,9 +476,19 @@ class KrutrimClientWithRawResponse:
         self.sshkey = sshkey.SshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithRawResponse(client.kpod)
         self.kos =kos.KosResourceWithRawResponse(client.kos)
-        
+        self.lb = lb.HighlvlResourceWithRawResponse(client.lb)
+        self.certs = certs.CertsResourceWithRawResponse(client.certs)
+        self.tags = tags.TagsResourceWithRawResponse(client.tags)
         
 
+        self.kks = kks.KksResourceWithRawResponse(client.kks)
+        self.v1 = v1.V1ResourceWithRawResponse(client.v1)
+        self.addons = addons.AddonsResourceWithRawResponse(client.addons)
+        self.clusters = clusters.ClustersResourceWithRawResponse(client.clusters)
+        self.node_groups = node_groups.NodeGroupsResourceWithRawResponse(client.node_groups)   
+        self.record = record.RecordResourceWithRawResponse(client.record)
+        self.zone = zone.ZoneResourceWithRawResponse(client.zone)   
+        self.vpc = vpc.VpcResourceWithRawResponse(client.vpc)
 
 class AsyncKrutrimClientWithRawResponse:
     def __init__(self, client: AsyncKrutrimClient) -> None:
@@ -435,8 +499,18 @@ class AsyncKrutrimClientWithRawResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithRawResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithRawResponse(client.kos)
-        
+        self.lb = lb.AsyncHighlvlResourceWithRawResponse(client.lb)
+        self.certs = certs.AsyncCertsResourceWithRawResponse(client.certs)
+        self.tags = tags.AsyncTagsResourceWithRawResponse(client.tags)
        
+        self.kks = kks.AsyncKksResourceWithRawResponse(client.kks)
+        self.v1 = v1.AsyncV1ResourceWithRawResponse(client.v1)
+        self.addons = addons.AsyncAddonsResourceWithRawResponse(client.addons)    
+        self.clusters = clusters.AsyncClustersResourceWithRawResponse(client.clusters)
+        self.node_groups = node_groups.AsyncNodeGroupsResourceWithRawResponse(client.node_groups)
+        self.record = record.AsyncRecordResourceWithRawResponse(client.record)
+        self.zone = zone.AsyncZoneResourceWithRawResponse(client.zone)
+        self.vpc = vpc.AsyncVpcResourceWithRawResponse(client.vpc)
 
 
 class KrutrimClientWithStreamedResponse:
@@ -448,6 +522,19 @@ class KrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.SshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.KosResourceWithStreamingResponse(client.kos)
+        self.lb = lb.HighlvlResourceWithStreamingResponse(client.lb)
+        self.certs = certs.CertsResourceWithStreamingResponse(client.certs)
+        self.tags = tags.TagsResourceWithStreamingResponse(client.tags)
+
+        
+        self.kks = kks.KksResourceWithStreamingResponse(client.kks)
+        self.v1 = v1.V1ResourceWithStreamingResponse(client.v1)
+        self.addons = addons.AddonsResourceWithStreamingResponse(client.addons)
+        self.clusters = clusters.ClustersResourceWithStreamingResponse(client.clusters)
+        self.node_groups = node_groups.NodeGroupsResourceWithStreamingResponse(client.node_groups)
+        self.record = record.RecordResourceWithStreamingResponse(client.record)
+        self.zone = zone.ZoneResourceWithStreamingResponse(client.zone)
+        self.vpc = vpc.VpcResourceWithStreamingResponse(client.vpc)
         
         
 
@@ -460,8 +547,19 @@ class AsyncKrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithStreamingResponse(client.kos)
+        self.lb = lb.AsyncHighlvlResourceWithStreamingResponse(client.lb)
+        self.certs = certs.AsyncCertsResourceWithStreamingResponse(client.certs)
+        self.tags = tags.AsyncTagsResourceWithStreamingResponse(client.tags)
         
         
+        self.kks = kks.AsyncKksResourceWithStreamingResponse(client.kks)
+        self.v1 =  v1.AsyncV1ResourceWithStreamingResponse(client.v1)
+        self.addons = addons.AsyncAddonsResourceWithStreamingResponse(client.addons)
+        self.clusters = clusters.AsyncClustersResourceWithStreamingResponse(client.clusters)
+        self.node_groups = node_groups.AsyncNodeGroupsResourceWithStreamingResponse(client.node_groups)
+        self.record = record.AsyncRecordResourceWithStreamingResponse(client.record)
+        self.zone = zone.AsyncZoneResourceWithStreamingResponse(client.zone)
+        self.vpc = vpc.AsyncVpcResourceWithStreamingResponse(client.vpc)        
 
 Client = KrutrimClient
 
