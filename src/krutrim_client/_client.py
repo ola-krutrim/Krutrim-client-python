@@ -34,6 +34,8 @@ from .resources.kks.clusters import node_groups
 
 from .resources.kcm import certs
 from .resources.kcm import tags
+from .resources.asg import asg
+from .resources.asg import asgV1
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
 from ._exceptions import APIStatusError, KrutrimClientError
 from ._base_client import (
@@ -73,7 +75,9 @@ class KrutrimClient(SyncAPIClient):
     zone: zone.ZoneResource  
     certs: certs.CertsResource
     tags: tags.TagsResource
-    
+    asg: asg.AsgResource
+    asgV1: asgV1.V1Resource
+
     
     with_raw_response: KrutrimClientWithRawResponse
     with_streaming_response: KrutrimClientWithStreamedResponse
@@ -142,7 +146,8 @@ class KrutrimClient(SyncAPIClient):
         self.lb = lb.HighlvlResource(self)
         self.certs = certs.CertsResource(self)
         self.tags = tags.TagsResource(self)
-        
+        self.asg = asg.AsgResource(self)
+        self.asgV1 = asgV1.V1Resource(self)
         self.kks = kks.KksResource(self)
         self.v1 = v1.V1Resource(self)
         self.addons = addons.AddonsResource(self)    
@@ -273,7 +278,8 @@ class AsyncKrutrimClient(AsyncAPIClient):
     lb: lb.AsyncHighlvlResource
     certs: certs.AsyncCertsResource
     tags: tags.AsyncTagsResource
-    
+    asg: asg.AsyncAsgResource
+    asgV1: asgV1.AsyncV1Resource
     Kks: kks.AsyncKksResource
     v1: v1.AsyncV1Resource
     clusters: clusters.AsyncClustersResource
@@ -350,7 +356,8 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.lb = lb.AsyncHighlvlResource(self)
         self.certs = certs.AsyncCertsResource(self)
         self.tags = tags.AsyncTagsResource(self)
-        
+        self.asg = asg.AsyncAsgResource(self)
+        self.asgV1 = asgV1.AsyncV1Resource(self)
         self.kks = kks.AsyncKksResource(self)
         self.v1 = v1.AsyncV1Resource(self)
         self.addons = addons.AsyncAddonsResource(self)
@@ -479,7 +486,8 @@ class KrutrimClientWithRawResponse:
         self.lb = lb.HighlvlResourceWithRawResponse(client.lb)
         self.certs = certs.CertsResourceWithRawResponse(client.certs)
         self.tags = tags.TagsResourceWithRawResponse(client.tags)
-        
+        self.asg = asg.AsgResourceWithRawResponse(client.asg)
+        self.asgV1 = asgV1.V1ResourceWithRawResponse(client.asgV1)
 
         self.kks = kks.KksResourceWithRawResponse(client.kks)
         self.v1 = v1.V1ResourceWithRawResponse(client.v1)
@@ -502,7 +510,8 @@ class AsyncKrutrimClientWithRawResponse:
         self.lb = lb.AsyncHighlvlResourceWithRawResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithRawResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithRawResponse(client.tags)
-       
+        self.asg = asg.AsyncAsgResourceWithRawResponse(client.asg)
+        self.asgV1 = asgV1.AsyncV1ResourceWithRawResponse(client.asgV1)
         self.kks = kks.AsyncKksResourceWithRawResponse(client.kks)
         self.v1 = v1.AsyncV1ResourceWithRawResponse(client.v1)
         self.addons = addons.AsyncAddonsResourceWithRawResponse(client.addons)    
@@ -525,8 +534,8 @@ class KrutrimClientWithStreamedResponse:
         self.lb = lb.HighlvlResourceWithStreamingResponse(client.lb)
         self.certs = certs.CertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.TagsResourceWithStreamingResponse(client.tags)
-
-        
+        self.asg = asg.AsgResourceWithStreamingResponse(client.asg)
+        self.asgV1 = asgV1.V1ResourceWithStreamingResponse(client.asgV1)
         self.kks = kks.KksResourceWithStreamingResponse(client.kks)
         self.v1 = v1.V1ResourceWithStreamingResponse(client.v1)
         self.addons = addons.AddonsResourceWithStreamingResponse(client.addons)
@@ -550,8 +559,8 @@ class AsyncKrutrimClientWithStreamedResponse:
         self.lb = lb.AsyncHighlvlResourceWithStreamingResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithStreamingResponse(client.tags)
-        
-        
+        self.asg = asg.AsyncAsgResourceWithStreamingResponse(client.asg)
+        self.asgV1 = asgV1.AsyncV1ResourceWithStreamingResponse(client.asgV1)
         self.kks = kks.AsyncKksResourceWithStreamingResponse(client.kks)
         self.v1 =  v1.AsyncV1ResourceWithStreamingResponse(client.v1)
         self.addons = addons.AsyncAddonsResourceWithStreamingResponse(client.addons)
