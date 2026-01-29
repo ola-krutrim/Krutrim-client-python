@@ -44,15 +44,22 @@ from .sshkey import(
     AsyncSshkeysResourceWithStreamingResponse
 )
 
-from .kcm import (
-    CertsResource,
-    AsyncCertsResource,
-    CertsResourceWithRawResponse,
-    AsyncCertsResourceWithRawResponse,
-    CertsResourceWithStreamingResponse,
-    AsyncCertsResourceWithStreamingResponse,
+
+ 
+# File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+from .kks import (
+    KksResource,
+    AsyncKksResource,
+    KksResourceWithRawResponse,
+    AsyncKksResourceWithRawResponse,
+    KksResourceWithStreamingResponse,
+    AsyncKksResourceWithStreamingResponse,
 )
 
+
+
+# File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
 from .dns import (
     DNSResource,
@@ -63,7 +70,23 @@ from .dns import (
     AsyncDNSResourceWithStreamingResponse,
 )
 
- 
+from .kcm import (
+    CertsResource,
+    AsyncCertsResource,
+    CertsResourceWithRawResponse,
+    AsyncCertsResourceWithRawResponse,
+    CertsResourceWithStreamingResponse,
+    AsyncCertsResourceWithStreamingResponse,
+)
+
+from .asg import (
+    AsgResource,
+    AsyncAsgResource,
+    AsgResourceWithRawResponse,
+    AsyncAsgResourceWithRawResponse,
+    AsgResourceWithStreamingResponse,
+    AsyncAsgResourceWithStreamingResponse,
+)
 
 
 
@@ -98,6 +121,12 @@ __all__ = [
     "AsyncSshkeysResourceWithRawResponse",
     "SshkeysResourceWithStreamingResponse",
     "AsyncSshkeysResourceWithStreamingResponse",
+    "KksResource",
+    "AsyncKksResource",
+    "KksResourceWithRawResponse",
+    "AsyncKksResourceWithRawResponse",
+    "KksResourceWithStreamingResponse",
+    "AsyncKksResourceWithStreamingResponse",        
     "DNSResource",
     "AsyncDNSResource",
     "DNSResourceWithRawResponse",
@@ -110,4 +139,10 @@ __all__ = [
     "AsyncCertsResourceWithRawResponse",
     "CertsResourceWithStreamingResponse",
     "AsyncCertsResourceWithStreamingResponse",
+    "AsgResource",
+    "AsyncAsgResource",
+    "AsgResourceWithRawResponse",
+    "AsyncAsgResourceWithRawResponse",
+    "AsgResourceWithStreamingResponse",
+    "AsyncAsgResourceWithStreamingResponse",
 ]
