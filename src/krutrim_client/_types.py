@@ -151,6 +151,7 @@ class Omit:
 
     def __bool__(self) -> Literal[False]:
         return False
+omit = Omit()     
 
 
 @runtime_checkable
@@ -215,3 +216,24 @@ class _GenericAlias(Protocol):
 
 class HttpxSendArgs(TypedDict, total=False):
     auth: httpx.Auth
+
+
+if TYPE_CHECKING:
+    # This works because str.__contains__ does not accept object (either in typeshed or at runtime)
+    # https://github.com/hauntsaninja/useful_types/blob/5e9710f3875107d068e7679fd7fec9cfab0eff3b/useful_types/__init__.py#L285
+    #
+    # Note: index() and count() methods are intentionally omitted to allow pyright to properly
+    # infer TypedDict types when dict literals are used in lists assigned to SequenceNotStr.
+    class SequenceNotStr(Protocol[_T_co]):
+        @overload
+        def __getitem__(self, index: SupportsIndex, /) -> _T_co: ...
+        @overload
+        def __getitem__(self, index: slice, /) -> Sequence[_T_co]: ...
+        def __contains__(self, value: object, /) -> bool: ...
+        def __len__(self) -> int: ...
+        def __iter__(self) -> Iterator[_T_co]: ...
+        def __reversed__(self) -> Iterator[_T_co]: ...
+else:
+    # just point this to a normal Sequence at runtime to avoid having to special case
+    # deserializing our custom sequence type
+    SequenceNotStr = Sequence

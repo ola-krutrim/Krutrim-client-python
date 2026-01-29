@@ -6,7 +6,7 @@ import httpx
 
 from typing import Mapping, cast, Dict
 
-from ..._types import Body, Omit, Query, Headers, NoneType, FileTypes, NotGiven, omit, NOT_GIVEN
+from ..._types import Body, Omit, Query, Headers, NoneType, FileTypes, NotGiven, NOT_GIVEN,omit
 from ..._utils import maybe_transform, async_maybe_transform, deepcopy_minimal, extract_files
 from ..._compat import cached_property
 from ..._resource import SyncAPIResource, AsyncAPIResource
