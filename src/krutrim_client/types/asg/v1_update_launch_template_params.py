@@ -7,8 +7,9 @@ from typing_extensions import Required, Annotated, TypedDict
 
 from ..._utils import PropertyInfo
 from .volume_param import VolumeParam
+from .policy_param import PolicyParam
 
-__all__ = ["V1UpdateLaunchTemplateParams", "Policy"]
+__all__ = ["V1UpdateLaunchTemplateParams"]
 
 
 class V1UpdateLaunchTemplateParams(TypedDict, total=False):
@@ -18,7 +19,7 @@ class V1UpdateLaunchTemplateParams(TypedDict, total=False):
 
     boot_volume_size: Annotated[str, PropertyInfo(alias="bootVolumeSize")]
 
-    policy: Iterable[Policy]
+    policy: Iterable[PolicyParam]
 
     qos: Dict[str, object]
 
@@ -27,15 +28,3 @@ class V1UpdateLaunchTemplateParams(TypedDict, total=False):
     volume_size: Annotated[Iterable[VolumeParam], PropertyInfo(alias="volumeSize")]
 
     x_region: str
-
-
-class Policy(TypedDict, total=False):
-    predefined_metric_type: Annotated[str, PropertyInfo(alias="PredefinedMetricType")]
-
-    scale_in_cooldown: Annotated[int, PropertyInfo(alias="ScaleInCooldown")]
-
-    scale_in_threshold: Annotated[int, PropertyInfo(alias="ScaleInThreshold")]
-
-    scale_out_cooldown: Annotated[int, PropertyInfo(alias="ScaleOutCooldown")]
-
-    scale_out_threshold: Annotated[int, PropertyInfo(alias="ScaleOutThreshold")]
