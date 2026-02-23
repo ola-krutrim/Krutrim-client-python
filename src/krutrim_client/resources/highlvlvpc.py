@@ -135,29 +135,25 @@ class HighlvlvpcResource(SyncAPIResource):
     
 
     def validate_create_instance_parameters(
-    self,
-    image_krn,
-    instanceName,
-    instanceType,
-    network_id,
-    security_groups,
-    sshkey_name,
-    subnet_id,
-    vm_volume_disk_size,
-    vpc_id,
-    x_region,
-    floating_ip=None,
-    user_data=None,
-    volume_name=None,
-    volume_size=None,
-    volumetype=None,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None,
-    qos=None,
-    tags=None
+        self,
+        image_krn,
+        instanceName,
+        instanceType,
+        network_id,
+        security_groups,
+        sshkey_name,
+        subnet_id,
+        vpc_id,
+        region,
+        floating_ip=None,
+        user_data=None,
+        volume_name=None,
+        volume_size=None,
+        volumetype=None,
+        tags=None,
+        timeout=None,
     ):
+        # Required string fields
         for name, value in {
             "image_krn": image_krn,
             "instanceName": instanceName,
@@ -165,89 +161,84 @@ class HighlvlvpcResource(SyncAPIResource):
             "network_id": network_id,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
-            "vm_volume_disk_size": vm_volume_disk_size,
             "vpc_id": vpc_id,
             "volumetype": volumetype,
+            "region": region,
         }.items():
-            if not isinstance(value, str) or not value:
+            if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"'{name}' must be a non-empty string.")
 
-        # Optional: floating_ip
+        # security_groups
+        if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
+            raise ValueError("'security_groups' must be a list of strings.")
+
+        # floating_ip
         if floating_ip is not None and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
-        # Optional: user_data
+        # user_data
         if user_data is not None and not isinstance(user_data, (str, dict)):
-            raise ValueError("'user_data' must be a string or Base64FileInput (dict) if provided.")
+            raise ValueError("'user_data' must be a string or Base64FileInput.")
 
-        # Optional: volume_name
+        # volume_name
         if volume_name is not None and not isinstance(volume_name, str):
             raise ValueError("'volume_name' must be a string if provided.")
 
-        # Optional: volume_size
+        # volume_size
         if volume_size is not None and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
 
-        # Optional: extra dicts
-        if extra_headers is not None and not isinstance(extra_headers, dict):
-            raise ValueError("'extra_headers' must be a dictionary if provided.")
-        if extra_query is not None and not isinstance(extra_query, dict):
-            raise ValueError("'extra_query' must be a dictionary if provided.")
-        if extra_body is not None and not isinstance(extra_body, dict):
-            raise ValueError("'extra_body' must be a dictionary if provided.")
-
-        # Optional: timeout
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-
-        # qos
-        if not isinstance(qos, dict):
-            raise ValueError("'qos' must be a dictionary.")
-
         # tags
-        if not isinstance(tags, list):
-            raise ValueError("'tags' must be a list.")
+        if tags is not None and not isinstance(tags, list):
+            raise ValueError("'tags' must be a list if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        # timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float)):
+            raise ValueError("'timeout' must be an int or float if provided.")
 
-    def validate_create_volume_parameters(
-    self,
-    availability_zone,
-    multiattach,
-    name,
-    size,
-    x_region,
-    volumetype,
-    k_tenant_id,
-    timeout=None
-    
-    ):
-        # Required string parameters
-        for param_name, param_value in {
-            "availability_zone": availability_zone,
-            "name": name,
-            "volumetype": volumetype,
-            "k_tenant_id": k_tenant_id,
-        }.items():
-            if not isinstance(param_value, str) or not param_value:
-                raise ValueError(f"'{param_name}' must be a non-empty string.")
+        # region validation
+        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError(
+                "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
 
-        # Required: multiattach
-        if not isinstance(multiattach, bool):
-            raise ValueError("'multiattach' must be a boolean.")
+        def validate_create_volume_parameters(
+        self,
+        availability_zone,
+        multiattach,
+        name,
+        size,
+        x_region,
+        volumetype,
+        k_tenant_id,
+        timeout=None
+        
+        ):
+            # Required string parameters
+            for param_name, param_value in {
+                "availability_zone": availability_zone,
+                "name": name,
+                "volumetype": volumetype,
+                "k_tenant_id": k_tenant_id,
+            }.items():
+                if not isinstance(param_value, str) or not param_value:
+                    raise ValueError(f"'{param_name}' must be a non-empty string.")
 
-        # Required: size
-        if not isinstance(size, int) or size <= 0:
-            raise ValueError("'size' must be a positive integer.")
+            # Required: multiattach
+            if not isinstance(multiattach, bool):
+                raise ValueError("'multiattach' must be a boolean.")
+
+            # Required: size
+            if not isinstance(size, int) or size <= 0:
+                raise ValueError("'size' must be a positive integer.")
 
 
-        # Optional: timeout
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+            # Optional: timeout
+            if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+                raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+            if x_region not in ("In-Bangalore-1"):
+                raise ValueError("'x_region' must be either 'In-Bangalore-1'")
 
 
 
@@ -335,38 +326,35 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'x_region' must be either 'In-Bangalore-1'")
 
     def validate_delete_instance_parameters(
-    self,
-    instanceKrn: str,
-    deleteVolume: bool,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        instanceKrn: str,
+        deleteVolume: bool,
+        x_region: str,
+        timeout=None,
     ):
-        # Validate instanceKrn
+        # instanceKrn (required)
         if not isinstance(instanceKrn, str) or not instanceKrn.strip():
             raise ValueError("'instanceKrn' must be a non-empty string.")
 
-        # Validate deleteVolume
+        # deleteVolume (required)
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
 
-        # Validate extra headers/query/body if provided
-        for name, param in {
-            "extra_headers": extra_headers,
-            "extra_query": extra_query,
-            "extra_body": extra_body,
-        }.items():
-            if param is not None and not isinstance(param, dict):
-                raise ValueError(f"'{name}' must be a dictionary if provided.")
+        # region header (required)
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
 
-        # Validate timeout
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-        
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError(
+                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
+
+        # timeout (optional)
+        if timeout not in (None, NOT_GIVEN) and not isinstance(
+            timeout, (int, float, httpx.Timeout)
+        ):
+            raise ValueError("'timeout' must be int, float, or httpx.Timeout if provided.")
+
 
     
 
@@ -497,50 +485,35 @@ class HighlvlvpcResource(SyncAPIResource):
 
 
     def validate_search_instances_params(
-    self,
-    vpc_id: str,
-    x_region,
-    x_user_email = NOT_GIVEN,
-    limit = NOT_GIVEN,
-    page = NOT_GIVEN,
-    ip_fixed = NOT_GIVEN,
-    ip_floating = NOT_GIVEN,
-    krn = NOT_GIVEN,
-    name = NOT_GIVEN
+        self,
+        vpc_id: str,
+        x_region: str,
+        limit=NOT_GIVEN,
+        page=NOT_GIVEN,
     ):
+        # vpc_id (required)
         if not isinstance(vpc_id, str) or not vpc_id.strip():
-            raise ValueError("vpc_id must be a non-empty string.")
-        
-        if x_user_email is not NOT_GIVEN and x_user_email is not None:
-            if not isinstance(x_user_email, str) or "@" not in x_user_email:
-                raise ValueError("x_user_email must be a valid email string.")
-        
+            raise ValueError("'vpc_id' must be a non-empty string.")
+
+        # region (required, header)
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError(
+                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
+
+        # limit (optional)
         if limit is not NOT_GIVEN and limit is not None:
             if not isinstance(limit, int) or limit <= 0:
-                raise ValueError("limit must be a positive integer.")
+                raise ValueError("'limit' must be a positive integer.")
 
+        # page (optional)
         if page is not NOT_GIVEN and page is not None:
             if not isinstance(page, int) or page <= 0:
-                raise ValueError("page must be a positive integer.")
+                raise ValueError("'page' must be a positive integer.")
 
-        def _validate_ip(ip):
-            if ip is not NOT_GIVEN and ip is not None:
-                if not isinstance(ip, str) or not ip:
-                    raise ValueError("IP address must be a non-empty string.")
-
-        _validate_ip(ip_fixed)
-        _validate_ip(ip_floating)
-
-        if krn is not NOT_GIVEN and krn is not None:
-            if not isinstance(krn, str) or not krn.strip():
-                raise ValueError("krn must be a non-empty string if provided.")
-        
-        if name is not NOT_GIVEN and name is not None:
-            if not isinstance(name, str) or not name.strip():
-                raise ValueError("name must be a non-empty string if provided.")
-        
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
 
 
 
@@ -781,90 +754,81 @@ class HighlvlvpcResource(SyncAPIResource):
         security_groups: List[str],
         sshkey_name: str,
         subnet_id: str,
-        vm_volume_disk_size: str,
         vpc_id: str,
-        x_region: str,
+        region: str,
         floating_ip: bool | NotGiven = NOT_GIVEN,
         user_data: Union[str, Base64FileInput] | NotGiven = NOT_GIVEN,
         volume_name: Optional[str] | NotGiven = NOT_GIVEN,
         volume_size: int | NotGiven = NOT_GIVEN,
         volumetype: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        delete_on_termination: bool = True,
+        port_krn: str = "",
+        isGpu: bool = False,
+        volumes: List = None,
+        tags: List = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | NotGiven = NOT_GIVEN,
-        qos : dict,
-        tags : List
     ) -> InstanceInfo:
         """
         Create a virtual machine instance
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
         """
-        
+
         self.validate_create_instance_parameters(
-            image_krn = image_krn,
-            instanceName = instanceName,
-            instanceType = instanceType,
-            network_id = network_id,
-            security_groups = security_groups,
-            sshkey_name = sshkey_name,
-            subnet_id = subnet_id,
-            vm_volume_disk_size = vm_volume_disk_size ,
-            vpc_id = vpc_id,
+            image_krn=image_krn,
+            instanceName=instanceName,
+            instanceType=instanceType,
+            network_id=network_id,
+            security_groups=security_groups,
+            sshkey_name=sshkey_name,
+            subnet_id=subnet_id,
+            vpc_id=vpc_id,
             floating_ip=floating_ip,
             user_data=user_data,
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
-            timeout=timeout,
-            qos=qos,
             tags=tags,
-            x_region = x_region
-         )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+            timeout=timeout,
+            region=region
+        )
+
         return self._post(
-            "/v1/highlvlvpc/create_instance",
+            "/vm/v1/create_instance",
             body=maybe_transform(
                 {
                     "image_krn": image_krn,
                     "instanceName": instanceName,
                     "instanceType": instanceType,
                     "network_id": network_id,
-                    "sshkey_name": sshkey_name,
                     "subnet_id": subnet_id,
-                    "vm_volume_disk_size": vm_volume_disk_size,
                     "vpc_id": vpc_id,
+                    "region": region,
                     "floating_ip": floating_ip,
-                    "security_groups" : security_groups,
-                    "tags" : tags,
+                    "security_groups": security_groups,
+                    "sshkey_name": sshkey_name,
                     "user_data": user_data,
                     "volume_name": volume_name,
                     "volume_size": volume_size,
                     "volumetype": volumetype,
-                    "timeout": timeout,
-                    "qos": qos,
-                    "region": x_region
+                    "delete_on_termination": delete_on_termination,
+                    "port_krn": port_krn,
+                    "isGpu": isGpu,
+                    "volumes": volumes or [],
+                    "tags": tags or [],
                 },
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=InstanceInfo,
         )
+
 
     def create_port(
         self,
@@ -1055,55 +1019,47 @@ class HighlvlvpcResource(SyncAPIResource):
         self,
         *,
         instanceKrn: str,
-        deleteVolume : bool,
+        deleteVolume: bool,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
         Delete a virtual machine instance
 
-        Args:
-          instance_krn: The KRN of the instance to be deleted.
-
-          instance_name: The name of the instance to be deleted.
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
+        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
         """
+
         self.validate_delete_instance_parameters(
-            instanceKrn = instanceKrn,
-            deleteVolume = deleteVolume,
-            extra_headers= extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
+            instanceKrn=instanceKrn,
+            deleteVolume=deleteVolume,
+            x_region=x_region,
             timeout=timeout,
-            x_region = x_region
         )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
-        return self._post(
-            "/v1/highlvlvpc/delete_instance",
-            body=maybe_transform(
-                {
-                    "instanceKrn": instanceKrn,
-                    "deleteVolume": deleteVolume
-                },
-                highlvlvpc_delete_instance_params.HighlvlvpcDeleteInstanceParams,
-            ),
+
+
+
+        extra_headers = {
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+
+        return self._delete(
+            "/vm/v1/delete_instance",   
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                timeout=timeout,
+                query=maybe_transform(
+                    {
+                        "instanceKrn": instanceKrn,
+                        "deleteVolume": deleteVolume,
+                    },
+                    highlvlvpc_delete_instance_params.HighlvlvpcDeleteInstanceParams,
+                ),
             ),
             cast_to=SuccessResponse,
         )
+
 
     def delete_vpc(
         self,
@@ -1396,67 +1352,33 @@ class HighlvlvpcResource(SyncAPIResource):
         *,
         vpc_id: str,
         x_region: str,
-        x_user_email: Optional[str]| None | NotGiven = NOT_GIVEN ,
-        limit: Optional[int] | None | NotGiven = NOT_GIVEN,
-        page: Optional[int] | None | NotGiven = NOT_GIVEN,
-        ip_fixed: Optional[str] | None | NotGiven = NOT_GIVEN,
-        ip_floating: Optional[str] | None | NotGiven = NOT_GIVEN,
-        krn: Optional[str] | None | NotGiven = NOT_GIVEN,
-        name: Optional[str] | None | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        limit: int | NotGiven = NOT_GIVEN,
+        page: int | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> InstanceInfoList:
         """
-        Search for instances based on various criteria
-
-        Args:
-          vpc_id: The KRN of the VPC to filter instances.
-
-          limit: Maximum number of instances to return per page.
-
-          page: Page number for pagination.
-
-          ip_fixed: Filter instances by fixed IP address.
-
-          ip_floating: Filter instances by floating IP address.
-
-          krn: Filter instances by their KRN.
-
-          name: Filter instances by name (exact match or contains, depending on API).
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
+        Matches:
+        GET /vm/v1/search_instances?vpc_id=...&page=1&limit=10
         """
 
         self.validate_search_instances_params(
-            vpc_id = vpc_id,
-            x_user_email = x_user_email,
-            limit = limit,
-            page= page,
-            ip_fixed= ip_fixed,
-            ip_floating = ip_floating,
-            krn = krn,
-            name = name,
-            x_region = x_region
-            )
+            vpc_id=vpc_id,
+            limit=limit,
+            page=page,
+            x_region=x_region,
+        )
 
+        # Only headers that curl sends
         extra_headers = {
-            "x-user-email": x_user_email,
-            "vpc_id": vpc_id,
             "x-region": x_region,
             **(extra_headers or {}),
         }
+
         return self._get(
-            "/v1/highlvlvpc/search_instances",
+            "/vm/v1/search_instances",   
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -1464,15 +1386,16 @@ class HighlvlvpcResource(SyncAPIResource):
                 timeout=timeout,
                 query=maybe_transform(
                     {
-                        "limit": limit,
+                        "vpc_id": vpc_id,   
                         "page": page,
-                        "vpc_id": vpc_id
+                        "limit": limit,
                     },
                     highlvlvpc_search_instances_params.HighlvlvpcSearchInstancesParams,
                 ),
             ),
             cast_to=InstanceInfoList,
         )
+
   
     def search_networks(
         self,
@@ -1938,30 +1861,25 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     
 
     async def validate_create_instance_parameters(
-    self,
-    image_krn,
-    instanceName,
-    instanceType,
-    network_id,
-    security_groups,
-    sshkey_name,
-    subnet_id,
-    vm_volume_disk_size,
-    vpc_id,
-    x_region,
-    floating_ip=None,
-    user_data=None,
-    volume_name=None,
-    volume_size=None,
-    volumetype=None,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None,
-    qos=None,
-    tags=None
+        self,
+        image_krn,
+        instanceName,
+        instanceType,
+        network_id,
+        security_groups,
+        sshkey_name,
+        subnet_id,
+        vpc_id,
+        region,
+        floating_ip=None,
+        user_data=None,
+        volume_name=None,
+        volume_size=None,
+        volumetype=None,
+        tags=None,
+        timeout=None,
     ):
-        # Required string parameters
+        # Required string fields
         for name, value in {
             "image_krn": image_krn,
             "instanceName": instanceName,
@@ -1969,51 +1887,47 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             "network_id": network_id,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
-            "vm_volume_disk_size": vm_volume_disk_size,
             "vpc_id": vpc_id,
             "volumetype": volumetype,
+            "region": region,
         }.items():
-            if not isinstance(value, str) or not value:
+            if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"'{name}' must be a non-empty string.")
 
-        # Optional: floating_ip
+        # security_groups
+        if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
+            raise ValueError("'security_groups' must be a list of strings.")
+
+        # floating_ip
         if floating_ip is not None and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
-        # Optional: user_data
+        # user_data
         if user_data is not None and not isinstance(user_data, (str, dict)):
-            raise ValueError("'user_data' must be a string or Base64FileInput (dict) if provided.")
+            raise ValueError("'user_data' must be a string or Base64FileInput.")
 
-        # Optional: volume_name
+        # volume_name
         if volume_name is not None and not isinstance(volume_name, str):
             raise ValueError("'volume_name' must be a string if provided.")
 
-        # Optional: volume_size
+        # volume_size
         if volume_size is not None and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
 
-        # Optional: extra dicts
-        if extra_headers is not None and not isinstance(extra_headers, dict):
-            raise ValueError("'extra_headers' must be a dictionary if provided.")
-        if extra_query is not None and not isinstance(extra_query, dict):
-            raise ValueError("'extra_query' must be a dictionary if provided.")
-        if extra_body is not None and not isinstance(extra_body, dict):
-            raise ValueError("'extra_body' must be a dictionary if provided.")
-
-        # Optional: timeout
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-
-        # qos
-        if not isinstance(qos, dict):
-            raise ValueError("'qos' must be a dictionary.")
-
         # tags
-        if not isinstance(tags, list):
-            raise ValueError("'tags' must be a list.")
+        if tags is not None and not isinstance(tags, list):
+            raise ValueError("'tags' must be a list if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        # timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float)):
+            raise ValueError("'timeout' must be an int or float if provided.")
+
+        # region validation
+        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError(
+                "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
+
 
     async def validate_create_volume_parameters(
     self,
@@ -2138,39 +2052,37 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
-    async def validate_delete_instance_parameters(
-    self,
-    instanceKrn: str,
-    deleteVolume: bool,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+    def validate_delete_instance_parameters(
+        self,
+        instanceKrn: str,
+        deleteVolume: bool,
+        x_region: str,
+        timeout=None,
     ):
-        # Validate instanceKrn
+        # instanceKrn (required)
         if not isinstance(instanceKrn, str) or not instanceKrn.strip():
             raise ValueError("'instanceKrn' must be a non-empty string.")
 
-        # Validate deleteVolume
+        # deleteVolume (required)
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
 
-        # Validate extra headers/query/body if provided
-        for name, param in {
-            "extra_headers": extra_headers,
-            "extra_query": extra_query,
-            "extra_body": extra_body,
-        }.items():
-            if param is not None and not isinstance(param, dict):
-                raise ValueError(f"'{name}' must be a dictionary if provided.")
+        # region header (required)
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
 
-        # Validate timeout
-        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-        
         if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            raise ValueError(
+                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
+
+        # timeout (optional)
+        if timeout not in (None, NOT_GIVEN) and not isinstance(
+            timeout, (int, float, httpx.Timeout)
+        ):
+            raise ValueError("'timeout' must be int, float, or httpx.Timeout if provided.")
+
+
 
     
 
@@ -2301,50 +2213,34 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
 
     async def validate_search_instances_params(
-    self,
-    vpc_id: str,
-    x_region,
-    x_user_email = NOT_GIVEN,
-    limit = NOT_GIVEN,
-    page = NOT_GIVEN,
-    ip_fixed = NOT_GIVEN,
-    ip_floating = NOT_GIVEN,
-    krn = NOT_GIVEN,
-    name = NOT_GIVEN
+        self,
+        vpc_id: str,
+        x_region: str,
+        limit=NOT_GIVEN,
+        page=NOT_GIVEN,
     ):
+        # vpc_id (required)
         if not isinstance(vpc_id, str) or not vpc_id.strip():
-            raise ValueError("vpc_id must be a non-empty string.")
-        
-        if x_user_email is not NOT_GIVEN and x_user_email is not None:
-            if not isinstance(x_user_email, str) or "@" not in x_user_email:
-                raise ValueError("x_user_email must be a valid email string.")
-        
+            raise ValueError("'vpc_id' must be a non-empty string.")
+
+        # region (required, header)
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError(
+                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
+            )
+
+        # limit (optional)
         if limit is not NOT_GIVEN and limit is not None:
             if not isinstance(limit, int) or limit <= 0:
-                raise ValueError("limit must be a positive integer.")
+                raise ValueError("'limit' must be a positive integer.")
 
+        # page (optional)
         if page is not NOT_GIVEN and page is not None:
             if not isinstance(page, int) or page <= 0:
-                raise ValueError("page must be a positive integer.")
-
-        def _validate_ip(ip):
-            if ip is not NOT_GIVEN and ip is not None:
-                if not isinstance(ip, str) or not ip:
-                    raise ValueError("IP address must be a non-empty string.")
-
-        _validate_ip(ip_fixed)
-        _validate_ip(ip_floating)
-
-        if krn is not NOT_GIVEN and krn is not None:
-            if not isinstance(krn, str) or not krn.strip():
-                raise ValueError("krn must be a non-empty string if provided.")
-        
-        if name is not NOT_GIVEN and name is not None:
-            if not isinstance(name, str) or not name.strip():
-                raise ValueError("name must be a non-empty string if provided.")
-        
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+                raise ValueError("'page' must be a positive integer.")
 
 
 
@@ -2586,92 +2482,81 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         security_groups: List[str],
         sshkey_name: str,
         subnet_id: str,
-        vm_volume_disk_size: str,
         vpc_id: str,
-        x_region: str,
+        region: str,
         floating_ip: bool | NotGiven = NOT_GIVEN,
-        security_group_rules_name: str | NotGiven = NOT_GIVEN,
-        security_group_rules_port: str | NotGiven = NOT_GIVEN,
-        security_group_rules_protocol: str | NotGiven = NOT_GIVEN,
         user_data: Union[str, Base64FileInput] | NotGiven = NOT_GIVEN,
         volume_name: Optional[str] | NotGiven = NOT_GIVEN,
         volume_size: int | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        volumetype: str,
+        delete_on_termination: bool = True,
+        port_krn: str = "",
+        isGpu: bool = False,
+        volumes: List | None = None,
+        tags: List | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-        qos: dict,
-        tags: List
     ) -> InstanceInfo:
         """
-        Create a virtual machine instance
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
+        Create a virtual machine instance (async)
         """
+
         await self.validate_create_instance_parameters(
-            image_krn = image_krn,
-            instanceName = instanceName,
-            instanceType = instanceType,
-            network_id = network_id,
-            security_groups = security_groups,
-            sshkey_name = sshkey_name,
-            subnet_id = subnet_id,
-            vm_volume_disk_size = vm_volume_disk_size ,
-            vpc_id = vpc_id,
+            image_krn=image_krn,
+            instanceName=instanceName,
+            instanceType=instanceType,
+            network_id=network_id,
+            security_groups=security_groups,
+            sshkey_name=sshkey_name,
+            subnet_id=subnet_id,
+            vpc_id=vpc_id,
+            region=region,
             floating_ip=floating_ip,
             user_data=user_data,
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
-            timeout=timeout,
-            qos=qos,
             tags=tags,
-            x_region = x_region
-         )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+            timeout=timeout,
+        )
+
         return await self._post(
-            "/v1/highlvlvpc/create_instance",
+            "/vm/v1/create_instance",
             body=await async_maybe_transform(
                 {
                     "image_krn": image_krn,
                     "instanceName": instanceName,
                     "instanceType": instanceType,
                     "network_id": network_id,
+                    "subnet_id": subnet_id,
+                    "vpc_id": vpc_id,
+                    "region": region,
+                    "floating_ip": floating_ip,
                     "security_groups": security_groups,
                     "sshkey_name": sshkey_name,
-                    "subnet_id": subnet_id,
-                    "vm_volume_disk_size": vm_volume_disk_size,
-                    "vpc_id": vpc_id,
-                    "floating_ip": floating_ip,
-                    "security_group_rules_name": security_group_rules_name,
-                    "security_group_rules_port": security_group_rules_port,
-                    "security_group_rules_protocol": security_group_rules_protocol,
                     "user_data": user_data,
                     "volume_name": volume_name,
                     "volume_size": volume_size,
-                    "timeout": timeout,
-                    "qos": qos,
-                    "region": x_region
+                    "volumetype": volumetype,
+                    "delete_on_termination": delete_on_termination,
+                    "port_krn": port_krn,
+                    "isGpu": isGpu,
+                    "volumes": volumes or [],
+                    "tags": tags or [],
                 },
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=InstanceInfo,
         )
+
 
     async def create_port(
         self,
@@ -2858,54 +2743,46 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         self,
         *,
         instanceKrn: str,
-        deleteVolume : bool,
+        deleteVolume: bool,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
-        Delete a virtual machine instance
-
-        Args:
-          instance_krn: The KRN of the instance to be deleted.
-
-          instance_name: The name of the instance to be deleted.
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
+        Async version of:
+        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
         """
-        await self.validate_delete_instance_parameters(
-            instanceKrn = instanceKrn,
-            deleteVolume = deleteVolume,
-            extra_headers= extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
+
+
+        self.validate_delete_instance_parameters(
+            instanceKrn=instanceKrn,
+            deleteVolume=deleteVolume,
+            x_region=x_region,
             timeout=timeout,
         )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
-        return await self._post(
-            "/v1/highlvlvpc/delete_instance",
-            body=await async_maybe_transform(
-                {
-                    "instance_krn": instance_krn,
-                    "instance_name": instance_name,
-                },
-                highlvlvpc_delete_instance_params.HighlvlvpcDeleteInstanceParams,
-            ),
+
+
+        extra_headers = {
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+
+        return await self._delete(
+            "/vm/v1/delete_instance",   
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                timeout=timeout,
+                query=maybe_transform(
+                    {
+                        "instanceKrn": instanceKrn,
+                        "deleteVolume": deleteVolume,
+                    },
+                    highlvlvpc_delete_instance_params.HighlvlvpcDeleteInstanceParams,
+                ),
             ),
             cast_to=SuccessResponse,
         )
+
 
     async def delete_vpc(
         self,
@@ -3193,92 +3070,50 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         *,
         vpc_id: str,
         x_region: str,
-        x_user_email: str| NotGiven = NOT_GIVEN,
         limit: int | NotGiven = NOT_GIVEN,
         page: int | NotGiven = NOT_GIVEN,
-        ip_fixed: Optional[str] | NotGiven = NOT_GIVEN,
-        ip_floating: Optional[str] | NotGiven = NOT_GIVEN,
-        krn: Optional[str] | NotGiven = NOT_GIVEN,
-        name: Optional[str] | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> InstanceInfoList:
         """
-        Search for instances based on various criteria
-
-        Args:
-          vpc_id: The KRN of the VPC to filter instances.
-
-          limit: Maximum number of instances to return per page.
-
-          page: Page number for pagination.
-
-          ip_fixed: Filter instances by fixed IP address.
-
-          ip_floating: Filter instances by floating IP address.
-
-          krn: Filter instances by their KRN.
-
-          name: Filter instances by name (exact match or contains, depending on API).
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
+        Async version of:
+        GET /vm/v1/search_instances?vpc_id=...&page=...&limit=...
         """
 
+        self.validate_search_instances_params(
+            vpc_id=vpc_id,
+            x_region=x_region,
+            limit=limit,
+            page=page,
+        )
 
-        await self.validate_search_instances_params(
-            vpc_id = vpc_id,
-            x_user_email = x_user_email,
-            limit = limit,
-            page= page,
-            ip_fixed= ip_fixed,
-            ip_floating = ip_floating,
-            krn = krn,
-            name = name,
-            )
 
         extra_headers = {
-            "x-user-email": x_user_email,
-            "vpc_id": vpc_id,
             "x-region": x_region,
             **(extra_headers or {}),
         }
-        return await self._post(
-            "/v1/highlvlvpc/search_instances",
-            body=await async_maybe_transform(
-                {
-                    "vpc_id": vpc_id,
-                    "ip_fixed": ip_fixed,
-                    "ip_floating": ip_floating,
-                    "krn": krn,
-                    "name": name,
-                },
-                highlvlvpc_search_instances_params.HighlvlvpcSearchInstancesParams,
-            ),
+
+        return await self._get(
+            "/vm/v1/search_instances",   
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
-                query=await async_maybe_transform(
+                query=maybe_transform(
                     {
-                        "limit": limit,
+                        "vpc_id": vpc_id,
                         "page": page,
+                        "limit": limit,
                     },
                     highlvlvpc_search_instances_params.HighlvlvpcSearchInstancesParams,
                 ),
             ),
             cast_to=InstanceInfoList,
         )
+
     
 
    
