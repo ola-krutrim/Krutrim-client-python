@@ -511,7 +511,7 @@ class HighlvlResource(SyncAPIResource):
             payload["loadbalancer_data"] = loadbalancer_data
         if security_groups is not omit:
             payload["security_groups"] = list(security_groups)               
-        return self._post(
+        return self._put(
             f"/v3/highlvl/update_load_balancer/{path_lb_krn}",
             body=payload,
             options=make_request_options(
@@ -558,7 +558,7 @@ class HighlvlResource(SyncAPIResource):
                 "x-region": x_region,
             }
         )
-        return self._post(
+        return self._put(
             "/v1/highlvl/updatetg",
             body=maybe_transform(
                 {
@@ -574,7 +574,41 @@ class HighlvlResource(SyncAPIResource):
             ),
             cast_to=NoneType,
         )
+    def get_load_balancer_details(
+        self,
+        lb_krn: str,
+        *,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """
+        Get Load Balancer Details
 
+        Args:
+        lb_krn: Load Balancer KRN
+        x_region: Region header (e.g. In-Bangalore-1)
+        """
+        self.validate_region(x_region)
+
+        if not lb_krn:
+            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
+
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        extra_headers.update({"x-region": x_region})
+
+        return self._get(
+            f"/v3/highlvl/lb_details_new/{lb_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=object,
+        )
 
 class AsyncHighlvlResource(AsyncAPIResource):
     @cached_property
@@ -1045,7 +1079,7 @@ class AsyncHighlvlResource(AsyncAPIResource):
             payload["listeners"] = listeners
         if loadbalancer_data is not omit:
             payload["loadbalancer_data"] = loadbalancer_data
-        return await self._post(
+        return await self._put(
             f"/v3/highlvl/update_load_balancer/{path_lb_krn}",
             body=payload,
             options=make_request_options(
@@ -1092,7 +1126,7 @@ class AsyncHighlvlResource(AsyncAPIResource):
                 "x-region": x_region,
             }
         )
-        return await self._post(
+        return await self._put(
             "/v1/highlvl/updatetg",
             body=await async_maybe_transform(
                 {
@@ -1107,6 +1141,38 @@ class AsyncHighlvlResource(AsyncAPIResource):
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
             cast_to=NoneType,
+        )
+
+    async def get_load_balancer_details(
+        self,
+        lb_krn: str,
+        *,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """
+        Get Load Balancer Details
+        """
+        await self.validate_region(x_region)
+
+        if not lb_krn:
+            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
+
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        extra_headers.update({"x-region": x_region})
+
+        return await self._get(
+            f"/v3/highlvl/lb_details_new/{lb_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=object,
         )
 
 
@@ -1150,6 +1216,9 @@ class HighlvlResourceWithRawResponse:
         self.update_target_group = to_raw_response_wrapper(
             highlvl.update_target_group,
         )
+        self.get_load_balancer_details = to_raw_response_wrapper(
+            highlvl.get_load_balancer_details,
+)
 
 
 class AsyncHighlvlResourceWithRawResponse:
@@ -1192,6 +1261,9 @@ class AsyncHighlvlResourceWithRawResponse:
         self.update_target_group = async_to_raw_response_wrapper(
             highlvl.update_target_group,
         )
+        self.get_load_balancer_details = async_to_raw_response_wrapper(
+            highlvl.get_load_balancer_details,
+)
 
 
 class HighlvlResourceWithStreamingResponse:
@@ -1234,6 +1306,9 @@ class HighlvlResourceWithStreamingResponse:
         self.update_target_group = to_streamed_response_wrapper(
             highlvl.update_target_group,
         )
+        self.get_load_balancer_details = to_streamed_response_wrapper(
+            highlvl.get_load_balancer_details,
+)
 
 
 class AsyncHighlvlResourceWithStreamingResponse:
@@ -1276,3 +1351,6 @@ class AsyncHighlvlResourceWithStreamingResponse:
         self.update_target_group = async_to_streamed_response_wrapper(
             highlvl.update_target_group,
         )
+        self.get_load_balancer_details = async_to_streamed_response_wrapper(
+            highlvl.get_load_balancer_details,
+)

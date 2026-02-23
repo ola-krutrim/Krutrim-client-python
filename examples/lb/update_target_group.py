@@ -10,17 +10,24 @@ api_key = os.getenv("API_KEY")
 client = KrutrimClient(api_key=api_key)
 try:
     resp = client.lb.with_raw_response.update_target_group(
-        x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1"
-        target_group_name="enter target group name",
-        k_customer_id="enter the k_customer_id",
-        x_account_id="enter the x_account_id",
-        vpc_id="enter vpc id",
-        body_lb_krn="enter lb krn here",
+        x_region="enter the region",  
+        
+        target_group_name="enter the target groupname", 
+        
+        k_customer_id="enter the kcustomerid",  
+        
+        x_account_id="enter the xaccountid",  
+        
+        vpc_id="enter the vpcid",
+        
+        
         members=[],
+        
         health_monitor={}
     )
+
     print("Response:", resp.json())
+
 except Exception as e:
     print(f"Error has occurred: {e}")
 
