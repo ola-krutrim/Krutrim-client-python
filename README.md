@@ -1,13 +1,4 @@
 # KrutrimClient Python API library
-
-[![PyPI version](https://img.shields.io/pypi/v/krutrim_client.svg)](https://pypi.org/project/krutrim_client/)
-
-The KrutrimClient Python library provides convenient access to the Krutrim Client REST API from any Python 3.8+
-application. The library includes type definitions for all request params and response fields,
-and offers both synchronous and asynchronous clients powered by [httpx](https://github.com/encode/httpx).
-
-It is generated with [Stainless](https://www.stainless.com/).
-
 ## Terms of Use
 
 By downloading or using this SDK, you agree to the terms as mentioned in [Krutrim SDK License](KRUTRIM%20SDK%20LICENSE.md).
