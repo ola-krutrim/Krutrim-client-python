@@ -86,15 +86,14 @@ class HighlvlvpcResource(SyncAPIResource):
 
 
     def validate_create_subnet_parameters(
-    self,
-    subnet_data,
-    vpc_id,
-    router_krn,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        subnet_data,
+        vpc_id,
+        x_region,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None
     ):
         if not isinstance(subnet_data, dict):
             raise ValueError("'subnet_data' must be a dictionary.")
@@ -103,13 +102,17 @@ class HighlvlvpcResource(SyncAPIResource):
         for field in required_fields:
             if field not in subnet_data:
                 raise ValueError(f"'{field}' is required in subnet_data.")
-        
+
         if not isinstance(subnet_data["cidr"], str):
             raise ValueError("'cidr' must be a string.")
-        
+
+        # Optional CIDR check
+        if "/" not in subnet_data["cidr"]:
+            raise ValueError("'cidr' must be in valid CIDR format (e.g., 192.168.0.0/24).")
+
         if subnet_data["ip_version"] not in (4, 6):
             raise ValueError("'ip_version' must be either 4 or 6.")
-        
+
         if not isinstance(subnet_data["name"], str):
             raise ValueError("'name' must be a string.")
 
@@ -121,15 +124,12 @@ class HighlvlvpcResource(SyncAPIResource):
 
         if not isinstance(vpc_id, str):
             raise ValueError("'vpc_id' must be a string.")
-        
-        if not isinstance(router_krn, str):
-            raise ValueError("'router_krn' must be a string.")
 
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
 
     
@@ -902,54 +902,39 @@ class HighlvlvpcResource(SyncAPIResource):
     def create_subnet(
         self,
         *,
-        subnet_data: highlvlvpc_create_subnet_params.SubnetData,
+        subnet_data,
         vpc_id: str,
-        router_krn : str,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Create a new subnet in the specified VPC
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None,
+    ):
 
-        Args:
-          vpc_id: The ID of the VPC where the subnet will be created.
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
         self.validate_create_subnet_parameters(
-            subnet_data = subnet_data,
-            vpc_id = vpc_id,
-            router_krn = router_krn,
-            extra_query = extra_query,
-            extra_body = extra_body,
-            timeout = timeout,
-            x_region =x_region
+            subnet_data=subnet_data,
+            vpc_id=vpc_id,
+            x_region=x_region,
         )
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
+        extra_headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+
         return self._post(
             "/v1/highlvlvpc/create_subnet",
-            body=maybe_transform(
-                {
-                    "subnet_data": subnet_data,
-                    "vpc_id": vpc_id,
-                    "router_krn": router_krn
-                },
-                highlvlvpc_create_subnet_params.HighlvlvpcCreateSubnetParams,
-            ),
+            body={
+                "subnet_data": subnet_data,
+                "vpc_id": vpc_id,
+            },
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=NoneType,
         )
@@ -1812,15 +1797,14 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         return AsyncHighlvlvpcResourceWithStreamingResponse(self)
 
     async def validate_create_subnet_parameters(
-    self,
-    subnet_data,
-    vpc_id,
-    router_krn,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        subnet_data,
+        vpc_id,
+        x_region,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None
     ):
         if not isinstance(subnet_data, dict):
             raise ValueError("'subnet_data' must be a dictionary.")
@@ -1829,13 +1813,17 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         for field in required_fields:
             if field not in subnet_data:
                 raise ValueError(f"'{field}' is required in subnet_data.")
-        
+
         if not isinstance(subnet_data["cidr"], str):
             raise ValueError("'cidr' must be a string.")
-        
+
+        # Optional: basic CIDR sanity check
+        if "/" not in subnet_data["cidr"]:
+            raise ValueError("'cidr' must be in valid CIDR format (e.g., 192.168.0.0/24).")
+
         if subnet_data["ip_version"] not in (4, 6):
             raise ValueError("'ip_version' must be either 4 or 6.")
-        
+
         if not isinstance(subnet_data["name"], str):
             raise ValueError("'name' must be a string.")
 
@@ -1847,9 +1835,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
         if not isinstance(vpc_id, str):
             raise ValueError("'vpc_id' must be a string.")
-        
-        if not isinstance(router_krn, str):
-            raise ValueError("'router_krn' must be a string.")
 
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
@@ -2632,10 +2617,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         *,
         subnet_data: highlvlvpc_create_subnet_params.SubnetData,
         vpc_id: str,
-        router_krn: str,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -2643,40 +2625,38 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     ) -> None:
         """
         Create a new subnet in the specified VPC
-
-        Args:
-          vpc_id: The ID of the VPC where the subnet will be created.
-
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
         """
+
         await self.validate_create_subnet_parameters(
-            subnet_data = subnet_data,
-            vpc_id = vpc_id,
-            router_krn = router_krn,
-            extra_query = extra_query,
-            extra_body = extra_body,
-            timeout = timeout
+            subnet_data=subnet_data,
+            vpc_id=vpc_id,
+            x_region=x_region,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
         )
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
+        extra_headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+
         return await self._post(
             "/v1/highlvlvpc/create_subnet",
             body=await async_maybe_transform(
                 {
                     "subnet_data": subnet_data,
                     "vpc_id": vpc_id,
-                    "router_krn": router_krn
                 },
                 highlvlvpc_create_subnet_params.HighlvlvpcCreateSubnetParams,
             ),
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=NoneType,
         )

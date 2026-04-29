@@ -36,6 +36,7 @@ from .resources.kcm import certs
 from .resources.kcm import tags
 from .resources.asg import asg
 from .resources.asg import asgV1
+from .resources.iam import iam
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
 from ._exceptions import APIStatusError, KrutrimClientError
 from ._base_client import (
@@ -77,6 +78,7 @@ class KrutrimClient(SyncAPIClient):
     tags: tags.TagsResource
     asg: asg.AsgResource
     asgV1: asgV1.V1Resource
+    iam: iam.IAMResource
 
     
     with_raw_response: KrutrimClientWithRawResponse
@@ -115,9 +117,7 @@ class KrutrimClient(SyncAPIClient):
         if api_key is None:
             api_key = os.environ.get("KRUTRIMCLIENT_API_KEY")
         if api_key is None:
-            raise KrutrimClientError(
-                "The api_key client option must be set either by passing api_key to the client or by setting the KRUTRIMCLIENT_API_KEY environment variable"
-            )
+            api_key = ""
         self.api_key = api_key
 
         if base_url is None:
@@ -156,8 +156,10 @@ class KrutrimClient(SyncAPIClient):
         self.record = record.RecordResource(self)
         self.zone = zone.ZoneResource(self)
         self.vpc = vpc.VpcResource(self)
+        self.iam = iam.IAMResource(self)
         self.with_raw_response = KrutrimClientWithRawResponse(self)
         self.with_streaming_response = KrutrimClientWithStreamedResponse(self)
+
         
 
         
@@ -170,8 +172,9 @@ class KrutrimClient(SyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
-        api_key = self.api_key
-        return {"Authorization": f"Bearer {api_key}"}
+        if self.api_key:
+            return {"Authorization": f"Bearer {self.api_key}"}
+        return {}
 
     @property
     @override
@@ -285,9 +288,10 @@ class AsyncKrutrimClient(AsyncAPIClient):
     clusters: clusters.AsyncClustersResource
     node_groups: node_groups.AsyncNodeGroupsResource
     addons: addons.AsyncAddonsResource
-    record = record.AsyncRecordResource
-    zone =  zone.AsyncZoneResource
-    vpc = vpc.AsyncVpcResource  
+    record: record.AsyncRecordResource
+    zone: zone.AsyncZoneResource
+    vpc: vpc.AsyncVpcResource
+    iam: iam.AsyncIAMResource 
     
     with_raw_response: AsyncKrutrimClientWithRawResponse
     with_streaming_response: AsyncKrutrimClientWithStreamedResponse
@@ -348,9 +352,9 @@ class AsyncKrutrimClient(AsyncAPIClient):
 
         self.highlvlvpc = highlvlvpc.AsyncHighlvlvpcResource(self)
         self.kbs = kbs.AsyncKbsResource(self)
-        self.securityGroup: securityGroup.AsyncSecurityGroupResource(self)
-        self.startStopVM: startStopVM.AsyncStartStopResource(self)
-        self.sshkey: sshkey.AsyncSshkeysResource(self)
+        self.securityGroup = securityGroup.AsyncSecurityGroupResource(self)
+        self.startStopVM = startStopVM.AsyncStartStopResource(self)
+        self.sshkey = sshkey.AsyncSshkeysResource(self)
         self.kpod = kpod.AsyncKpodResource(self)
         self.kos = kos.AsyncKosResource(self)
         self.lb = lb.AsyncHighlvlResource(self)
@@ -366,6 +370,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.record = record.AsyncRecordResource(self)
         self.vpc = vpc.AsyncVpcResource(self)
         self.zone = zone.AsyncZoneResource(self)
+        self.iam = iam.AsyncIAMResource(self)
         self.with_raw_response = AsyncKrutrimClientWithRawResponse(self)
         self.with_streaming_response = AsyncKrutrimClientWithStreamedResponse(self)
 
@@ -573,3 +578,7 @@ class AsyncKrutrimClientWithStreamedResponse:
 Client = KrutrimClient
 
 AsyncClient = AsyncKrutrimClient
+
+
+
+

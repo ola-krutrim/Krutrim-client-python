@@ -6,28 +6,26 @@ load_dotenv()
 
 api_key = os.getenv("api_key")
 
-client = KrutrimClient(api_key = api_key)
+client = KrutrimClient(api_key=api_key)
 
 try:
-    Create_Subnet_Response = client.highlvlvpc.create_subnet(
-
-        subnet_data = {
-        "cidr": "10.0.39.0/25",
-        "gateway_ip": "10.0.39.1",
-        "name": "Enter the Subnet Name",
-        "description": "Enter the subnet description",
-        "ip_version": 4,
-        "ingress": False,
-        "egress": False
-    },
-    vpc_id = "Enter the VPC ID",
-    router_krn = "Enter the Router ID",
-    timeout = 1000,
-    x_region = "Enter the region"
-    # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
-
+    raw_response = client.highlvlvpc.with_raw_response.create_subnet(
+        subnet_data={
+            "cidr": "enter the cidr",
+            "gateway_ip": "enter the gateway ip",
+            "name": "enter the name",
+            "description": "enter the description",
+            "ip_version": 4,
+            "ingress": True,
+            "egress": True,
+            "network_id": "enter the network id",
+        },
+        vpc_id="enter the vpcid",
+        x_region="enter the region",
+        timeout=1000,
     )
-    print(f"Successfully created the Subnet")
+
+    print("JSON response:", raw_response.http_response.json())
 
 except Exception as e:
-    print(f"Exception: {e}")       
+    print(f"Exception: {e}")
