@@ -241,7 +241,7 @@ class V1Resource(SyncAPIResource):
         instance_type,
         max,
         min,
-        network_krn,
+        vpc_name,
         region,
         security_groups,
         sshkey_name,
@@ -264,7 +264,7 @@ class V1Resource(SyncAPIResource):
             "image_krn": image_krn,
             "instance_name": instance_name,
             "instance_type": instance_type,
-            "network_krn": network_krn,
+            "vpc_name": vpc_name,
             "region": region,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
@@ -368,7 +368,10 @@ class V1Resource(SyncAPIResource):
 
         # 4. Integers
         for name, value in {"min": min, "max": max}.items():
-            if value is not omit and not isinstance(value, int):
+            if value is NOT_GIVEN:
+                continue  # not provided → skip validation
+
+            if not isinstance(value, int):
                 raise ValueError(f"'{name}' must be an integer if provided.")
 
         # 5. Iterables (security_groups, volume_size, policy)
@@ -398,7 +401,7 @@ class V1Resource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout.")
 
         # 8. Literal Constraints
-        if x_region is not omit and x_region not in ("In-Bangalore-1"):
+        if x_region is not omit and x_region not in ("In-Bangalore-1","colo-1"):
             raise ValueError("'x_region' must be 'In-Bangalore-1'")
         
 
@@ -562,7 +565,7 @@ class V1Resource(SyncAPIResource):
         instance_type: str | Omit = omit,
         max: int | Omit = omit,
         min: int | Omit = omit,
-        network_krn: str | Omit = omit,
+        vpc_name: str | Omit = omit,
         policy: Iterable[PolicyParam] | NotGiven = NOT_GIVEN,
         region: str | Omit = omit,
         security_groups: SequenceNotStr[str] | Omit = omit,
@@ -601,7 +604,7 @@ class V1Resource(SyncAPIResource):
             instance_type=instance_type,
             max=max,
             min=min,
-            network_krn=network_krn,
+            vpc_name=vpc_name,
             region=region,
             security_groups=security_groups,
             sshkey_name=sshkey_name,
@@ -622,6 +625,13 @@ class V1Resource(SyncAPIResource):
 
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         extra_headers = {**strip_not_given({"x_region": x_region}), **(extra_headers or {})}
+        network_id = self._fetch_network_id_from_vpc(
+            vpc_krn=vpc_krn,
+            vpc_name=vpc_name,
+            x_region=x_region,
+            extra_headers=extra_headers,
+            timeout=timeout,
+        )
         return self._post(
             "/asg/v1/create-launch-template",
             body=maybe_transform(
@@ -631,7 +641,7 @@ class V1Resource(SyncAPIResource):
                     "instance_type": instance_type,
                     "max": max,
                     "min": min,
-                    "network_krn": network_krn,
+                    "network_krn": network_id,
                     "policy": policy,
                     "qos": {
                         "iops": {},
@@ -719,7 +729,7 @@ class V1Resource(SyncAPIResource):
         """
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         extra_headers.update({"x-region": x_region})
-        return self._post(
+        return self._delete(
             "/asg/v1/delete-launch-template",
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -949,43 +959,37 @@ class V1Resource(SyncAPIResource):
             cast_to=NoneType,
         )
 
+
+
     def update_launch_template(
         self,
         *,
         template_id: str,
         template_name: str,
+
         instance_name: str | Omit = omit,
         instance_type: str | Omit = omit,
         sshkey_name: str | Omit = omit,
         image_krn: str | Omit = omit,
         security_groups: Iterable[str] | Omit = omit,
-        min: int | Omit = omit,
-        max: int | Omit = omit,
         volume_size: Iterable[VolumeParam] | Omit = omit,
+
+        min: int | None | NotGiven = NOT_GIVEN,
+        max: int | None | NotGiven = NOT_GIVEN,
+
         policy: Iterable[PolicyParam] | NotGiven = NOT_GIVEN,
         volume_name: str | NotGiven = NOT_GIVEN,
         volume_type: str | NotGiven = NOT_GIVEN,
         user_data: str | NotGiven = NOT_GIVEN,
+
         x_region: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """
-        Update Launch Template
 
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
         self.validate_update_launch_template_parameters(
             template_id=template_id,
             template_name=template_name,
@@ -1002,34 +1006,49 @@ class V1Resource(SyncAPIResource):
             volume_type=volume_type,
             user_data=user_data,
             x_region=x_region,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
-            timeout=timeout
+            timeout=timeout,
         )
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers = {**strip_not_given({"x_region": x_region}), **(extra_headers or {})}
-        return self._post(
+
+        # ---- headers ----
+        extra_headers = {
+            "Accept": "*/*",
+            **strip_not_given({"x_region": x_region}),
+            **(extra_headers or {}),
+        }
+
+        # ---- RAW body (may contain omit / NOT_GIVEN) ----
+        raw_body = {
+            "policy": policy,
+            "qos": {
+                "iops": {},
+                "bandwidth": {}
+            },
+            "volume_size": volume_size,
+            "volumeName": volume_name,
+            "volumeType": volume_type,
+            "instanceName": instance_name,
+            "instanceType": instance_type,
+            "sshkey_name": sshkey_name,
+            "user_data": user_data,
+            "image_krn": image_krn,
+            "security_groups": security_groups,
+            "min": min,
+            "max": max,
+        }
+
+        # ---- STRIP NOT_GIVEN ----
+        body = strip_not_given(raw_body)
+
+        # ---- STRIP omit / Omit (CRITICAL) ----
+        body = {
+            k: v for k, v in body.items()
+            if v is not omit and not isinstance(v, Omit)
+        }
+
+        return self._put(
             "/asg/v1/update-launch-template",
             body=maybe_transform(
-                {
-                    "policy": policy,
-                    "qos": {
-                        "iops": {},
-                        "bandwidth": {}
-                    },
-                    "volume_size": volume_size,
-                    "volumeName": volume_name,
-                    "volumeType": volume_type,
-                    "instanceName": instance_name,
-                    "instanceType": instance_type,
-                    "sshkey_name": sshkey_name,
-                    "user_data": user_data,
-                    "image_krn": image_krn,
-                    "security_groups":security_groups,
-                    "min": min,
-                    "max": max
-                },
+                body,
                 v1_update_launch_template_params.V1UpdateLaunchTemplateParams,
             ),
             options=make_request_options(
@@ -1047,6 +1066,7 @@ class V1Resource(SyncAPIResource):
             ),
             cast_to=NoneType,
         )
+
 
     def upscale_asg(
         self,
@@ -1121,7 +1141,7 @@ class AsyncV1Resource(AsyncAPIResource):
         instance_type,
         max,
         min,
-        network_krn,
+        vpc_name,
         region,
         security_groups,
         sshkey_name,
@@ -1144,7 +1164,7 @@ class AsyncV1Resource(AsyncAPIResource):
             "image_krn": image_krn,
             "instance_name": instance_name,
             "instance_type": instance_type,
-            "network_krn": network_krn,
+            "network_krn": vpc_name,
             "region": region,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
@@ -1531,7 +1551,7 @@ class AsyncV1Resource(AsyncAPIResource):
         instance_type: str | Omit = omit,
         max: int | Omit = omit,
         min: int | Omit = omit,
-        network_krn: str | Omit = omit,
+        vpc_name: str | Omit = omit,
         policy: Iterable[PolicyParam] | NotGiven = NOT_GIVEN,
         region: str | Omit = omit,
         security_groups: SequenceNotStr[str] | Omit = omit,
@@ -1570,7 +1590,7 @@ class AsyncV1Resource(AsyncAPIResource):
             instance_type=instance_type,
             max=max,
             min=min,
-            network_krn=network_krn,
+            vpc_name=vpc_name,
             region=region,
             security_groups=security_groups,
             sshkey_name=sshkey_name,
@@ -1591,6 +1611,13 @@ class AsyncV1Resource(AsyncAPIResource):
 
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         extra_headers = {**strip_not_given({"x_region": x_region}), **(extra_headers or {})}
+        network_id = self._fetch_network_id_from_vpc(
+            vpc_krn=vpc_krn,
+            vpc_name=vpc_name,
+            x_region=x_region,
+            extra_headers=extra_headers,
+            timeout=timeout,
+        )
         return await self._post(
             "/asg/v1/create-launch-template",
             body=await async_maybe_transform(
@@ -1600,7 +1627,7 @@ class AsyncV1Resource(AsyncAPIResource):
                     "instance_type": instance_type,
                     "max": max,
                     "min": min,
-                    "network_krn": network_krn,
+                    "network_krn": network_id,
                     "policy": policy,
                     "qos": {
                         "iops": {},
@@ -1690,7 +1717,7 @@ class AsyncV1Resource(AsyncAPIResource):
         """
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         extra_headers.update({"x-region": x_region})
-        return await self._post(
+        return await self._delete(
             "/asg/v1/delete-launch-template",
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -1981,7 +2008,7 @@ class AsyncV1Resource(AsyncAPIResource):
         )
         extra_headers = {"Accept": "*/*", **(extra_headers or {})}
         extra_headers = {**strip_not_given({"x_region": x_region}), **(extra_headers or {})}
-        return await self._post(
+        return await self._put(
             "/asg/v1/update-launch-template",
             body=await async_maybe_transform(
                 {
