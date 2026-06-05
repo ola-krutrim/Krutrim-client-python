@@ -1,0 +1,50 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify version matches tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${TAG#v}"
+          PYPROJECT=$(grep -E '^version = ' pyproject.toml | sed -E 's/^version = "(.*)"/\1/')
+          VERSION_PY=$(grep -E '^__version__ = ' src/krutrim_client/_version.py | sed -E 's/^__version__ = "(.*)"/\1/')
+
+          if [ "$TAG" != "$PYPROJECT" ]; then
+            echo "Tag version ($TAG) does not match pyproject.toml ($PYPROJECT)"
+            exit 1
+          fi
+          if [ "$TAG" != "$VERSION_PY" ]; then
+            echo "Tag version ($TAG) does not match _version.py ($VERSION_PY)"
+            exit 1
+          fi
+          echo "Version $TAG verified"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v2
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
