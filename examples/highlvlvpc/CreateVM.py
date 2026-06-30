@@ -8,28 +8,41 @@ api_key = os.getenv("api_key")
 client = KrutrimClient(api_key=api_key)
 
 try:
+    # Option A: attach an existing volume (omit image_krn, volume_name, volume_size, volumetype)
     create_vm_response = client.highlvlvpc.create_instance(
-        image_krn="enter the image krn",
         instanceName="enter the name",
-        instanceType="enter the instance type",
-        network_id="enter the network krn",
-        subnet_id="enter the subnet krn",
-        vpc_id="enter the vpc krn",
+        instanceType="enter the type",
+        subnet_id="enter the subnetid",
+        vpc_id="enter the vpcid",
         region="enter the region",
-        sshkey_name="enter the ssh key name",
-        security_groups=["enter the security group krn"],
-        floating_ip=True,   
-        volume_name="enter the volume name",
-        volume_size=20,                                                #enter as per requirement
-        volumetype="enter the volume type",
+        sshkey_name="enter the sshkey name",
+        security_groups=["enter the security group name"],
+        floating_ip=True,
         user_data="",
         delete_on_termination=True,
         port_krn="",
         isGpu=False,
-        volumes=[],
+        volumes=["enter the volume krn"],
         tags=[],
         timeout=6000,
     )
+
+    # Option B: create a new boot volume (omit volumes, provide image_krn + volume fields)
+    # create_vm_response = client.highlvlvpc.create_instance(
+    #     image_krn="krn:kbs:In-Bangalore-1:4144076351:...:image:...",
+    #     instanceName="moni",
+    #     instanceType="CPU-4x-16GB",
+    #     subnet_id="...",
+    #     vpc_id="...",
+    #     region="In-Bangalore-1",
+    #     sshkey_name="jawakey",
+    #     security_groups=["..."],
+    #     floating_ip=True,
+    #     volume_name="moni-boot-volume",
+    #     volume_size=40,
+    #     volumetype="SSD",
+    #     timeout=6000,
+    # )
 
     print(f"Created VM successfully: {create_vm_response}")
 

@@ -139,7 +139,6 @@ class HighlvlvpcResource(SyncAPIResource):
         image_krn,
         instanceName,
         instanceType,
-        network_id,
         security_groups,
         sshkey_name,
         subnet_id,
@@ -150,19 +149,17 @@ class HighlvlvpcResource(SyncAPIResource):
         volume_name=None,
         volume_size=None,
         volumetype=None,
+        volumes=None, 
         tags=None,
         timeout=None,
     ):
         # Required string fields
         for name, value in {
-            "image_krn": image_krn,
             "instanceName": instanceName,
             "instanceType": instanceType,
-            "network_id": network_id,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
             "vpc_id": vpc_id,
-            "volumetype": volumetype,
             "region": region,
         }.items():
             if not isinstance(value, str) or not value.strip():
@@ -181,11 +178,11 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
-        if volume_name is not None and not isinstance(volume_name, str):
+        if volume_name not in (None, NOT_GIVEN) and not isinstance(volume_name, str):
             raise ValueError("'volume_name' must be a string if provided.")
 
         # volume_size
-        if volume_size is not None and not isinstance(volume_size, int):
+        if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
 
         # tags
@@ -195,50 +192,67 @@ class HighlvlvpcResource(SyncAPIResource):
         # timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float)):
             raise ValueError("'timeout' must be an int or float if provided.")
+        if image_krn is not None:
+            if not isinstance(image_krn, str) or not image_krn.strip():
+                raise ValueError("'image_krn' must be a non-empty string if provided.")
+
+        if volumetype is not None:
+            if not isinstance(volumetype, str) or not volumetype.strip():
+                raise ValueError("'volumetype' must be a non-empty string if provided.")
 
         # region validation
         if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
             raise ValueError(
                 "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
             )
+        # If an existing volume is NOT provided, validate new volume fields.
+        if not volumes:
+            if volume_name in (None, NOT_GIVEN) or not isinstance(volume_name, str) or not volume_name.strip():
+                raise ValueError("'volume_name' must be a non-empty string.")
 
-        def validate_create_volume_parameters(
-        self,
-        availability_zone,
-        multiattach,
-        name,
-        size,
-        x_region,
-        volumetype,
-        k_tenant_id,
-        timeout=None
-        
-        ):
-            # Required string parameters
-            for param_name, param_value in {
-                "availability_zone": availability_zone,
-                "name": name,
-                "volumetype": volumetype,
-                "k_tenant_id": k_tenant_id,
-            }.items():
-                if not isinstance(param_value, str) or not param_value:
-                    raise ValueError(f"'{param_name}' must be a non-empty string.")
+            if volume_size in (None, NOT_GIVEN) or not isinstance(volume_size, int):
+                raise ValueError("'volume_size' must be an integer.")
 
-            # Required: multiattach
-            if not isinstance(multiattach, bool):
-                raise ValueError("'multiattach' must be a boolean.")
+            if volumetype in (None, NOT_GIVEN) or not isinstance(volumetype, str) or not volumetype.strip():
+                raise ValueError("'volumetype' must be a non-empty string.")
 
-            # Required: size
-            if not isinstance(size, int) or size <= 0:
-                raise ValueError("'size' must be a positive integer.")
+    def validate_create_volume_parameters(
+    self,
+    availability_zone,
+    multiattach,
+    name,
+    size,
+    x_region,
+    volumetype,
+    k_tenant_id,
+    timeout=None
+    
+    ):
+        # Required string parameters
+        for param_name, param_value in {
+            "availability_zone": availability_zone,
+            "name": name,
+            "volumetype": volumetype,
+            "k_tenant_id": k_tenant_id,
+        }.items():
+            if not isinstance(param_value, str) or not param_value:
+                raise ValueError(f"'{param_name}' must be a non-empty string.")
+
+        # Required: multiattach
+        if not isinstance(multiattach, bool):
+            raise ValueError("'multiattach' must be a boolean.")
+
+        # Required: size
+        if not isinstance(size, int) or size <= 0:
+            raise ValueError("'size' must be a positive integer.")
 
 
-            # Optional: timeout
-            if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
-                raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+        # Optional: timeout
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-            if x_region not in ("In-Bangalore-1"):
-                raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in ("In-Bangalore-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
 
 
 
@@ -747,10 +761,9 @@ class HighlvlvpcResource(SyncAPIResource):
     def create_instance(
         self,
         *,
-        image_krn: str,
+        image_krn: str | None = None,
         instanceName: str,
         instanceType: str,
-        network_id: str,
         security_groups: List[str],
         sshkey_name: str,
         subnet_id: str,
@@ -760,7 +773,7 @@ class HighlvlvpcResource(SyncAPIResource):
         user_data: Union[str, Base64FileInput] | NotGiven = NOT_GIVEN,
         volume_name: Optional[str] | NotGiven = NOT_GIVEN,
         volume_size: int | NotGiven = NOT_GIVEN,
-        volumetype: str,
+        volumetype: str | None = None,
         delete_on_termination: bool = True,
         port_krn: str = "",
         isGpu: bool = False,
@@ -779,7 +792,6 @@ class HighlvlvpcResource(SyncAPIResource):
             image_krn=image_krn,
             instanceName=instanceName,
             instanceType=instanceType,
-            network_id=network_id,
             security_groups=security_groups,
             sshkey_name=sshkey_name,
             subnet_id=subnet_id,
@@ -789,9 +801,10 @@ class HighlvlvpcResource(SyncAPIResource):
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
+            volumes=volumes,          # <-- Add this
             tags=tags,
             timeout=timeout,
-            region=region
+            region=region,
         )
 
         return self._post(
@@ -801,7 +814,6 @@ class HighlvlvpcResource(SyncAPIResource):
                     "image_krn": image_krn,
                     "instanceName": instanceName,
                     "instanceType": instanceType,
-                    "network_id": network_id,
                     "subnet_id": subnet_id,
                     "vpc_id": vpc_id,
                     "region": region,
@@ -1850,7 +1862,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         image_krn,
         instanceName,
         instanceType,
-        network_id,
         security_groups,
         sshkey_name,
         subnet_id,
@@ -1861,19 +1872,17 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         volume_name=None,
         volume_size=None,
         volumetype=None,
+        volumes=None,
         tags=None,
         timeout=None,
     ):
         # Required string fields
         for name, value in {
-            "image_krn": image_krn,
             "instanceName": instanceName,
             "instanceType": instanceType,
-            "network_id": network_id,
             "sshkey_name": sshkey_name,
             "subnet_id": subnet_id,
             "vpc_id": vpc_id,
-            "volumetype": volumetype,
             "region": region,
         }.items():
             if not isinstance(value, str) or not value.strip():
@@ -1892,11 +1901,11 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
-        if volume_name is not None and not isinstance(volume_name, str):
+        if volume_name not in (None, NOT_GIVEN) and not isinstance(volume_name, str):
             raise ValueError("'volume_name' must be a string if provided.")
 
         # volume_size
-        if volume_size is not None and not isinstance(volume_size, int):
+        if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
 
         # tags
@@ -1906,12 +1915,29 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         # timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float)):
             raise ValueError("'timeout' must be an int or float if provided.")
+        if image_krn is not None:
+            if not isinstance(image_krn, str) or not image_krn.strip():
+                raise ValueError("'image_krn' must be a non-empty string if provided.")
+
+        if volumetype is not None:
+            if not isinstance(volumetype, str) or not volumetype.strip():
+                raise ValueError("'volumetype' must be a non-empty string if provided.")
 
         # region validation
         if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
             raise ValueError(
                 "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
             )
+        # If an existing volume is NOT provided, validate new volume fields.
+        if not volumes:
+            if volume_name in (None, NOT_GIVEN) or not isinstance(volume_name, str) or not volume_name.strip():
+                raise ValueError("'volume_name' must be a non-empty string.")
+
+            if volume_size in (None, NOT_GIVEN) or not isinstance(volume_size, int):
+                raise ValueError("'volume_size' must be an integer.")
+
+            if volumetype in (None, NOT_GIVEN) or not isinstance(volumetype, str) or not volumetype.strip():
+                raise ValueError("'volumetype' must be a non-empty string.")
 
 
     async def validate_create_volume_parameters(
@@ -2460,10 +2486,9 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     async def create_instance(
         self,
         *,
-        image_krn: str,
+        image_krn: str | None = None,
         instanceName: str,
         instanceType: str,
-        network_id: str,
         security_groups: List[str],
         sshkey_name: str,
         subnet_id: str,
@@ -2473,7 +2498,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         user_data: Union[str, Base64FileInput] | NotGiven = NOT_GIVEN,
         volume_name: Optional[str] | NotGiven = NOT_GIVEN,
         volume_size: int | NotGiven = NOT_GIVEN,
-        volumetype: str,
+        volumetype: str | None = None,
         delete_on_termination: bool = True,
         port_krn: str = "",
         isGpu: bool = False,
@@ -2492,7 +2517,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             image_krn=image_krn,
             instanceName=instanceName,
             instanceType=instanceType,
-            network_id=network_id,
             security_groups=security_groups,
             sshkey_name=sshkey_name,
             subnet_id=subnet_id,
@@ -2503,6 +2527,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
+            volumes=volumes,
             tags=tags,
             timeout=timeout,
         )
@@ -2514,7 +2539,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                     "image_krn": image_krn,
                     "instanceName": instanceName,
                     "instanceType": instanceType,
-                    "network_id": network_id,
                     "subnet_id": subnet_id,
                     "vpc_id": vpc_id,
                     "region": region,

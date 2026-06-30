@@ -14,6 +14,7 @@ try:
         key_name = "Enter the Key Name",
         public_key = "Enter the Public key",
         x_region = "Enter the region",
+        customer_id = "Enter the customer id",
         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
     print(f"Successfully Created the SSHKEY {create_sshkey_response}")
