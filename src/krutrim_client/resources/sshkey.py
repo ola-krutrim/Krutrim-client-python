@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing_extensions import Literal
-
 import httpx
 
 from .._types import NOT_GIVEN, Body, Query, Headers, NotGiven, NoneType
@@ -19,7 +17,6 @@ from .._response import (
 )
 
 from ..types.sshkey.sshkey_create_response import SshkeyCreateResponse
-from ..types.sshkey.sshkey_retrieve_response import SshkeyRetrieveResponse
 
 __all__ = ["SshkeysResource", "AsyncSshkeysResource"]
 
@@ -48,6 +45,7 @@ class SshkeysResource(SyncAPIResource):
         key_name: str,
         public_key: str,
         x_region: str,
+        customer_id: str,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -64,6 +62,8 @@ class SshkeysResource(SyncAPIResource):
 
           public_key: The actual public SSH key string (e.g., starting with "ssh-rsa").
 
+          customer_id: The customer ID for the SSH key.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -72,9 +72,13 @@ class SshkeysResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
         return self._post(
-            "/v1/sshkeys",
+            "/v2/sshkeys",
             body=maybe_transform(
                 {
                     "key_name": key_name,
@@ -88,22 +92,36 @@ class SshkeysResource(SyncAPIResource):
             cast_to=SshkeyCreateResponse,
         )
 
-    def retrieve_sshkey(
+    def list_sshkeys(
         self,
-        ssh_key_identifier: str,
-        x_region: str,
+        customer_id: str,
         *,
+        x_region: str,
+        sort_by: str = "createdAt",
+        sort_order: str = "desc",
+        page: int = 1,
+        limit: int = 10,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> SshkeyRetrieveResponse:
+    ) -> httpx.Response:
         """
-        Fetch an SSH key by its unique identifier
+        List SSH keys for a customer
 
         Args:
+          customer_id: The customer ID to list SSH keys for.
+
+          sort_by: Field to sort results by.
+
+          sort_order: Sort direction (asc or desc).
+
+          page: Page number for pagination.
+
+          limit: Number of results per page.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -112,22 +130,34 @@ class SshkeysResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        if not ssh_key_identifier:
-            raise ValueError(f"Expected a non-empty value for `ssh_key_identifier` but received {ssh_key_identifier!r}")
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
+        query = {
+            "sortBy": sort_by,
+            "sortOrder": sort_order,
+            "page": page,
+            "limit": limit,
+        }
         return self._get(
-            f"/v1/sshkeys/{ssh_key_identifier}",
+            f"/v2/sshkeys/{customer_id}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=SshkeyRetrieveResponse,
+            cast_to=httpx.Response,
         )
 
     def delete_sshkey(
         self,
-        ssh_key_identifier: str,
+        ssh_key_id: str,
         *,
         x_region: str,
+        customer_id: str,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -139,6 +169,10 @@ class SshkeysResource(SyncAPIResource):
         Delete a specific SSH key by its UUID
 
         Args:
+          ssh_key_id: The UUID of the SSH key to delete.
+
+          customer_id: The customer ID associated with the SSH key.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -147,12 +181,15 @@ class SshkeysResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        if not ssh_key_identifier:
-            raise ValueError(f"Expected a non-empty value for `ssh_key_identifier` but received {ssh_key_identifier!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
+        if not ssh_key_id:
+            raise ValueError(f"Expected a non-empty value for `ssh_key_id` but received {ssh_key_id!r}")
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
         return self._delete(
-            f"/v1/sshkeys/{ssh_key_identifier}",
+            f"/v2/sshkeys/{ssh_key_id}",
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -182,6 +219,7 @@ class AsyncSshkeysResource(AsyncAPIResource):
         key_name: str,
         public_key: str,
         x_region: str,
+        customer_id: str,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -198,6 +236,8 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           public_key: The actual public SSH key string (e.g., starting with "ssh-rsa").
 
+          customer_id: The customer ID for the SSH key.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -206,9 +246,13 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
         return await self._post(
-            "/v1/sshkeys",
+            "/v2/sshkeys",
             body=await async_maybe_transform(
                 {
                     "key_name": key_name,
@@ -221,22 +265,37 @@ class AsyncSshkeysResource(AsyncAPIResource):
             ),
             cast_to=SshkeyCreateResponse,
         )
-    
-    async def retrieve_sshkey(
+
+    async def list_sshkeys(
         self,
-        ssh_key_identifier: str,
+        customer_id: str,
         *,
+        x_region: str,
+        sort_by: str = "createdAt",
+        sort_order: str = "desc",
+        page: int = 1,
+        limit: int = 10,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> SshkeyRetrieveResponse:
+    ) -> httpx.Response:
         """
-        Fetch an SSH key by its unique identifier
+        List SSH keys for a customer
 
         Args:
+          customer_id: The customer ID to list SSH keys for.
+
+          sort_by: Field to sort results by.
+
+          sort_order: Sort direction (asc or desc).
+
+          page: Page number for pagination.
+
+          limit: Number of results per page.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -245,21 +304,34 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        if not ssh_key_identifier:
-            raise ValueError(f"Expected a non-empty value for `ssh_key_identifier` but received {ssh_key_identifier!r}")
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
+        query = {
+            "sortBy": sort_by,
+            "sortOrder": sort_order,
+            "page": page,
+            "limit": limit,
+        }
         return await self._get(
-            f"/v1/sshkeys/{ssh_key_identifier}",
+            f"/v2/sshkeys/{customer_id}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=SshkeyRetrieveResponse,
+            cast_to=httpx.Response,
         )
 
     async def delete_sshkey(
         self,
-        ssh_key_identifier: str,
+        ssh_key_id: str,
         *,
         x_region: str,
+        customer_id: str,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -271,6 +343,10 @@ class AsyncSshkeysResource(AsyncAPIResource):
         Delete a specific SSH key by its UUID
 
         Args:
+          ssh_key_id: The UUID of the SSH key to delete.
+
+          customer_id: The customer ID associated with the SSH key.
+
           extra_headers: Send extra headers
 
           extra_query: Add additional query parameters to the request
@@ -279,12 +355,15 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        if not ssh_key_identifier:
-            raise ValueError(f"Expected a non-empty value for `ssh_key_identifier` but received {ssh_key_identifier!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
+        if not ssh_key_id:
+            raise ValueError(f"Expected a non-empty value for `ssh_key_id` but received {ssh_key_id!r}")
+        extra_headers = {
+            "x-region": x_region,
+            "k-customer-id": customer_id,
+            **(extra_headers or {}),
+        }
         return await self._delete(
-            f"/v1/sshkeys/{ssh_key_identifier}",
+            f"/v2/sshkeys/{ssh_key_id}",
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
@@ -299,8 +378,8 @@ class SshkeysResourceWithRawResponse:
         self.create_sshkey = to_raw_response_wrapper(
             sshkeys.create_sshkey,
         )
-        self.retrieve_sshkey = to_raw_response_wrapper(
-            sshkeys.retrieve_sshkey,
+        self.list_sshkeys = to_raw_response_wrapper(
+            sshkeys.list_sshkeys,
         )
         self.delete_sshkey = to_raw_response_wrapper(
             sshkeys.delete_sshkey,
@@ -313,8 +392,8 @@ class AsyncSshkeysResourceWithRawResponse:
         self.create_sshkey = async_to_raw_response_wrapper(
             sshkeys.create_sshkey,
         )
-        self.retrieve_sshkey = async_to_raw_response_wrapper(
-            sshkeys.retrieve_sshkey,
+        self.list_sshkeys = async_to_raw_response_wrapper(
+            sshkeys.list_sshkeys,
         )
         self.delete_sshkey = async_to_raw_response_wrapper(
             sshkeys.delete_sshkey,
@@ -328,8 +407,8 @@ class SshkeysResourceWithStreamingResponse:
             sshkeys.create_sshkey,
         )
 
-        self.retrieve_sshkey = to_streamed_response_wrapper(
-            sshkeys.retrieve_sshkey,
+        self.list_sshkeys = to_streamed_response_wrapper(
+            sshkeys.list_sshkeys,
         )
         self.delete_sshkey = to_streamed_response_wrapper(
             sshkeys.delete_sshkey,
@@ -342,12 +421,11 @@ class AsyncSshkeysResourceWithStreamingResponse:
         self.create_sshkey = async_to_streamed_response_wrapper(
             sshkeys.create_sshkey,
         )
-        self.retrieve_sshkey = async_to_streamed_response_wrapper(
-            sshkeys.retrieve_sshkey,
+        self.list_sshkeys = async_to_streamed_response_wrapper(
+            sshkeys.list_sshkeys,
         )
 
         self.delete_sshkey = async_to_streamed_response_wrapper(
             sshkeys.delete_sshkey,
         )
-        
 

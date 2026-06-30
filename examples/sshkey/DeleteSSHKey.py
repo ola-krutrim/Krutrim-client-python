@@ -10,8 +10,9 @@ client = KrutrimClient(api_key = api_key)
 
 try:
     delete_sshkey_resp = client.sshkey.delete_sshkey(
-        ssh_key_identifier = "Enter the uuid associated to your ssh key which you want to delete",
-        x_region = "Enter the region"
+        ssh_key_id = "Enter the uuid associated to your ssh key which you want to delete",
+        x_region = "Enter the region",
+        customer_id = "Enter the customer id",
         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
     print("Successfully deleted the SSH Key")

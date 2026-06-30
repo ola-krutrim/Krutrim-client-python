@@ -10,11 +10,13 @@ client = KrutrimClient(api_key = api_key)
 
 
 try:
-    get_sshkey_response = client.sshkey.retrieve_sshkey(
-        ssh_key_identifier = "0070140197",
-        x_region = "In-Bangalore-1"
+    get_sshkey_response = client.sshkey.list_sshkeys(
+        customer_id = "enter the customer id",
+        x_region = "enter the region",
+        page = 1,
+        limit = 10,
         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
-    print(f"Successfully retrieve the SSH Key List {get_sshkey_response}!")
+    print(f"Successfully retrieved the SSH Key List {get_sshkey_response.json()}!")
 except Exception as e:
     print(f"Exception! {e}")

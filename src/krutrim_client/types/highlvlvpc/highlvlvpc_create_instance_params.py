@@ -17,8 +17,6 @@ class HighlvlvpcCreateInstanceParams(TypedDict, total=False):
 
     instance_type: Required[Annotated[str, PropertyInfo(alias="instanceType")]]
 
-    network_id: Required[str]
-
     region: Required[str]
 
     security_groups: Required[List[str]]
