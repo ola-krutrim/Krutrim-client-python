@@ -20,34 +20,13 @@ pip install krutrim-client
 
 ## Getting Started
 
-The SDK provides examples for common Krutrim Cloud workflows.
+See [examples/getting-started.md](examples/getting-started.md) for an end-to-end workflow covering:
 
-Typical workflow:
-
-1. Generate an API Key / Access Token
-2. Initialize the SDK Client
-3. Create a VPC
-4. Create an SSH Key
-5. Create a Virtual Machine
-6. Retrieve VM Details
-7. Connect to the VM via SSH
-8. Manage VM Lifecycle
-
-### Example Directories
-
-| Service | Example Directory |
-|----------|----------|
-| IAM | `examples/iam/` |
-| VPC | `examples/highlvlvpc/` |
-| SSH Keys | `examples/sshkey/` |
-| Security Groups | `examples/securityGroup/` |
-| DNS | `examples/dns/` |
-| Load Balancer | `examples/lb/` |
-| Virtual Machine Operations | `examples/startStopVM/` |
-
-For a complete API reference, see:
-
-- `api_examples.ipynb`
+- Authentication
+- VPC Creation
+- SSH Keys
+- VM Provisioning
+- VM Access
 
 ## Usage
 
