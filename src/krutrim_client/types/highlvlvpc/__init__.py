@@ -32,7 +32,24 @@ from .highlvlvpc_delete_image_params import HighlvlvpcDeleteImageParams as Highl
 from .highlvlvpc_delete_machine_image_params import HighlvlvpcImageParams as HighlvlvpcImageParams
 from .highlvlvpc_machine_s3_params import ImageMachineParams as ImageMachineParams
 from .highlvlvpc_machine_s3_response import ImageMachineResponse as ImageMachineResponse
-
+from .instance_template import InstanceTemplate as InstanceTemplate
+from .instance_template import InstanceTemplateList as InstanceTemplateList
+from .instance_template import BatchVmCreateResponse as BatchVmCreateResponse
+from .highlvlvpc_create_instance_template_params import (
+    HighlvlvpcCreateInstanceTemplateParams as HighlvlvpcCreateInstanceTemplateParams,
+)
+from .highlvlvpc_batch_create_vms_params import (
+    HighlvlvpcBatchCreateVmsParams as HighlvlvpcBatchCreateVmsParams,
+)
+from .highlvlvpc_list_instance_templates_params import (
+    HighlvlvpcListInstanceTemplatesParams as HighlvlvpcListInstanceTemplatesParams,
+)
+from .highlvlvpc_retrieve_instance_template_params import (
+    HighlvlvpcRetrieveInstanceTemplateParams as HighlvlvpcRetrieveInstanceTemplateParams,
+)
+from .highlvlvpc_delete_instance_template_params import (
+    HighlvlvpcDeleteInstanceTemplateParams as HighlvlvpcDeleteInstanceTemplateParams,
+)
 
 from .qos import Qos as Qos
 

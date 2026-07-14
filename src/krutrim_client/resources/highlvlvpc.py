@@ -30,7 +30,11 @@ from ..types.highlvlvpc import (
     highlvlvpc_delete_image_params,
     highlvlvpc_delete_machine_image_params,
     highlvlvpc_machine_s3_params,
-    
+    highlvlvpc_create_instance_template_params,
+    highlvlvpc_batch_create_vms_params,
+    highlvlvpc_list_instance_templates_params,
+    highlvlvpc_retrieve_instance_template_params,
+    highlvlvpc_delete_instance_template_params,
     QosParam,
 )
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
@@ -58,6 +62,11 @@ from ..types.highlvlvpc.highlvlvpc_create_image_response import HighlvlvpcCreate
 from ..types.highlvlvpc.highlvlvpc_list_image_response import HighlvlvpcListImageResponse
 from ..types.highlvlvpc.highlvlvpc_delete_machine_image_response import HighlvlvpcDeleteImageResponse
 from ..types.highlvlvpc.highlvlvpc_machine_s3_response import ImageMachineResponse
+from ..types.highlvlvpc.instance_template import (
+    InstanceTemplate,
+    InstanceTemplateList,
+    BatchVmCreateResponse,
+)
 
 
 
@@ -149,9 +158,10 @@ class HighlvlvpcResource(SyncAPIResource):
         volume_name=None,
         volume_size=None,
         volumetype=None,
-        volumes=None, 
+        volumes=None,
         tags=None,
         timeout=None,
+        count=None,
     ):
         # Required string fields
         for name, value in {
@@ -170,11 +180,11 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'security_groups' must be a list of strings.")
 
         # floating_ip
-        if floating_ip is not None and not isinstance(floating_ip, bool):
+        if floating_ip is not None and floating_ip is not NOT_GIVEN and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
         # user_data
-        if user_data is not None and not isinstance(user_data, (str, dict)):
+        if user_data is not None and user_data is not NOT_GIVEN and not isinstance(user_data, (str, dict)):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
@@ -184,6 +194,10 @@ class HighlvlvpcResource(SyncAPIResource):
         # volume_size
         if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
+
+        # count
+        if count is not None and not isinstance(count, int):
+            raise ValueError("'count' must be an integer if provided.")
 
         # tags
         if tags is not None and not isinstance(tags, list):
@@ -779,13 +793,21 @@ class HighlvlvpcResource(SyncAPIResource):
         isGpu: bool = False,
         volumes: List = None,
         tags: List = None,
+        count: int = 1,
+        easydeploy_type: str = "",
+        gateway_password: str = "",
+        model_name: str = "",
+        model_api_key: str = "",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | NotGiven = NOT_GIVEN,
-    ) -> InstanceInfo:
+    ) -> SuccessResponse:
         """
-        Create a virtual machine instance
+        Create a virtual machine instance (async API).
+
+        POST /vm/v1/create_instance_async
+        Returns {message, task_id}; poll search_instances / retrieve_instance for status.
         """
 
         self.validate_create_instance_parameters(
@@ -801,35 +823,53 @@ class HighlvlvpcResource(SyncAPIResource):
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
-            volumes=volumes,          # <-- Add this
+            volumes=volumes,
             tags=tags,
             timeout=timeout,
             region=region,
+            count=count,
         )
 
+        extra_headers = {
+            "x-region": region,
+            **(extra_headers or {}),
+        }
+
+        body: dict = {
+            "instanceName": instanceName,
+            "instanceType": instanceType,
+            "subnet_id": subnet_id,
+            "vpc_id": vpc_id,
+            "region": region,
+            "floating_ip": floating_ip,
+            "security_groups": security_groups,
+            "sshkey_name": sshkey_name,
+            "user_data": user_data if user_data is not NOT_GIVEN else "",
+            "delete_on_termination": delete_on_termination,
+            "port_krn": port_krn,
+            "isGpu": isGpu,
+            "volumes": volumes or [],
+            "tags": tags or [],
+            "count": count,
+            "easydeploy_type": easydeploy_type,
+            "gateway_password": gateway_password,
+            "model_name": model_name,
+            "model_api_key": model_api_key,
+        }
+        # New boot volume fields — only when not attaching an existing volume.
+        if image_krn is not None:
+            body["image_krn"] = image_krn
+        if volume_name not in (None, NOT_GIVEN):
+            body["volume_name"] = volume_name
+        if volume_size not in (None, NOT_GIVEN):
+            body["volume_size"] = volume_size
+        if volumetype is not None:
+            body["volumetype"] = volumetype
+
         return self._post(
-            "/vm/v1/create_instance",
+            "/vm/v1/create_instance_async",
             body=maybe_transform(
-                {
-                    "image_krn": image_krn,
-                    "instanceName": instanceName,
-                    "instanceType": instanceType,
-                    "subnet_id": subnet_id,
-                    "vpc_id": vpc_id,
-                    "region": region,
-                    "floating_ip": floating_ip,
-                    "security_groups": security_groups,
-                    "sshkey_name": sshkey_name,
-                    "user_data": user_data,
-                    "volume_name": volume_name,
-                    "volume_size": volume_size,
-                    "volumetype": volumetype,
-                    "delete_on_termination": delete_on_termination,
-                    "port_krn": port_krn,
-                    "isGpu": isGpu,
-                    "volumes": volumes or [],
-                    "tags": tags or [],
-                },
+                body,
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
@@ -838,7 +878,7 @@ class HighlvlvpcResource(SyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=InstanceInfo,
+            cast_to=SuccessResponse,
         )
 
 
@@ -1022,9 +1062,10 @@ class HighlvlvpcResource(SyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
-        Delete a virtual machine instance
+        Delete a virtual machine instance (async API).
 
-        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
+        DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
+        Returns {message, task_id}.
         """
 
         self.validate_delete_instance_parameters(
@@ -1034,15 +1075,13 @@ class HighlvlvpcResource(SyncAPIResource):
             timeout=timeout,
         )
 
-
-
         extra_headers = {
             "x-region": x_region,
             **(extra_headers or {}),
         }
 
         return self._delete(
-            "/vm/v1/delete_instance",   
+            "/vm/v1/delete_instance_async",
             options=make_request_options(
                 extra_headers=extra_headers,
                 timeout=timeout,
@@ -1792,6 +1831,243 @@ class HighlvlvpcResource(SyncAPIResource):
         )
 
            
+
+    def create_instance_template(
+        self,
+        *,
+        name: str,
+        vpc_id: str,
+        subnet_id: str,
+        instanceType: str,
+        sshkey_name: str,
+        region: str,
+        image_krn: str,
+        volumetype: str,
+        volume_size: int,
+        volume_name: str,
+        security_groups: List[str],
+        isGpu: bool = False,
+        user_data: str = "",
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplate:
+        """
+        Create a VM instance template.
+
+        POST /vm/v1/instance-templates/create
+        """
+        for field, value in {
+            "name": name,
+            "vpc_id": vpc_id,
+            "subnet_id": subnet_id,
+            "instanceType": instanceType,
+            "sshkey_name": sshkey_name,
+            "region": region,
+            "image_krn": image_krn,
+            "volumetype": volumetype,
+            "volume_name": volume_name,
+        }.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"'{field}' must be a non-empty string.")
+        if not isinstance(volume_size, int) or volume_size <= 0:
+            raise ValueError("'volume_size' must be a positive integer.")
+        if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
+            raise ValueError("'security_groups' must be a list of strings.")
+        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": region, **(extra_headers or {})}
+        return self._post(
+            "/vm/v1/instance-templates/create",
+            body=maybe_transform(
+                {
+                    "name": name,
+                    "volume_name": volume_name,
+                    "vpc_id": vpc_id,
+                    "subnet_id": subnet_id,
+                    "instanceType": instanceType,
+                    "isGpu": isGpu,
+                    "sshkey_name": sshkey_name,
+                    "region": region,
+                    "image_krn": image_krn,
+                    "volumetype": volumetype,
+                    "volume_size": volume_size,
+                    "security_groups": security_groups,
+                    "user_data": user_data,
+                },
+                highlvlvpc_create_instance_template_params.HighlvlvpcCreateInstanceTemplateParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=InstanceTemplate,
+        )
+
+    def list_instance_templates(
+        self,
+        *,
+        x_region: str,
+        page: int | NotGiven = NOT_GIVEN,
+        limit: int | NotGiven = NOT_GIVEN,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplateList:
+        """
+        List VM instance templates.
+
+        GET /vm/v1/instance-templates/list?page=1&limit=10
+        """
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._get(
+            "/vm/v1/instance-templates/list",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"page": page, "limit": limit},
+                    highlvlvpc_list_instance_templates_params.HighlvlvpcListInstanceTemplatesParams,
+                ),
+            ),
+            cast_to=InstanceTemplateList,
+        )
+
+    def retrieve_instance_template(
+        self,
+        *,
+        template_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplate:
+        """
+        Get instance template details.
+
+        GET /vm/v1/instance-templates/details?template_krn=...
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._get(
+            "/vm/v1/instance-templates/details",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"template_krn": template_krn},
+                    highlvlvpc_retrieve_instance_template_params.HighlvlvpcRetrieveInstanceTemplateParams,
+                ),
+            ),
+            cast_to=InstanceTemplate,
+        )
+
+    def delete_instance_template(
+        self,
+        *,
+        template_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SuccessResponse:
+        """
+        Delete an instance template.
+
+        DELETE /vm/v1/instance-templates/delete?template_krn=...
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._delete(
+            "/vm/v1/instance-templates/delete",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"template_krn": template_krn},
+                    highlvlvpc_delete_instance_template_params.HighlvlvpcDeleteInstanceTemplateParams,
+                ),
+            ),
+            cast_to=SuccessResponse,
+        )
+
+    def batch_create_vms(
+        self,
+        *,
+        template_krn: str,
+        count: int,
+        instanceName: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> BatchVmCreateResponse:
+        """
+        Batch-create VMs from an instance template.
+
+        POST /vm/v1/batch-vm-create
+        Returns {batch_source, job_id, message, total_count}.
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(instanceName, str) or not instanceName.strip():
+            raise ValueError("'instanceName' must be a non-empty string.")
+        if not isinstance(count, int) or count <= 0:
+            raise ValueError("'count' must be a positive integer.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._post(
+            "/vm/v1/batch-vm-create",
+            body=maybe_transform(
+                {
+                    "template_krn": template_krn,
+                    "count": count,
+                    "instanceName": instanceName,
+                },
+                highlvlvpc_batch_create_vms_params.HighlvlvpcBatchCreateVmsParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=BatchVmCreateResponse,
+        )
+
+
+
 class AsyncHighlvlvpcResource(AsyncAPIResource):
     @cached_property
     def with_raw_response(self) -> AsyncHighlvlvpcResourceWithRawResponse:
@@ -1875,6 +2151,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         volumes=None,
         tags=None,
         timeout=None,
+        count=None,
     ):
         # Required string fields
         for name, value in {
@@ -1893,11 +2170,11 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'security_groups' must be a list of strings.")
 
         # floating_ip
-        if floating_ip is not None and not isinstance(floating_ip, bool):
+        if floating_ip is not None and floating_ip is not NOT_GIVEN and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
         # user_data
-        if user_data is not None and not isinstance(user_data, (str, dict)):
+        if user_data is not None and user_data is not NOT_GIVEN and not isinstance(user_data, (str, dict)):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
@@ -1907,6 +2184,10 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         # volume_size
         if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
+
+        # count
+        if count is not None and not isinstance(count, int):
+            raise ValueError("'count' must be an integer if provided.")
 
         # tags
         if tags is not None and not isinstance(tags, list):
@@ -2504,13 +2785,21 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         isGpu: bool = False,
         volumes: List | None = None,
         tags: List | None = None,
+        count: int = 1,
+        easydeploy_type: str = "",
+        gateway_password: str = "",
+        model_name: str = "",
+        model_api_key: str = "",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> InstanceInfo:
+    ) -> SuccessResponse:
         """
-        Create a virtual machine instance (async)
+        Create a virtual machine instance (async API).
+
+        POST /vm/v1/create_instance_async
+        Returns {message, task_id}; poll search_instances / retrieve_instance for status.
         """
 
         await self.validate_create_instance_parameters(
@@ -2530,31 +2819,49 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             volumes=volumes,
             tags=tags,
             timeout=timeout,
+            count=count,
         )
 
+        extra_headers = {
+            "x-region": region,
+            **(extra_headers or {}),
+        }
+
+        body: dict = {
+            "instanceName": instanceName,
+            "instanceType": instanceType,
+            "subnet_id": subnet_id,
+            "vpc_id": vpc_id,
+            "region": region,
+            "floating_ip": floating_ip,
+            "security_groups": security_groups,
+            "sshkey_name": sshkey_name,
+            "user_data": user_data if user_data is not NOT_GIVEN else "",
+            "delete_on_termination": delete_on_termination,
+            "port_krn": port_krn,
+            "isGpu": isGpu,
+            "volumes": volumes or [],
+            "tags": tags or [],
+            "count": count,
+            "easydeploy_type": easydeploy_type,
+            "gateway_password": gateway_password,
+            "model_name": model_name,
+            "model_api_key": model_api_key,
+        }
+        # New boot volume fields — only when not attaching an existing volume.
+        if image_krn is not None:
+            body["image_krn"] = image_krn
+        if volume_name not in (None, NOT_GIVEN):
+            body["volume_name"] = volume_name
+        if volume_size not in (None, NOT_GIVEN):
+            body["volume_size"] = volume_size
+        if volumetype is not None:
+            body["volumetype"] = volumetype
+
         return await self._post(
-            "/vm/v1/create_instance",
+            "/vm/v1/create_instance_async",
             body=await async_maybe_transform(
-                {
-                    "image_krn": image_krn,
-                    "instanceName": instanceName,
-                    "instanceType": instanceType,
-                    "subnet_id": subnet_id,
-                    "vpc_id": vpc_id,
-                    "region": region,
-                    "floating_ip": floating_ip,
-                    "security_groups": security_groups,
-                    "sshkey_name": sshkey_name,
-                    "user_data": user_data,
-                    "volume_name": volume_name,
-                    "volume_size": volume_size,
-                    "volumetype": volumetype,
-                    "delete_on_termination": delete_on_termination,
-                    "port_krn": port_krn,
-                    "isGpu": isGpu,
-                    "volumes": volumes or [],
-                    "tags": tags or [],
-                },
+                body,
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
@@ -2563,7 +2870,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=InstanceInfo,
+            cast_to=SuccessResponse,
         )
 
 
@@ -2753,10 +3060,11 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
-        Async version of:
-        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
-        """
+        Delete a virtual machine instance (async API).
 
+        DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
+        Returns {message, task_id}.
+        """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
@@ -2765,14 +3073,13 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             timeout=timeout,
         )
 
-
         extra_headers = {
             "x-region": x_region,
             **(extra_headers or {}),
         }
 
         return await self._delete(
-            "/vm/v1/delete_instance",   
+            "/vm/v1/delete_instance_async",
             options=make_request_options(
                 extra_headers=extra_headers,
                 timeout=timeout,
@@ -3526,6 +3833,243 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     
 
 
+
+    async def create_instance_template(
+        self,
+        *,
+        name: str,
+        vpc_id: str,
+        subnet_id: str,
+        instanceType: str,
+        sshkey_name: str,
+        region: str,
+        image_krn: str,
+        volumetype: str,
+        volume_size: int,
+        volume_name: str,
+        security_groups: List[str],
+        isGpu: bool = False,
+        user_data: str = "",
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplate:
+        """
+        Create a VM instance template.
+
+        POST /vm/v1/instance-templates/create
+        """
+        for field, value in {
+            "name": name,
+            "vpc_id": vpc_id,
+            "subnet_id": subnet_id,
+            "instanceType": instanceType,
+            "sshkey_name": sshkey_name,
+            "region": region,
+            "image_krn": image_krn,
+            "volumetype": volumetype,
+            "volume_name": volume_name,
+        }.items():
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"'{field}' must be a non-empty string.")
+        if not isinstance(volume_size, int) or volume_size <= 0:
+            raise ValueError("'volume_size' must be a positive integer.")
+        if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
+            raise ValueError("'security_groups' must be a list of strings.")
+        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": region, **(extra_headers or {})}
+        return await self._post(
+            "/vm/v1/instance-templates/create",
+            body=await async_maybe_transform(
+                {
+                    "name": name,
+                    "volume_name": volume_name,
+                    "vpc_id": vpc_id,
+                    "subnet_id": subnet_id,
+                    "instanceType": instanceType,
+                    "isGpu": isGpu,
+                    "sshkey_name": sshkey_name,
+                    "region": region,
+                    "image_krn": image_krn,
+                    "volumetype": volumetype,
+                    "volume_size": volume_size,
+                    "security_groups": security_groups,
+                    "user_data": user_data,
+                },
+                highlvlvpc_create_instance_template_params.HighlvlvpcCreateInstanceTemplateParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=InstanceTemplate,
+        )
+
+    async def list_instance_templates(
+        self,
+        *,
+        x_region: str,
+        page: int | NotGiven = NOT_GIVEN,
+        limit: int | NotGiven = NOT_GIVEN,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplateList:
+        """
+        List VM instance templates.
+
+        GET /vm/v1/instance-templates/list?page=1&limit=10
+        """
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._get(
+            "/vm/v1/instance-templates/list",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"page": page, "limit": limit},
+                    highlvlvpc_list_instance_templates_params.HighlvlvpcListInstanceTemplatesParams,
+                ),
+            ),
+            cast_to=InstanceTemplateList,
+        )
+
+    async def retrieve_instance_template(
+        self,
+        *,
+        template_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> InstanceTemplate:
+        """
+        Get instance template details.
+
+        GET /vm/v1/instance-templates/details?template_krn=...
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._get(
+            "/vm/v1/instance-templates/details",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"template_krn": template_krn},
+                    highlvlvpc_retrieve_instance_template_params.HighlvlvpcRetrieveInstanceTemplateParams,
+                ),
+            ),
+            cast_to=InstanceTemplate,
+        )
+
+    async def delete_instance_template(
+        self,
+        *,
+        template_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SuccessResponse:
+        """
+        Delete an instance template.
+
+        DELETE /vm/v1/instance-templates/delete?template_krn=...
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._delete(
+            "/vm/v1/instance-templates/delete",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"template_krn": template_krn},
+                    highlvlvpc_delete_instance_template_params.HighlvlvpcDeleteInstanceTemplateParams,
+                ),
+            ),
+            cast_to=SuccessResponse,
+        )
+
+    async def batch_create_vms(
+        self,
+        *,
+        template_krn: str,
+        count: int,
+        instanceName: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> BatchVmCreateResponse:
+        """
+        Batch-create VMs from an instance template.
+
+        POST /vm/v1/batch-vm-create
+        Returns {batch_source, job_id, message, total_count}.
+        """
+        if not isinstance(template_krn, str) or not template_krn.strip():
+            raise ValueError("'template_krn' must be a non-empty string.")
+        if not isinstance(instanceName, str) or not instanceName.strip():
+            raise ValueError("'instanceName' must be a non-empty string.")
+        if not isinstance(count, int) or count <= 0:
+            raise ValueError("'count' must be a positive integer.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._post(
+            "/vm/v1/batch-vm-create",
+            body=await async_maybe_transform(
+                {
+                    "template_krn": template_krn,
+                    "count": count,
+                    "instanceName": instanceName,
+                },
+                highlvlvpc_batch_create_vms_params.HighlvlvpcBatchCreateVmsParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=BatchVmCreateResponse,
+        )
+
+
+
 class HighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: HighlvlvpcResource) -> None:
         self._highlvlvpc = highlvlvpc
@@ -3533,6 +4077,22 @@ class HighlvlvpcResourceWithRawResponse:
         self.create_instance = to_raw_response_wrapper(
             highlvlvpc.create_instance,
         )
+        self.create_instance_template = to_raw_response_wrapper(
+            highlvlvpc.create_instance_template,
+        )
+        self.list_instance_templates = to_raw_response_wrapper(
+            highlvlvpc.list_instance_templates,
+        )
+        self.retrieve_instance_template = to_raw_response_wrapper(
+            highlvlvpc.retrieve_instance_template,
+        )
+        self.delete_instance_template = to_raw_response_wrapper(
+            highlvlvpc.delete_instance_template,
+        )
+        self.batch_create_vms = to_raw_response_wrapper(
+            highlvlvpc.batch_create_vms,
+        )
+
         self.create_port = to_raw_response_wrapper(
             highlvlvpc.create_port,
         )
@@ -3600,6 +4160,22 @@ class AsyncHighlvlvpcResourceWithRawResponse:
         self.create_instance = async_to_raw_response_wrapper(
             highlvlvpc.create_instance,
         )
+        self.create_instance_template = async_to_raw_response_wrapper(
+            highlvlvpc.create_instance_template,
+        )
+        self.list_instance_templates = async_to_raw_response_wrapper(
+            highlvlvpc.list_instance_templates,
+        )
+        self.retrieve_instance_template = async_to_raw_response_wrapper(
+            highlvlvpc.retrieve_instance_template,
+        )
+        self.delete_instance_template = async_to_raw_response_wrapper(
+            highlvlvpc.delete_instance_template,
+        )
+        self.batch_create_vms = async_to_raw_response_wrapper(
+            highlvlvpc.batch_create_vms,
+        )
+
         self.create_port = async_to_raw_response_wrapper(
             highlvlvpc.create_port,
         )
@@ -3669,6 +4245,22 @@ class HighlvlvpcResourceWithStreamingResponse:
         self.create_instance = to_streamed_response_wrapper(
             highlvlvpc.create_instance,
         )
+        self.create_instance_template = to_streamed_response_wrapper(
+            highlvlvpc.create_instance_template,
+        )
+        self.list_instance_templates = to_streamed_response_wrapper(
+            highlvlvpc.list_instance_templates,
+        )
+        self.retrieve_instance_template = to_streamed_response_wrapper(
+            highlvlvpc.retrieve_instance_template,
+        )
+        self.delete_instance_template = to_streamed_response_wrapper(
+            highlvlvpc.delete_instance_template,
+        )
+        self.batch_create_vms = to_streamed_response_wrapper(
+            highlvlvpc.batch_create_vms,
+        )
+
         self.create_port = to_streamed_response_wrapper(
             highlvlvpc.create_port,
         )
@@ -3739,6 +4331,22 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         self.create_instance = async_to_streamed_response_wrapper(
             highlvlvpc.create_instance,
         )
+        self.create_instance_template = async_to_streamed_response_wrapper(
+            highlvlvpc.create_instance_template,
+        )
+        self.list_instance_templates = async_to_streamed_response_wrapper(
+            highlvlvpc.list_instance_templates,
+        )
+        self.retrieve_instance_template = async_to_streamed_response_wrapper(
+            highlvlvpc.retrieve_instance_template,
+        )
+        self.delete_instance_template = async_to_streamed_response_wrapper(
+            highlvlvpc.delete_instance_template,
+        )
+        self.batch_create_vms = async_to_streamed_response_wrapper(
+            highlvlvpc.batch_create_vms,
+        )
+
         self.create_port = async_to_streamed_response_wrapper(
             highlvlvpc.create_port,
         )
