@@ -13,7 +13,6 @@ try:
         name="enter the template name",
         volume_name="enter the volume name",
         vpc_id="enter the vpc krn",
-        network_id="enter the network krn",
         subnet_id="enter the subnet krn",
         instanceType="CPU-2x-8GB",
         isGpu=False,

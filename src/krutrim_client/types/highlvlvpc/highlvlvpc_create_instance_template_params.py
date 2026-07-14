@@ -12,7 +12,6 @@ class HighlvlvpcCreateInstanceTemplateParams(TypedDict, total=False):
 
     name: Required[str]
     vpc_id: Required[str]
-    network_id: Required[str]
     subnet_id: Required[str]
     instanceType: Required[str]
     sshkey_name: Required[str]
