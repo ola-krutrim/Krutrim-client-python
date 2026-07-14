@@ -149,9 +149,10 @@ class HighlvlvpcResource(SyncAPIResource):
         volume_name=None,
         volume_size=None,
         volumetype=None,
-        volumes=None, 
+        volumes=None,
         tags=None,
         timeout=None,
+        count=None,
     ):
         # Required string fields
         for name, value in {
@@ -170,11 +171,11 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'security_groups' must be a list of strings.")
 
         # floating_ip
-        if floating_ip is not None and not isinstance(floating_ip, bool):
+        if floating_ip is not None and floating_ip is not NOT_GIVEN and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
         # user_data
-        if user_data is not None and not isinstance(user_data, (str, dict)):
+        if user_data is not None and user_data is not NOT_GIVEN and not isinstance(user_data, (str, dict)):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
@@ -184,6 +185,10 @@ class HighlvlvpcResource(SyncAPIResource):
         # volume_size
         if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
+
+        # count
+        if count is not None and not isinstance(count, int):
+            raise ValueError("'count' must be an integer if provided.")
 
         # tags
         if tags is not None and not isinstance(tags, list):
@@ -779,13 +784,21 @@ class HighlvlvpcResource(SyncAPIResource):
         isGpu: bool = False,
         volumes: List = None,
         tags: List = None,
+        count: int = 1,
+        easydeploy_type: str = "",
+        gateway_password: str = "",
+        model_name: str = "",
+        model_api_key: str = "",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | NotGiven = NOT_GIVEN,
-    ) -> InstanceInfo:
+    ) -> SuccessResponse:
         """
-        Create a virtual machine instance
+        Create a virtual machine instance (async API).
+
+        POST /vm/v1/create_instance_async
+        Returns {message, task_id}; poll search_instances / retrieve_instance for status.
         """
 
         self.validate_create_instance_parameters(
@@ -801,35 +814,53 @@ class HighlvlvpcResource(SyncAPIResource):
             volume_name=volume_name,
             volume_size=volume_size,
             volumetype=volumetype,
-            volumes=volumes,          # <-- Add this
+            volumes=volumes,
             tags=tags,
             timeout=timeout,
             region=region,
+            count=count,
         )
 
+        extra_headers = {
+            "x-region": region,
+            **(extra_headers or {}),
+        }
+
+        body: dict = {
+            "instanceName": instanceName,
+            "instanceType": instanceType,
+            "subnet_id": subnet_id,
+            "vpc_id": vpc_id,
+            "region": region,
+            "floating_ip": floating_ip,
+            "security_groups": security_groups,
+            "sshkey_name": sshkey_name,
+            "user_data": user_data if user_data is not NOT_GIVEN else "",
+            "delete_on_termination": delete_on_termination,
+            "port_krn": port_krn,
+            "isGpu": isGpu,
+            "volumes": volumes or [],
+            "tags": tags or [],
+            "count": count,
+            "easydeploy_type": easydeploy_type,
+            "gateway_password": gateway_password,
+            "model_name": model_name,
+            "model_api_key": model_api_key,
+        }
+        # New boot volume fields — only when not attaching an existing volume.
+        if image_krn is not None:
+            body["image_krn"] = image_krn
+        if volume_name not in (None, NOT_GIVEN):
+            body["volume_name"] = volume_name
+        if volume_size not in (None, NOT_GIVEN):
+            body["volume_size"] = volume_size
+        if volumetype is not None:
+            body["volumetype"] = volumetype
+
         return self._post(
-            "/vm/v1/create_instance",
+            "/vm/v1/create_instance_async",
             body=maybe_transform(
-                {
-                    "image_krn": image_krn,
-                    "instanceName": instanceName,
-                    "instanceType": instanceType,
-                    "subnet_id": subnet_id,
-                    "vpc_id": vpc_id,
-                    "region": region,
-                    "floating_ip": floating_ip,
-                    "security_groups": security_groups,
-                    "sshkey_name": sshkey_name,
-                    "user_data": user_data,
-                    "volume_name": volume_name,
-                    "volume_size": volume_size,
-                    "volumetype": volumetype,
-                    "delete_on_termination": delete_on_termination,
-                    "port_krn": port_krn,
-                    "isGpu": isGpu,
-                    "volumes": volumes or [],
-                    "tags": tags or [],
-                },
+                body,
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
@@ -838,7 +869,7 @@ class HighlvlvpcResource(SyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=InstanceInfo,
+            cast_to=SuccessResponse,
         )
 
 
@@ -1022,9 +1053,10 @@ class HighlvlvpcResource(SyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
-        Delete a virtual machine instance
+        Delete a virtual machine instance (async API).
 
-        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
+        DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
+        Returns {message, task_id}.
         """
 
         self.validate_delete_instance_parameters(
@@ -1034,15 +1066,13 @@ class HighlvlvpcResource(SyncAPIResource):
             timeout=timeout,
         )
 
-
-
         extra_headers = {
             "x-region": x_region,
             **(extra_headers or {}),
         }
 
         return self._delete(
-            "/vm/v1/delete_instance",   
+            "/vm/v1/delete_instance_async",
             options=make_request_options(
                 extra_headers=extra_headers,
                 timeout=timeout,
@@ -1875,6 +1905,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         volumes=None,
         tags=None,
         timeout=None,
+        count=None,
     ):
         # Required string fields
         for name, value in {
@@ -1893,11 +1924,11 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'security_groups' must be a list of strings.")
 
         # floating_ip
-        if floating_ip is not None and not isinstance(floating_ip, bool):
+        if floating_ip is not None and floating_ip is not NOT_GIVEN and not isinstance(floating_ip, bool):
             raise ValueError("'floating_ip' must be a boolean if provided.")
 
         # user_data
-        if user_data is not None and not isinstance(user_data, (str, dict)):
+        if user_data is not None and user_data is not NOT_GIVEN and not isinstance(user_data, (str, dict)):
             raise ValueError("'user_data' must be a string or Base64FileInput.")
 
         # volume_name
@@ -1907,6 +1938,10 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         # volume_size
         if volume_size not in (None, NOT_GIVEN) and not isinstance(volume_size, int):
             raise ValueError("'volume_size' must be an integer if provided.")
+
+        # count
+        if count is not None and not isinstance(count, int):
+            raise ValueError("'count' must be an integer if provided.")
 
         # tags
         if tags is not None and not isinstance(tags, list):
@@ -2504,13 +2539,21 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         isGpu: bool = False,
         volumes: List | None = None,
         tags: List | None = None,
+        count: int = 1,
+        easydeploy_type: str = "",
+        gateway_password: str = "",
+        model_name: str = "",
+        model_api_key: str = "",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> InstanceInfo:
+    ) -> SuccessResponse:
         """
-        Create a virtual machine instance (async)
+        Create a virtual machine instance (async API).
+
+        POST /vm/v1/create_instance_async
+        Returns {message, task_id}; poll search_instances / retrieve_instance for status.
         """
 
         await self.validate_create_instance_parameters(
@@ -2530,31 +2573,49 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             volumes=volumes,
             tags=tags,
             timeout=timeout,
+            count=count,
         )
 
+        extra_headers = {
+            "x-region": region,
+            **(extra_headers or {}),
+        }
+
+        body: dict = {
+            "instanceName": instanceName,
+            "instanceType": instanceType,
+            "subnet_id": subnet_id,
+            "vpc_id": vpc_id,
+            "region": region,
+            "floating_ip": floating_ip,
+            "security_groups": security_groups,
+            "sshkey_name": sshkey_name,
+            "user_data": user_data if user_data is not NOT_GIVEN else "",
+            "delete_on_termination": delete_on_termination,
+            "port_krn": port_krn,
+            "isGpu": isGpu,
+            "volumes": volumes or [],
+            "tags": tags or [],
+            "count": count,
+            "easydeploy_type": easydeploy_type,
+            "gateway_password": gateway_password,
+            "model_name": model_name,
+            "model_api_key": model_api_key,
+        }
+        # New boot volume fields — only when not attaching an existing volume.
+        if image_krn is not None:
+            body["image_krn"] = image_krn
+        if volume_name not in (None, NOT_GIVEN):
+            body["volume_name"] = volume_name
+        if volume_size not in (None, NOT_GIVEN):
+            body["volume_size"] = volume_size
+        if volumetype is not None:
+            body["volumetype"] = volumetype
+
         return await self._post(
-            "/vm/v1/create_instance",
+            "/vm/v1/create_instance_async",
             body=await async_maybe_transform(
-                {
-                    "image_krn": image_krn,
-                    "instanceName": instanceName,
-                    "instanceType": instanceType,
-                    "subnet_id": subnet_id,
-                    "vpc_id": vpc_id,
-                    "region": region,
-                    "floating_ip": floating_ip,
-                    "security_groups": security_groups,
-                    "sshkey_name": sshkey_name,
-                    "user_data": user_data,
-                    "volume_name": volume_name,
-                    "volume_size": volume_size,
-                    "volumetype": volumetype,
-                    "delete_on_termination": delete_on_termination,
-                    "port_krn": port_krn,
-                    "isGpu": isGpu,
-                    "volumes": volumes or [],
-                    "tags": tags or [],
-                },
+                body,
                 highlvlvpc_create_instance_params.HighlvlvpcCreateInstanceParams,
             ),
             options=make_request_options(
@@ -2563,7 +2624,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=InstanceInfo,
+            cast_to=SuccessResponse,
         )
 
 
@@ -2753,10 +2814,11 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
         """
-        Async version of:
-        DELETE /vm/v1/delete_instance?instanceKrn=...&deleteVolume=true
-        """
+        Delete a virtual machine instance (async API).
 
+        DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
+        Returns {message, task_id}.
+        """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
@@ -2765,14 +2827,13 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             timeout=timeout,
         )
 
-
         extra_headers = {
             "x-region": x_region,
             **(extra_headers or {}),
         }
 
         return await self._delete(
-            "/vm/v1/delete_instance",   
+            "/vm/v1/delete_instance_async",
             options=make_request_options(
                 extra_headers=extra_headers,
                 timeout=timeout,
