@@ -35,6 +35,9 @@ from ..types.highlvlvpc import (
     highlvlvpc_list_instance_templates_params,
     highlvlvpc_retrieve_instance_template_params,
     highlvlvpc_delete_instance_template_params,
+    highlvlvpc_list_floating_ips_params,
+    highlvlvpc_attach_floating_ip_params,
+    highlvlvpc_update_port_security_groups_params,
     QosParam,
 )
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
@@ -66,6 +69,14 @@ from ..types.highlvlvpc.instance_template import (
     InstanceTemplate,
     InstanceTemplateList,
     BatchVmCreateResponse,
+)
+from ..types.highlvlvpc.floating_ip import (
+    FloatingIpList,
+    CreatePortResponse,
+    AttachFloatingIpResponse,
+)
+from ..types.highlvlvpc.update_port_security_groups_response import (
+    UpdatePortSecurityGroupsResponse,
 )
 
 
@@ -897,7 +908,7 @@ class HighlvlvpcResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> PortDetail:
+    ) -> CreatePortResponse:
         """
         Create a network port and optionally attach a floating IP
 
@@ -948,7 +959,7 @@ class HighlvlvpcResource(SyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=PortDetail,
+            cast_to=CreatePortResponse,
         )
 
     def create_subnet(
@@ -2068,6 +2079,165 @@ class HighlvlvpcResource(SyncAPIResource):
 
 
 
+
+    def list_floating_ips(
+        self,
+        *,
+        vpc_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> FloatingIpList:
+        """
+        List floating IPs for a VPC.
+
+        GET /v1/highlvlvpc/floating_ip_list?vpc_id=...
+        """
+        if not isinstance(vpc_id, str) or not vpc_id.strip():
+            raise ValueError("'vpc_id' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._get(
+            "/v1/highlvlvpc/floating_ip_list",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"vpc_id": vpc_id},
+                    highlvlvpc_list_floating_ips_params.HighlvlvpcListFloatingIpsParams,
+                ),
+            ),
+            cast_to=FloatingIpList,
+        )
+
+    def detach_floating_ip(
+        self,
+        *,
+        port_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SuccessResponse:
+        """
+        Detach / delete floating IP from a port.
+
+        DELETE /v1/highlvlvpc/detachFloatingIp/{port_krn}
+        """
+        if not isinstance(port_krn, str) or not port_krn.strip():
+            raise ValueError("'port_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._delete(
+            f"/v1/highlvlvpc/detachFloatingIp/{port_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                timeout=timeout,
+            ),
+            cast_to=SuccessResponse,
+        )
+
+    def attach_floating_ip(
+        self,
+        *,
+        attach_port: str,
+        detach_port: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> AttachFloatingIpResponse:
+        """
+        Attach a floating IP to a port (optionally moving it from another port).
+
+        POST /v1/highlvlvpc/attachFloatingIp
+        Body: { attach_port, detach_port }
+        """
+        if not isinstance(attach_port, str) or not attach_port.strip():
+            raise ValueError("'attach_port' must be a non-empty string.")
+        if not isinstance(detach_port, str) or not detach_port.strip():
+            raise ValueError("'detach_port' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._post(
+            "/v1/highlvlvpc/attachFloatingIp",
+            body=maybe_transform(
+                {
+                    "attach_port": attach_port,
+                    "detach_port": detach_port,
+                },
+                highlvlvpc_attach_floating_ip_params.HighlvlvpcAttachFloatingIpParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=AttachFloatingIpResponse,
+        )
+
+    def update_port_security_groups(
+        self,
+        port_krn: str,
+        *,
+        security_groups: List[str],
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> UpdatePortSecurityGroupsResponse:
+        """
+        Update security groups on a port.
+
+        PUT /api/v1/ports/{port_krn}
+        Body: { "security_groups": ["sg_krn", ...] }
+        Header: x-region
+        """
+        if not isinstance(port_krn, str) or not port_krn.strip():
+            raise ValueError("'port_krn' must be a non-empty string.")
+        if not isinstance(security_groups, list) or not security_groups:
+            raise ValueError("'security_groups' must be a non-empty list of security group KRNs.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return self._put(
+            f"/api/v1/ports/{port_krn}",
+            body=maybe_transform(
+                {"security_groups": security_groups},
+                highlvlvpc_update_port_security_groups_params.HighlvlvpcUpdatePortSecurityGroupsParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=UpdatePortSecurityGroupsResponse,
+        )
+
+
+
 class AsyncHighlvlvpcResource(AsyncAPIResource):
     @cached_property
     def with_raw_response(self) -> AsyncHighlvlvpcResourceWithRawResponse:
@@ -2889,7 +3059,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> PortDetail:
+    ) -> CreatePortResponse:
         """
         Create a network port and optionally attach a floating IP
 
@@ -2940,7 +3110,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=PortDetail,
+            cast_to=CreatePortResponse,
         )
 
     async def create_subnet(
@@ -4070,6 +4240,165 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
 
 
+
+    async def list_floating_ips(
+        self,
+        *,
+        vpc_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> FloatingIpList:
+        """
+        List floating IPs for a VPC.
+
+        GET /v1/highlvlvpc/floating_ip_list?vpc_id=...
+        """
+        if not isinstance(vpc_id, str) or not vpc_id.strip():
+            raise ValueError("'vpc_id' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._get(
+            "/v1/highlvlvpc/floating_ip_list",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"vpc_id": vpc_id},
+                    highlvlvpc_list_floating_ips_params.HighlvlvpcListFloatingIpsParams,
+                ),
+            ),
+            cast_to=FloatingIpList,
+        )
+
+    async def detach_floating_ip(
+        self,
+        *,
+        port_krn: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SuccessResponse:
+        """
+        Detach / delete floating IP from a port.
+
+        DELETE /v1/highlvlvpc/detachFloatingIp/{port_krn}
+        """
+        if not isinstance(port_krn, str) or not port_krn.strip():
+            raise ValueError("'port_krn' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._delete(
+            f"/v1/highlvlvpc/detachFloatingIp/{port_krn}",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                timeout=timeout,
+            ),
+            cast_to=SuccessResponse,
+        )
+
+    async def attach_floating_ip(
+        self,
+        *,
+        attach_port: str,
+        detach_port: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> AttachFloatingIpResponse:
+        """
+        Attach a floating IP to a port (optionally moving it from another port).
+
+        POST /v1/highlvlvpc/attachFloatingIp
+        Body: { attach_port, detach_port }
+        """
+        if not isinstance(attach_port, str) or not attach_port.strip():
+            raise ValueError("'attach_port' must be a non-empty string.")
+        if not isinstance(detach_port, str) or not detach_port.strip():
+            raise ValueError("'detach_port' must be a non-empty string.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._post(
+            "/v1/highlvlvpc/attachFloatingIp",
+            body=await async_maybe_transform(
+                {
+                    "attach_port": attach_port,
+                    "detach_port": detach_port,
+                },
+                highlvlvpc_attach_floating_ip_params.HighlvlvpcAttachFloatingIpParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=AttachFloatingIpResponse,
+        )
+
+    async def update_port_security_groups(
+        self,
+        port_krn: str,
+        *,
+        security_groups: List[str],
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> UpdatePortSecurityGroupsResponse:
+        """
+        Update security groups on a port.
+
+        PUT /api/v1/ports/{port_krn}
+        Body: { "security_groups": ["sg_krn", ...] }
+        Header: x-region
+        """
+        if not isinstance(port_krn, str) or not port_krn.strip():
+            raise ValueError("'port_krn' must be a non-empty string.")
+        if not isinstance(security_groups, list) or not security_groups:
+            raise ValueError("'security_groups' must be a non-empty list of security group KRNs.")
+        if not isinstance(x_region, str) or not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        return await self._put(
+            f"/api/v1/ports/{port_krn}",
+            body=await async_maybe_transform(
+                {"security_groups": security_groups},
+                highlvlvpc_update_port_security_groups_params.HighlvlvpcUpdatePortSecurityGroupsParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=UpdatePortSecurityGroupsResponse,
+        )
+
+
+
 class HighlvlvpcResourceWithRawResponse:
     def __init__(self, highlvlvpc: HighlvlvpcResource) -> None:
         self._highlvlvpc = highlvlvpc
@@ -4096,6 +4425,19 @@ class HighlvlvpcResourceWithRawResponse:
         self.create_port = to_raw_response_wrapper(
             highlvlvpc.create_port,
         )
+        self.list_floating_ips = to_raw_response_wrapper(
+            highlvlvpc.list_floating_ips,
+        )
+        self.detach_floating_ip = to_raw_response_wrapper(
+            highlvlvpc.detach_floating_ip,
+        )
+        self.attach_floating_ip = to_raw_response_wrapper(
+            highlvlvpc.attach_floating_ip,
+        )
+        self.update_port_security_groups = to_raw_response_wrapper(
+            highlvlvpc.update_port_security_groups,
+        )
+
         self.create_subnet = to_raw_response_wrapper(
             highlvlvpc.create_subnet,
         )
@@ -4179,6 +4521,19 @@ class AsyncHighlvlvpcResourceWithRawResponse:
         self.create_port = async_to_raw_response_wrapper(
             highlvlvpc.create_port,
         )
+        self.list_floating_ips = async_to_raw_response_wrapper(
+            highlvlvpc.list_floating_ips,
+        )
+        self.detach_floating_ip = async_to_raw_response_wrapper(
+            highlvlvpc.detach_floating_ip,
+        )
+        self.attach_floating_ip = async_to_raw_response_wrapper(
+            highlvlvpc.attach_floating_ip,
+        )
+        self.update_port_security_groups = async_to_raw_response_wrapper(
+            highlvlvpc.update_port_security_groups,
+        )
+
         self.create_subnet = async_to_raw_response_wrapper(
             highlvlvpc.create_subnet,
         )
@@ -4264,6 +4619,19 @@ class HighlvlvpcResourceWithStreamingResponse:
         self.create_port = to_streamed_response_wrapper(
             highlvlvpc.create_port,
         )
+        self.list_floating_ips = to_streamed_response_wrapper(
+            highlvlvpc.list_floating_ips,
+        )
+        self.detach_floating_ip = to_streamed_response_wrapper(
+            highlvlvpc.detach_floating_ip,
+        )
+        self.attach_floating_ip = to_streamed_response_wrapper(
+            highlvlvpc.attach_floating_ip,
+        )
+        self.update_port_security_groups = to_streamed_response_wrapper(
+            highlvlvpc.update_port_security_groups,
+        )
+
         self.create_subnet = to_streamed_response_wrapper(
             highlvlvpc.create_subnet,
         )
@@ -4350,6 +4718,19 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         self.create_port = async_to_streamed_response_wrapper(
             highlvlvpc.create_port,
         )
+        self.list_floating_ips = async_to_streamed_response_wrapper(
+            highlvlvpc.list_floating_ips,
+        )
+        self.detach_floating_ip = async_to_streamed_response_wrapper(
+            highlvlvpc.detach_floating_ip,
+        )
+        self.attach_floating_ip = async_to_streamed_response_wrapper(
+            highlvlvpc.attach_floating_ip,
+        )
+        self.update_port_security_groups = async_to_streamed_response_wrapper(
+            highlvlvpc.update_port_security_groups,
+        )
+
         self.create_subnet = async_to_streamed_response_wrapper(
             highlvlvpc.create_subnet,
         )
