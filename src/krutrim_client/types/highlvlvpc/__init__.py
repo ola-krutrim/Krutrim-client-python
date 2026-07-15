@@ -35,6 +35,23 @@ from .highlvlvpc_machine_s3_response import ImageMachineResponse as ImageMachine
 from .instance_template import InstanceTemplate as InstanceTemplate
 from .instance_template import InstanceTemplateList as InstanceTemplateList
 from .instance_template import BatchVmCreateResponse as BatchVmCreateResponse
+from .floating_ip import FloatingIpInfo as FloatingIpInfo
+from .floating_ip import FloatingIpList as FloatingIpList
+from .floating_ip import CreatePortResponse as CreatePortResponse
+from .floating_ip import AttachFloatingIpResponse as AttachFloatingIpResponse
+from .highlvlvpc_list_floating_ips_params import (
+    HighlvlvpcListFloatingIpsParams as HighlvlvpcListFloatingIpsParams,
+)
+from .highlvlvpc_attach_floating_ip_params import (
+    HighlvlvpcAttachFloatingIpParams as HighlvlvpcAttachFloatingIpParams,
+)
+from .highlvlvpc_update_port_security_groups_params import (
+    HighlvlvpcUpdatePortSecurityGroupsParams as HighlvlvpcUpdatePortSecurityGroupsParams,
+)
+from .update_port_security_groups_response import (
+    UpdatePortSecurityGroupsResponse as UpdatePortSecurityGroupsResponse,
+)
+from .update_port_security_groups_response import UpdatedPort as UpdatedPort
 from .highlvlvpc_create_instance_template_params import (
     HighlvlvpcCreateInstanceTemplateParams as HighlvlvpcCreateInstanceTemplateParams,
 )

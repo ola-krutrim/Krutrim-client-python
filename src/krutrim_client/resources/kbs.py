@@ -14,9 +14,13 @@ from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64
 
 from ..types.kbs import (
     volume_create_params,
+    volume_attach_params,
+    volume_detach_params,
     QosParam,
     SourceParam,
-    VolumeDetail
+    VolumeDetail,
+    VolumeList,
+    VolumeActionResponse,
 )
 
 
@@ -296,6 +300,152 @@ class KbsResource(SyncAPIResource):
             cast_to=VolumeDetail,
         )
 
+    def list_volumes(
+        self,
+        *,
+        k_tenant_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeList:
+        """
+        List KBS volumes for a tenant (VPC).
+
+        GET /kbs/v1/volumes
+        Header: k-tenant-id
+        """
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return self._get(
+            "/kbs/v1/volumes",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=VolumeList,
+        )
+
+    def attach_volume(
+        self,
+        volume_id: str,
+        *,
+        instance_id: str,
+        k_tenant_id: str,
+        x_region: str,
+        mount_partition: str = "/dev/vdz",
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeActionResponse:
+        """
+        Attach a volume to an instance.
+
+        POST /kbs/v1/volumes/{volume_id}/action?op=attach
+        Body: { "input": { "instanceId": "...", "mountPartition": "/dev/vdz" } }
+        """
+        if not isinstance(volume_id, str) or not volume_id.strip():
+            raise ValueError("'volume_id' must be a non-empty string.")
+        if not isinstance(instance_id, str) or not instance_id.strip():
+            raise ValueError("'instance_id' must be a non-empty string.")
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return self._post(
+            f"/kbs/v1/volumes/{volume_id}/action",
+            body=maybe_transform(
+                {
+                    "input": {
+                        "instanceId": instance_id,
+                        "mountPartition": mount_partition,
+                    }
+                },
+                volume_attach_params.VolumeAttachParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query={"op": "attach"},
+            ),
+            cast_to=VolumeActionResponse,
+        )
+
+    def detach_volume(
+        self,
+        volume_id: str,
+        *,
+        instance_id: str,
+        attachment_id: str,
+        k_tenant_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeActionResponse:
+        """
+        Detach a volume from an instance.
+
+        POST /kbs/v1/volumes/{volume_id}/action?op=detach
+        Body: { "input": { "instanceId": "...", "attachment_id": "..." } }
+        """
+        if not isinstance(volume_id, str) or not volume_id.strip():
+            raise ValueError("'volume_id' must be a non-empty string.")
+        if not isinstance(instance_id, str) or not instance_id.strip():
+            raise ValueError("'instance_id' must be a non-empty string.")
+        if not isinstance(attachment_id, str) or not attachment_id.strip():
+            raise ValueError("'attachment_id' must be a non-empty string.")
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return self._post(
+            f"/kbs/v1/volumes/{volume_id}/action",
+            body=maybe_transform(
+                {
+                    "input": {
+                        "instanceId": instance_id,
+                        "attachment_id": attachment_id,
+                    }
+                },
+                volume_detach_params.VolumeDetachParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query={"op": "detach"},
+            ),
+            cast_to=VolumeActionResponse,
+        )
 
 
 
@@ -564,6 +714,151 @@ class AsyncKbsResource(AsyncAPIResource):
             cast_to=VolumeDetail,
         )
 
+    async def list_volumes(
+        self,
+        *,
+        k_tenant_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeList:
+        """
+        List KBS volumes for a tenant (VPC).
+
+        GET /kbs/v1/volumes
+        Header: k-tenant-id
+        """
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return await self._get(
+            "/kbs/v1/volumes",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=VolumeList,
+        )
+
+    async def attach_volume(
+        self,
+        volume_id: str,
+        *,
+        instance_id: str,
+        k_tenant_id: str,
+        x_region: str,
+        mount_partition: str = "/dev/vdz",
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeActionResponse:
+        """
+        Attach a volume to an instance.
+
+        POST /kbs/v1/volumes/{volume_id}/action?op=attach
+        """
+        if not isinstance(volume_id, str) or not volume_id.strip():
+            raise ValueError("'volume_id' must be a non-empty string.")
+        if not isinstance(instance_id, str) or not instance_id.strip():
+            raise ValueError("'instance_id' must be a non-empty string.")
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return await self._post(
+            f"/kbs/v1/volumes/{volume_id}/action",
+            body=await async_maybe_transform(
+                {
+                    "input": {
+                        "instanceId": instance_id,
+                        "mountPartition": mount_partition,
+                    }
+                },
+                volume_attach_params.VolumeAttachParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query={"op": "attach"},
+            ),
+            cast_to=VolumeActionResponse,
+        )
+
+    async def detach_volume(
+        self,
+        volume_id: str,
+        *,
+        instance_id: str,
+        attachment_id: str,
+        k_tenant_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> VolumeActionResponse:
+        """
+        Detach a volume from an instance.
+
+        POST /kbs/v1/volumes/{volume_id}/action?op=detach
+        """
+        if not isinstance(volume_id, str) or not volume_id.strip():
+            raise ValueError("'volume_id' must be a non-empty string.")
+        if not isinstance(instance_id, str) or not instance_id.strip():
+            raise ValueError("'instance_id' must be a non-empty string.")
+        if not isinstance(attachment_id, str) or not attachment_id.strip():
+            raise ValueError("'attachment_id' must be a non-empty string.")
+        if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
+            raise ValueError("'k_tenant_id' must be a non-empty string.")
+        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+
+        extra_headers = {
+            "K-Tenant-ID": k_tenant_id,
+            "x-region": x_region,
+            **(extra_headers or {}),
+        }
+        return await self._post(
+            f"/kbs/v1/volumes/{volume_id}/action",
+            body=await async_maybe_transform(
+                {
+                    "input": {
+                        "instanceId": instance_id,
+                        "attachment_id": attachment_id,
+                    }
+                },
+                volume_detach_params.VolumeDetachParams,
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query={"op": "detach"},
+            ),
+            cast_to=VolumeActionResponse,
+        )
+
 
 
 
@@ -571,73 +866,45 @@ class KbsResourceWithRawResponse:
     def __init__(self, kbs: KbsResource) -> None:
         self._kbs = kbs
 
-        self.delete_security_group = to_raw_response_wrapper(
-            kbs.create_volume,
-        )
-        
-        self.create_security_group = to_raw_response_wrapper(
-            kbs.delete_volume,
-        )
-
-        self.create_rule = to_raw_response_wrapper(
-            kbs.retrieve_volume,
-        )
-
-
+        self.create_volume = to_raw_response_wrapper(kbs.create_volume)
+        self.delete_volume = to_raw_response_wrapper(kbs.delete_volume)
+        self.retrieve_volume = to_raw_response_wrapper(kbs.retrieve_volume)
+        self.list_volumes = to_raw_response_wrapper(kbs.list_volumes)
+        self.attach_volume = to_raw_response_wrapper(kbs.attach_volume)
+        self.detach_volume = to_raw_response_wrapper(kbs.detach_volume)
 
 
 class AsyncKbsResourceWithRawResponse:
     def __init__(self, kbs: AsyncKbsResource) -> None:
         self._kbs = kbs
 
-        self.delete_security_group = async_to_raw_response_wrapper(
-            kbs.create_volume,
-        )
-
-        self.create_security_group = async_to_raw_response_wrapper(
-            kbs.delete_volume,
-        )
-
-        self.create_rule = async_to_raw_response_wrapper(
-            kbs.retrieve_volume,
-        )
-        
+        self.create_volume = async_to_raw_response_wrapper(kbs.create_volume)
+        self.delete_volume = async_to_raw_response_wrapper(kbs.delete_volume)
+        self.retrieve_volume = async_to_raw_response_wrapper(kbs.retrieve_volume)
+        self.list_volumes = async_to_raw_response_wrapper(kbs.list_volumes)
+        self.attach_volume = async_to_raw_response_wrapper(kbs.attach_volume)
+        self.detach_volume = async_to_raw_response_wrapper(kbs.detach_volume)
 
 
 class KbsResourceWithStreamingResponse:
     def __init__(self, kbs: KbsResource) -> None:
         self._kbs = kbs
 
-        self.delete_security_group = to_streamed_response_wrapper(
-            kbs.create_volume,
-        )
-
-        self.create_security_group = to_streamed_response_wrapper(
-            kbs.delete_volume,
-        )
-
-        self.create_rule = to_streamed_response_wrapper(
-            kbs.retrieve_volume,
-        )
+        self.create_volume = to_streamed_response_wrapper(kbs.create_volume)
+        self.delete_volume = to_streamed_response_wrapper(kbs.delete_volume)
+        self.retrieve_volume = to_streamed_response_wrapper(kbs.retrieve_volume)
+        self.list_volumes = to_streamed_response_wrapper(kbs.list_volumes)
+        self.attach_volume = to_streamed_response_wrapper(kbs.attach_volume)
+        self.detach_volume = to_streamed_response_wrapper(kbs.detach_volume)
 
 
 class AsyncKbsResourceWithStreamingResponse:
     def __init__(self, kbs: AsyncKbsResource) -> None:
         self._kbs = kbs
 
-        self.delete_security_group = async_to_streamed_response_wrapper(
-            kbs.create_volume,
-        )
-
-        self.create_security_group = async_to_streamed_response_wrapper(
-            kbs.delete_volume,
-        )
-        
-        self.create_rule = async_to_streamed_response_wrapper(
-            kbs.retrieve_volume,
-        )
-
-
-        
-
-    
+        self.create_volume = async_to_streamed_response_wrapper(kbs.create_volume)
+        self.delete_volume = async_to_streamed_response_wrapper(kbs.delete_volume)
+        self.retrieve_volume = async_to_streamed_response_wrapper(kbs.retrieve_volume)
+        self.list_volumes = async_to_streamed_response_wrapper(kbs.list_volumes)
+        self.attach_volume = async_to_streamed_response_wrapper(kbs.attach_volume)
+        self.detach_volume = async_to_streamed_response_wrapper(kbs.detach_volume)
