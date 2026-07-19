@@ -36,9 +36,7 @@ pip install krutrim-client
 import os
 from krutrim_client import KrutrimClient
 
-client = KrutrimClient(
-    api_key=os.environ.get("krutrim_client_API_KEY")
-)
+client = KrutrimClient()  # reads KRUTRIMCLIENT_API_KEY from the environment
 ```
 
 It is recommended to store your API key in environment variables or a `.env` file rather than hardcoding it.
