@@ -2,6 +2,8 @@
 
 import httpx
 
+SUPPORTED_REGIONS = ("In-Bangalore-1", "In-Hyderabad-1")
+
 RAW_RESPONSE_HEADER = "X-Stainless-Raw-Response"
 OVERRIDE_CAST_TO_HEADER = "____stainless_override_cast_to"
 

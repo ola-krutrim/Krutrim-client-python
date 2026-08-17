@@ -12,7 +12,7 @@ try:
     resp = client.lb.with_raw_response.delete_target_group(
         target_group_name="enter target group name",
         x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1" 
+        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
         vpc_id="enter vpc id here"
     )
     print("Response:", resp.json())

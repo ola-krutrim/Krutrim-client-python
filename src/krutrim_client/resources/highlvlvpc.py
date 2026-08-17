@@ -43,6 +43,7 @@ from ..types.highlvlvpc import (
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
 from .._utils import maybe_transform, async_maybe_transform
 from .._compat import cached_property
+from .._constants import SUPPORTED_REGIONS
 from .._resource import SyncAPIResource, AsyncAPIResource
 from .._response import (
     to_raw_response_wrapper,
@@ -276,8 +277,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
 
 
@@ -361,8 +362,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
     def validate_delete_instance_parameters(
         self,
@@ -424,8 +425,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
 
     def validate_list_instance_info_parameters(
@@ -466,8 +467,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
 
     def validate_retrieve_instance_parameters(
@@ -493,8 +494,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
 
     def validate_get_vpc_task_status_params(
@@ -519,8 +520,8 @@ class HighlvlvpcResource(SyncAPIResource):
 
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
 
     def validate_search_instances_params(
@@ -585,8 +586,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
     
     def validate_create_port_parameters(
     self,
@@ -632,8 +633,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
     def validate_create_image_parameters(
         self,
@@ -651,8 +652,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'instance_krn' must be a non-empty string.")
         
         # Validate 'x_region' is either In-Bangalore-1 or In-Hyderabad-1
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
         # Validate timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
@@ -754,8 +755,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
 
-        if x_region not in ("In-Bangalore-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
 
         if not isinstance(disk_format, str) or not disk_format.strip():
             raise ValueError("'disk_format' must be a non-empty string.")
@@ -4785,4 +4786,3 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         self.delete_machine_image = async_to_streamed_response_wrapper(
             highlvlvpc.delete_machine_image
         )
-

@@ -14,7 +14,7 @@ try:
 
         path_lb_krn=lb_krn,
         x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1"
+        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
         k_customer_id="enter the k_customer_id",
         x_account_id="enter the x_account_id",
         listeners=[],
@@ -97,4 +97,4 @@ except Exception as e:
             # "lb_name": "test-lb-1",
             # "network_id": "krn:vpc:In-Bangalore-1:7344783839:2fbf2544-0c1d-481c-b745-4ef99e564b41:network:aea55436-84b9-4d08-87d1-8cc831ed2811",
             # "vip_subnet_id": "krn:vpc:In-Bangalore-1:7344783839:2fbf2544-0c1d-481c-b745-4ef99e564b41:subnet:15aaac4e-fc29-4c26-8283-d5ed1824ba85",
-            # "vpc_id": "krn:vpc:In-Bangalore-1:7344783839:2fbf2544-0c1d-481c-b745-4ef99e564b41:vpc:0f716d62-fe5d-4aff-b23e-a277192b3546",            
+            # "vpc_id": "krn:vpc:In-Bangalore-1:7344783839:2fbf2544-0c1d-481c-b745-4ef99e564b41:vpc:0f716d62-fe5d-4aff-b23e-a277192b3546",
