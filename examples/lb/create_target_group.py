@@ -15,7 +15,7 @@ try:
         vpc_id="enter vpc_krn",
 
         x_region="enter the region",
-        # x_region possible values "In-Bangalore-1" 
+        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
 
 
         # Health monitor (API expects: type, delay, timeout, name)

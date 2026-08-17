@@ -12,7 +12,7 @@ try:
     resp = client.lb.with_raw_response.delete_load_balancer(
         lb_krn="enter load balancer krn",
         x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1" 
+        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
     print("Response:", resp.json())
 except Exception as e:

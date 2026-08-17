@@ -12,7 +12,7 @@ try:
         k_customer_id="enter customer id",
         x_account_id="enter account id",
         x_region="enter x_region",
-         # x_region possible values "In-Bangalore-1"  
+         # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
 
         listeners=[],
 

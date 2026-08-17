@@ -23,6 +23,7 @@ from ...types.lb.highlvl_create_lb_orchestration_response import LBOrchestration
 from ..._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven,Omit, omit
 from ..._utils import maybe_transform, async_maybe_transform
 from ..._compat import cached_property
+from ..._constants import SUPPORTED_REGIONS
 from ..._resource import SyncAPIResource, AsyncAPIResource
 from ..._response import (
     to_raw_response_wrapper,
@@ -60,9 +61,10 @@ class HighlvlResource(SyncAPIResource):
     def validate_region(self, x_region: str) -> None:
         if not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ('In-Bangalore-1'):
+        if x_region not in SUPPORTED_REGIONS:
             raise ValueError(
-                f"Invalid region '{x_region}'. Supported regions are: 'In-Bangalore-1'."
+                f"Invalid region '{x_region}'. Supported regions are: "
+                "'In-Bangalore-1' and 'In-Hyderabad-1'."
             )
 
     def create_load_balancer_orchestration(
@@ -589,7 +591,7 @@ class HighlvlResource(SyncAPIResource):
 
         Args:
         lb_krn: Load Balancer KRN
-        x_region: Region header (e.g. In-Bangalore-1)
+        x_region: Region header (`In-Bangalore-1` or `In-Hyderabad-1`)
         """
         self.validate_region(x_region)
 
@@ -632,9 +634,10 @@ class AsyncHighlvlResource(AsyncAPIResource):
     async def validate_region(x_region: str) -> None:
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ('In-Bangalore-1'):
+        if x_region not in SUPPORTED_REGIONS:
             raise ValueError(
-                f"Invalid region '{x_region}'. Supported regions are: 'In-Bangalore-1'."
+                f"Invalid region '{x_region}'. Supported regions are: "
+                "'In-Bangalore-1' and 'In-Hyderabad-1'."
             )
 
     async def create_load_balancer_orchestration(

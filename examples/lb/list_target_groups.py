@@ -11,7 +11,7 @@ client = KrutrimClient(api_key=api_key)
 try:
     resp = client.lb.with_raw_response.get_detailed_target_groups(
         x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1"
+        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
         k_customer_id = "enter the k_customer_id",
         x_account_id = "enter the x_account_id",
         vpc_id="enter vpc id",

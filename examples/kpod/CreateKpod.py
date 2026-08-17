@@ -25,7 +25,7 @@ try:
         ],
         pod_template_id=1,                                    
         region="enter region", 
-        # x_region possible values "In-Bangalore-1"                             
+        # region possible values "In-Bangalore-1","In-Hyderabad-1"
         sshkey_name="enter sshkeyname",                           
         volume_disk_size="enter volumedisk size",                                  
         volume_mount_path="enter volume mount path",                      
@@ -40,8 +40,6 @@ except Exception as e:
     
 
     
-
-
 
 
 

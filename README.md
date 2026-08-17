@@ -9,7 +9,11 @@ The full API of this library can be found in [api_examples.ipynb](api_examples.i
 
 ## Requirements
 
-Python >=3.8
+Python >=3.9
+
+## Supported regions
+
+All regional services support both `In-Bangalore-1` and `In-Hyderabad-1`.
 
 ## Installation
 
@@ -362,7 +366,7 @@ print(krutrim_client.__version__)
 
 ## Requirements
 
-Python 3.8 or higher.
+Python 3.9 or higher.
 
 ## Contributing
 
