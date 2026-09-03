@@ -73,6 +73,27 @@ asyncio.run(main())
 
 Functionality between the synchronous and asynchronous clients is otherwise identical.
 
+## Omni Sandbox
+
+The SDK includes an E2B-style, client-owned sandbox API with automatic readiness polling and context-manager cleanup:
+
+```python
+from krutrim_client import KrutrimClient
+
+with KrutrimClient() as client:
+    with client.sandbox.create(
+        flavor_name="Omni-CPU-1x-4GB",
+        region="In-Bangalore-2",
+        timeout=900,
+    ) as sandbox:
+        sandbox.files.make_dir("/app/work")
+        sandbox.files.write("/app/work/hello.py", 'print("hello")')
+        result = sandbox.run_command("python3 hello.py", cwd="/app/work")
+        print(result.stdout)
+```
+
+See the [Omni Sandbox guide](docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior.
+
 ## Using types
 
 Nested request parameters are [TypedDicts](https://docs.python.org/3/library/typing.html#typing.TypedDict). Responses are [Pydantic models](https://docs.pydantic.dev) which also provide helper methods for things like:

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import gc
@@ -37,7 +36,7 @@ from krutrim_client._base_client import (
     BaseClient,
     make_request_options,
 )
-from krutrim_client.types.highlvlvpc_create_vpc_params import HighlvlvpcCreateVpcParams
+from krutrim_client.types.highlvlvpc.highlvlvpc_create_vpc_params import HighlvlvpcCreateVpcParams
 
 from .utils import update_env
 

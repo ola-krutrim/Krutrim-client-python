@@ -19,24 +19,7 @@ from ._types import (
 )
 from ._utils import is_given, get_async_library
 from ._version import __version__
-from .resources import highlvlvpc, kbs, securityGroup, startStopVM, sshkey
-from .resources.kos import kos
-from .resources.kpod import kpod
-from .resources.lb import lb
-from .resources.kks import kks
-from .resources.v1 import v1
-from .resources.v1 import record
-from .resources.v1.zone import zone
-from .resources.v1.zone import vpc
-from .resources.kks.clusters import clusters
-from .resources.kks.clusters import addons
-from .resources.kks.clusters import node_groups
-
-from .resources.kcm import certs
-from .resources.kcm import tags
-from .resources.asg import asg
-from .resources.asg import asgV1
-from .resources.iam import iam
+from .resources import kbs, sshkey, highlvlvpc, startStopVM, securityGroup
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
 from ._exceptions import APIStatusError, KrutrimClientError
 from ._base_client import (
@@ -44,6 +27,24 @@ from ._base_client import (
     SyncAPIClient,
     AsyncAPIClient,
 )
+from .resources.lb import lb
+from .resources.v1 import v1, record
+from .resources.asg import asg, asgV1
+from .resources.iam import iam
+from .resources.kcm import tags, certs
+from .resources.kks import kks
+from .resources.kos import kos
+from .resources.kpod import kpod
+from .resources.sandbox import (
+    SandboxResource,
+    AsyncSandboxResource,
+    SandboxResourceWithRawResponse,
+    AsyncSandboxResourceWithRawResponse,
+    SandboxResourceWithStreamingResponse,
+    AsyncSandboxResourceWithStreamingResponse,
+)
+from .resources.v1.zone import vpc, zone
+from .resources.kks.clusters import addons, clusters, node_groups
 
 __all__ = [
     "Timeout",
@@ -58,6 +59,7 @@ __all__ = [
 
 
 class KrutrimClient(SyncAPIClient):
+    sandbox: SandboxResource
     highlvlvpc: highlvlvpc.HighlvlvpcResource
     kbs: kbs.KbsResource
     securityGroup: securityGroup.SecurityGroupResource
@@ -157,6 +159,7 @@ class KrutrimClient(SyncAPIClient):
         self.zone = zone.ZoneResource(self)
         self.vpc = vpc.VpcResource(self)
         self.iam = iam.IAMResource(self)
+        self.sandbox = SandboxResource(self)
         self.with_raw_response = KrutrimClientWithRawResponse(self)
         self.with_streaming_response = KrutrimClientWithStreamedResponse(self)
 
@@ -271,6 +274,7 @@ class KrutrimClient(SyncAPIClient):
 
 
 class AsyncKrutrimClient(AsyncAPIClient):
+    sandbox: AsyncSandboxResource
     highlvlvpc: highlvlvpc.AsyncHighlvlvpcResource
     kbs: kbs.AsyncKbsResource
     securityGroup: securityGroup.AsyncSecurityGroupResource
@@ -371,6 +375,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.vpc = vpc.AsyncVpcResource(self)
         self.zone = zone.AsyncZoneResource(self)
         self.iam = iam.AsyncIAMResource(self)
+        self.sandbox = AsyncSandboxResource(self)
         self.with_raw_response = AsyncKrutrimClientWithRawResponse(self)
         self.with_streaming_response = AsyncKrutrimClientWithStreamedResponse(self)
 
@@ -481,6 +486,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
 
 class KrutrimClientWithRawResponse:
     def __init__(self, client: KrutrimClient) -> None:
+        self.sandbox = SandboxResourceWithRawResponse(client.sandbox)
         self.highlvlvpc = highlvlvpc.HighlvlvpcResourceWithRawResponse(client.highlvlvpc)
         self.kbs = kbs.KbsResourceWithRawResponse(client.kbs)
         self.securityGroup = securityGroup.SecurityGroupResourceWithRawResponse(client.securityGroup)
@@ -505,6 +511,7 @@ class KrutrimClientWithRawResponse:
 
 class AsyncKrutrimClientWithRawResponse:
     def __init__(self, client: AsyncKrutrimClient) -> None:
+        self.sandbox = AsyncSandboxResourceWithRawResponse(client.sandbox)
         self.highlvlvpc = highlvlvpc.AsyncHighlvlvpcResourceWithRawResponse(client.highlvlvpc)
         self.kbs = kbs.AsyncKbsResourceWithRawResponse(client.kbs)
         self.securityGroup = securityGroup.AsyncSecurityGroupResourceWithRawResponse(client.securityGroup)
@@ -529,6 +536,7 @@ class AsyncKrutrimClientWithRawResponse:
 
 class KrutrimClientWithStreamedResponse:
     def __init__(self, client: KrutrimClient) -> None:
+        self.sandbox = SandboxResourceWithStreamingResponse(client.sandbox)
         self.highlvlvpc = highlvlvpc.HighlvlvpcResourceWithStreamingResponse(client.highlvlvpc)
         self.kbs = kbs.KbsResourceWithStreamingResponse(client.kbs)
         self.securityGroup = securityGroup.SecurityGroupResourceWithStreamingResponse(client.securityGroup)
@@ -554,6 +562,7 @@ class KrutrimClientWithStreamedResponse:
 
 class AsyncKrutrimClientWithStreamedResponse:
     def __init__(self, client: AsyncKrutrimClient) -> None:
+        self.sandbox = AsyncSandboxResourceWithStreamingResponse(client.sandbox)
         self.highlvlvpc = highlvlvpc.AsyncHighlvlvpcResourceWithStreamingResponse(client.highlvlvpc)
         self.kbs = kbs.AsyncKbsResourceWithStreamingResponse(client.kbs)
         self.securityGroup = securityGroup.AsyncSecurityGroupResourceWithStreamingResponse(client.securityGroup)
@@ -578,7 +587,6 @@ class AsyncKrutrimClientWithStreamedResponse:
 Client = KrutrimClient
 
 AsyncClient = AsyncKrutrimClient
-
 
 
 

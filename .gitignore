@@ -15,3 +15,6 @@ dist
 codegen.log
 Brewfile.lock.json
 sdk.sh
+openspec/
+.gitnexus/
+.codex/
