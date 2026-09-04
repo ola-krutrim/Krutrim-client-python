@@ -494,6 +494,13 @@ class BaseClient(Generic[_HttpxClientT, _DefaultStreamT]):
         params = _merge_mappings(self.default_query, options.params)
         content_type = headers.get("Content-Type")
         files = options.files
+        content = options.content
+
+        if content is not None and (json_data is not None or options.extra_json is not None or files is not None):
+            raise ValueError("Cannot provide raw content together with JSON or multipart files")
+
+        if content is not None:
+            kwargs["content"] = content
 
         # If the given Content-Type header is multipart/form-data then it
         # has to be removed so that httpx can generate the header with

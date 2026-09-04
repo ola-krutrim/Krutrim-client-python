@@ -734,6 +734,7 @@ class FinalRequestOptionsInput(TypedDict, total=False):
     max_retries: int
     timeout: float | Timeout | None
     files: HttpxRequestFiles | None
+    content: str | bytes | None
     idempotency_key: str
     json_data: Body
     extra_json: AnyMapping
@@ -748,6 +749,7 @@ class FinalRequestOptions(pydantic.BaseModel):
     max_retries: Union[int, NotGiven] = NotGiven()
     timeout: Union[float, Timeout, None, NotGiven] = NotGiven()
     files: Union[HttpxRequestFiles, None] = None
+    content: Union[str, bytes, None] = None
     idempotency_key: Union[str, None] = None
     post_parser: Union[Callable[[Any], Any], NotGiven] = NotGiven()
 

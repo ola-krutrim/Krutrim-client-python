@@ -11,9 +11,9 @@ from ._client import (
     Transport,
     AsyncClient,
     AsyncStream,
-    RequestOptions,
     KrutrimClient,
-    AsyncKrutrimClient
+    RequestOptions,
+    AsyncKrutrimClient,
 )
 from ._models import BaseModel
 from ._version import __title__, __version__
@@ -27,16 +27,19 @@ from ._exceptions import (
     RateLimitError,
     APITimeoutError,
     BadRequestError,
+    SandboxException,
     APIConnectionError,
+    KrutrimClientError,
     AuthenticationError,
     InternalServerError,
+    SandboxTimeoutError,
     PermissionDeniedError,
-    KrutrimClientError,
     UnprocessableEntityError,
     APIResponseValidationError,
 )
 from ._base_client import DefaultHttpxClient, DefaultAsyncHttpxClient
 from ._utils._logs import setup_logging as _setup_logging
+from .resources.sandbox import Sandbox, AsyncSandbox
 
 __all__ = [
     "types",
@@ -54,6 +57,8 @@ __all__ = [
     "APITimeoutError",
     "APIConnectionError",
     "APIResponseValidationError",
+    "SandboxException",
+    "SandboxTimeoutError",
     "BadRequestError",
     "AuthenticationError",
     "PermissionDeniedError",
@@ -70,6 +75,8 @@ __all__ = [
     "AsyncStream",
     "KrutrimClient",
     "AsyncKrutrimClient",
+    "Sandbox",
+    "AsyncSandbox",
     "file_from_path",
     "BaseModel",
     "DEFAULT_TIMEOUT",

@@ -9,8 +9,7 @@ import pytest
 
 from tests.utils import assert_matches_type
 from krutrim_client import KrutrimClient, AsyncKrutrimClient
-from krutrim_client.types import (
-    ImageList,
+from krutrim_client.types.highlvlvpc import (
     VpcDetail,
     PortDetail,
     InstanceInfo,
@@ -19,10 +18,7 @@ from krutrim_client.types import (
     HighlvlvpcListVpcsResponse,
     HighlvlvpcSearchVpcsResponse,
     HighlvlvpcSearchPortsResponse,
-    HighlvlvpcSearchNetworksResponse,
-    HighlvlvpcListSubnetConnectionsResponse,
 )
-from krutrim_client._utils import parse_datetime
 
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 

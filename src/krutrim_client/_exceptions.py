@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing_extensions import Literal
@@ -6,6 +5,14 @@ from typing_extensions import Literal
 import httpx
 
 __all__ = [
+    "KrutrimClientError",
+    "SandboxException",
+    "SandboxTimeoutError",
+    "APIError",
+    "APIConnectionError",
+    "APITimeoutError",
+    "APIResponseValidationError",
+    "APIStatusError",
     "BadRequestError",
     "AuthenticationError",
     "PermissionDeniedError",
@@ -18,6 +25,20 @@ __all__ = [
 
 
 class KrutrimClientError(Exception):
+    pass
+
+
+class SandboxException(KrutrimClientError):
+    sandbox_id: str
+    metadata: object | None
+
+    def __init__(self, message: str, *, sandbox_id: str, metadata: object | None = None) -> None:
+        super().__init__(message)
+        self.sandbox_id = sandbox_id
+        self.metadata = metadata
+
+
+class SandboxTimeoutError(SandboxException):
     pass
 
 
