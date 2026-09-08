@@ -22,6 +22,16 @@ All regional services support both `In-Bangalore-1` and `In-Hyderabad-1`.
 pip install krutrim-client
 ```
 
+## Getting Started
+
+See [examples/getting-started.md](examples/getting-started.md) for an end-to-end workflow covering:
+
+- Authentication
+- VPC Creation
+- SSH Keys
+- VM Provisioning
+- VM Access
+
 ## Usage
 
 The full API of this library can be found in [api_examples.ipynb](api_examples.ipynb).
