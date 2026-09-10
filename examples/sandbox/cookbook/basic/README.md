@@ -60,4 +60,4 @@ Agent result:
 4. `sandbox.files.read` downloads the output file.
 5. Leaving the `with` block requests sandbox deletion automatically.
 
-See [docs/sandbox.md](../../docs/sandbox.md) for the full sandbox guide, including low-level API access, timeout semantics, ports, and proxying.
+See [docs/sandbox.md](../../../../docs/sandbox.md) for the full sandbox guide, including low-level API access, timeout semantics, ports, and proxying.

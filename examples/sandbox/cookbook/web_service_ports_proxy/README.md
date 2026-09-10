@@ -12,7 +12,7 @@ export KRUTRIM_SANDBOX_REGION="In-Bangalore-1"
 export KRUTRIM_SANDBOX_FLAVOR="sandbox-large"
 ```
 
-See [../../README.md](../../README.md) for flavor discovery and
+See [../basic/README.md](../basic/README.md) for flavor discovery and
 [../../../../docs/sandbox.md](../../../../docs/sandbox.md) for the full guide.
 
 ## What it does
