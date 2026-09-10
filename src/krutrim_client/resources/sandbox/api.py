@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, List, Mapping, Sequence, cast
 
 import httpx
@@ -40,6 +41,7 @@ from .commands import (
     AsyncCommandsResourceWithStreamingResponse,
 )
 from ..._compat import cached_property
+from ..._models import construct_type
 from ..._resource import SyncAPIResource, AsyncAPIResource
 from ..._response import (
     to_raw_response_wrapper,
@@ -82,6 +84,17 @@ def _validate_create(
         validate_ttl(ttl_seconds)
 
 
+def _coerce_templates(raw: object) -> List[PodTemplate]:
+    """Normalize the template listing.
+
+    The deployed gateway labels this JSON payload ``text/plain``, so the
+    transport can hand back undecoded text instead of parsed models.
+    """
+    if isinstance(raw, str):
+        raw = cast(object, construct_type(value=json.loads(raw), type_=List[PodTemplate]))
+    return cast(List[PodTemplate], raw)
+
+
 class SandboxAPIResource(SyncAPIResource):
     @cached_property
     def files(self) -> FilesResource:
@@ -114,8 +127,7 @@ class SandboxAPIResource(SyncAPIResource):
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> List[PodTemplate]:
-        return cast(
-            List[PodTemplate],
+        return _coerce_templates(
             self._get(
                 "/omni/sandbox/v1/template",
                 cast_to=cast(Any, List[PodTemplate]),
@@ -317,8 +329,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> List[PodTemplate]:
-        return cast(
-            List[PodTemplate],
+        return _coerce_templates(
             await self._get(
                 "/omni/sandbox/v1/template",
                 cast_to=cast(Any, List[PodTemplate]),

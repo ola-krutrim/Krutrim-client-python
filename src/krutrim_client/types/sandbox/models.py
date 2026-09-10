@@ -63,6 +63,7 @@ class PodTemplate(BaseModel):
 
 
 class FlavorGroupBy(BaseModel):
+    flavorname: Optional[str] = None
     flavor_status: Optional[Literal["active", "inactive"]] = FieldInfo(alias="flavorStatus", default=None)
 
 

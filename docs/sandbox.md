@@ -2,6 +2,8 @@
 
 Omni Sandbox provides isolated, short-lived compute through the normal `KrutrimClient` and `AsyncKrutrimClient`. Authentication comes from the client's bearer API key; sandbox calls do not accept backend identity headers.
 
+For a function-by-function description of the user-facing sandbox surface (signatures, behavior, models, limits), see the [Sandbox SDK reference](sandbox-sdk-reference.md).
+
 ## Managed workflow
 
 Use `client.sandbox.create` for the common workflow. It creates the sandbox, waits until its state is `active`, and returns a handle whose helpers automatically bind the sandbox ID.
@@ -115,7 +117,7 @@ Command results are data even when the program fails. Inspect `stdout`, `stderr`
 
 Ports 1024–65535 can be opened, listed, and closed through `sandbox.ports`. Opening returns either the already-open HTTP 200 state or the HTTP 202 provisioning state. The SDK does not hide activation polling: list ports until the requested port reports `active` before routing traffic.
 
-`sandbox.proxy.request(method, path, ...)` forwards GET, POST, PUT, PATCH, DELETE, HEAD, or OPTIONS and returns exact bytes. Paths are relative to the sandbox and traversal segments are rejected. JSON and raw content are mutually exclusive, and request bodies are limited to 100 MB. Proxy calls default to `max_retries=0` so a non-idempotent workload is never repeated silently; opt in explicitly when safe. HTTP failures preserve the SDK's normal `APIStatusError` subclasses and response object. Use the raw/streaming low-level views when headers or incremental response bytes are needed.
+`sandbox.proxy.request(method, path, ...)` forwards GET, POST, PUT, PATCH, DELETE, HEAD, or OPTIONS and returns exact bytes. Paths take the form `/port/{port}/<service-path>` and route to a port that was opened through `sandbox.ports` and is `active`; traversal segments are rejected, and unprefixed paths fail with `NotFoundError`. JSON and raw content are mutually exclusive, and request bodies are limited to 100 MB. Proxy calls default to `max_retries=0` so a non-idempotent workload is never repeated silently; opt in explicitly when safe. HTTP failures preserve the SDK's normal `APIStatusError` subclasses and response object. Use the raw/streaming low-level views when headers or incremental response bytes are needed.
 
 ## Exceptions and lifecycle limits
 
