@@ -15,8 +15,8 @@ from krutrim_client import KrutrimClient
 
 with KrutrimClient() as client:
     with client.sandbox.create(
-        flavor_name="Omni-CPU-1x-4GB",
-        region="In-Bangalore-2",
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
         timeout=900,
     ) as sandbox:
         sandbox.files.make_dir("/app/work")
@@ -49,8 +49,8 @@ from krutrim_client import AsyncKrutrimClient
 
 async with AsyncKrutrimClient() as client:
     async with await client.sandbox.create(
-        flavor_name="Omni-CPU-1x-4GB",
-        region="In-Bangalore-2",
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
         timeout=900,
     ) as sandbox:
         await sandbox.files.write("/app/message.txt", "hello")
@@ -63,7 +63,7 @@ async with AsyncKrutrimClient() as client:
 Discover available compute and runtime choices before creating a sandbox:
 
 ```python
-flavors = client.sandbox.api.list_flavors(region="In-Bangalore-2")
+flavors = client.sandbox.api.list_flavors(region="In-Bangalore-1")
 templates = client.sandbox.api.list_templates()
 ```
 
@@ -72,8 +72,8 @@ The managed facade intentionally polls readiness. For contract-shaped response e
 ```python
 accepted = client.sandbox.api.create(
     sandbox_name="batch-worker",
-    region="In-Bangalore-2",
-    flavor_name="Omni-CPU-1x-4GB",
+    region="In-Bangalore-1",
+    flavor_name="sandbox-nano",
     template_name="python-runtime-sandbox",
     ttl_seconds=900,
 )

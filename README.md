@@ -82,8 +82,8 @@ from krutrim_client import KrutrimClient
 
 with KrutrimClient() as client:
     with client.sandbox.create(
-        flavor_name="Omni-CPU-1x-4GB",
-        region="In-Bangalore-2",
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
         timeout=900,
     ) as sandbox:
         sandbox.files.make_dir("/app/work")

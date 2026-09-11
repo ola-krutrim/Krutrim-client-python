@@ -17,8 +17,8 @@ from krutrim_client import KrutrimClient
 client = KrutrimClient()  # api_key from KRUTRIMCLIENT_API_KEY
 
 with client.sandbox.create(
-    flavor_name="Omni-CPU-1x-4GB",
-    region="In-Bangalore-2",
+    flavor_name="sandbox-nano",
+    region="In-Bangalore-1",
     timeout=900,                    # sandbox lifetime in seconds
 ) as sandbox:
     sandbox.files.write("/app/hello.py", 'print("hello")')
@@ -34,7 +34,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 
 | Function | Returns | Purpose |
 | --- | --- | --- |
-| `client.sandbox.create(...)` | `Sandbox` | Create a sandbox and wait until it is ready |
+| `client.sandbox.create(...)` | `Sandbox` | Create a sandbox |
 | `client.sandbox.connect(sandbox_id)` | `Sandbox` | Attach to an existing sandbox |
 | `sandbox.run_command(command, ...)` | `SandboxCommandResult` | Execute a shell command |
 | `sandbox.set_timeout(seconds)` | `None` | Reset the sandbox lifetime |
@@ -47,7 +47,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `sandbox.files.stat(path)` | `SandboxEntryInfo` | Get metadata for one entry |
 | `sandbox.files.rename(path, new_path)` | `SandboxFileData` | Move or rename an entry |
 | `sandbox.files.make_dir(path)` | `SandboxFileData` | Create a directory |
-| `sandbox.ports.open(port)` | `SandboxPortInfo` | Expose a port publicly |
+| `sandbox.ports.open(port)` | `SandboxPortInfo` | Expose a port |
 | `sandbox.ports.list()` | `List[SandboxPortInfo]` | List exposed ports |
 | `sandbox.ports.close(port)` | `None` | Close an exposed port |
 | `sandbox.proxy.request(method, path, ...)` | `bytes` | Send an HTTP request into the sandbox |
@@ -88,8 +88,8 @@ Creates a sandbox, waits until its status is `active`, and returns a ready-to-us
 ```python
 def create(
     *,
-    flavor_name: str,                                   # required, e.g. "Omni-CPU-1x-4GB"
-    region: str,                                        # required, e.g. "In-Bangalore-2"
+    flavor_name: str,                                   # required, e.g. "sandbox-nano"
+    region: str,                                        # required, e.g. "In-Bangalore-1"
     sandbox_name: str | None = None,                    # auto-generated "sandbox-<12 hex>" if omitted
     template_id: int | None = None,                     # mutually exclusive with template_name
     template_name: str | None = None,
