@@ -114,6 +114,30 @@ async def test_public_client_surface_and_exports() -> None:
         await async_client.close()
 
 
+def _text_plain_template_handler(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/omni/sandbox/v1/template"
+    return httpx.Response(
+        200,
+        content=json.dumps([{"ID": 7, "template_name": "python-runtime-sandbox"}]),
+        headers={"content-type": "text/plain; charset=utf-8"},
+        request=request,
+    )
+
+
+def test_list_templates_tolerates_text_plain_content_type() -> None:
+    with make_client(_text_plain_template_handler) as client:
+        templates = client.sandbox.api.list_templates()
+        assert templates[0].id == 7
+        assert templates[0].template_name == "python-runtime-sandbox"
+
+
+async def test_async_list_templates_tolerates_text_plain_content_type() -> None:
+    async with make_async_client(_text_plain_template_handler) as client:
+        templates = await client.sandbox.api.list_templates()
+        assert templates[0].id == 7
+        assert templates[0].template_name == "python-runtime-sandbox"
+
+
 def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
     requests: list[httpx.Request] = []
 

@@ -73,7 +73,7 @@ asyncio.run(main())
 
 Functionality between the synchronous and asynchronous clients is otherwise identical.
 
-## Omni Sandbox
+## Sandbox
 
 The SDK includes an E2B-style, client-owned sandbox API with automatic readiness polling and context-manager cleanup:
 
@@ -82,8 +82,8 @@ from krutrim_client import KrutrimClient
 
 with KrutrimClient() as client:
     with client.sandbox.create(
-        flavor_name="Omni-CPU-1x-4GB",
-        region="In-Bangalore-2",
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
         timeout=900,
     ) as sandbox:
         sandbox.files.make_dir("/app/work")
@@ -92,7 +92,7 @@ with KrutrimClient() as client:
         print(result.stdout)
 ```
 
-See the [Omni Sandbox guide](docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior.
+See the [Sandbox guide](docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior, and the [Sandbox SDK reference](docs/sandbox-sdk-reference.md) for a description of all user-facing sandbox functions.
 
 ## Using types
 
