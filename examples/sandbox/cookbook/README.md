@@ -1,4 +1,4 @@
-# Omni Sandbox Cookbook
+# Sandbox Cookbook
 
 Task-oriented recipes for the sandbox SDK. Each recipe lives in its own
 directory with a README covering setup, walkthrough, and expected output.

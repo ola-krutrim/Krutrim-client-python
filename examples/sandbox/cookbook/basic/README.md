@@ -1,4 +1,4 @@
-# Omni Sandbox Examples
+# Sandbox Examples
 
 These examples create an isolated sandbox, upload a small Python program, run it, and read the result back.
 

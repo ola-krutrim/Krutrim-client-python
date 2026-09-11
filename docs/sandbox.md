@@ -1,6 +1,6 @@
-# Omni Sandbox
+# Sandbox
 
-Omni Sandbox provides isolated, short-lived compute through the normal `KrutrimClient` and `AsyncKrutrimClient`. Authentication comes from the client's bearer API key; sandbox calls do not accept backend identity headers.
+Sandbox provides isolated, short-lived compute through the normal `KrutrimClient` and `AsyncKrutrimClient`. Authentication comes from the client's bearer API key; sandbox calls do not accept backend identity headers.
 
 For a function-by-function description of the user-facing sandbox surface (signatures, behavior, models, limits), see the [Sandbox SDK reference](sandbox-sdk-reference.md).
 

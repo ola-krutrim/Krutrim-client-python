@@ -1,7 +1,7 @@
-# Omni Sandbox SDK Reference
+# Sandbox SDK Reference
 
 Reference for the sandbox functions you call as an SDK user. For a narrative introduction see
-the [Omni Sandbox guide](sandbox.md); for agent-oriented usage see the
+the [Sandbox guide](sandbox.md); for agent-oriented usage see the
 [agent guide](sandbox-agent-guide.md).
 
 > **Note.** The SDK also exposes `client.sandbox.api`, a low-level 1:1 mirror of the REST
