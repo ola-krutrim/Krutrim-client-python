@@ -147,7 +147,19 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
         if path == "/omni/sandbox/v1/template":
             return json_response(request, [{"ID": 7, "template_name": "python", "supported_services": ["sandbox"]}])
         if path == "/omni/sandbox/v1/flavors":
-            return json_response(request, {"status": 200, "data": [{"name": "cpu-1", "subject": "test-region"}]})
+            return json_response(
+                request,
+                {
+                    "status": 200,
+                    "data": [
+                        {
+                            "groupBy": {"flavorname": "cpu-1", "flavorid": "cpu-1", "flavorstatus": "active"},
+                            "subject": "test-region",
+                            "time": "",
+                        }
+                    ],
+                },
+            )
         if path == "/omni/sandbox/v1/sandbox" and request.method == "GET":
             return json_response(request, {"status": 200, "data": {"rows": [], "total": 0, "totalPages": 0}})
         if path == "/omni/sandbox/v1/sandbox" and request.method == "POST":
@@ -165,7 +177,12 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
 
     with make_client(handler) as client:
         assert client.sandbox.api.list_templates()[0].id == 7
-        assert client.sandbox.api.list_flavors(region="test-region").data[0].name == "cpu-1"  # type: ignore[index,union-attr]
+        flavor = client.sandbox.api.list_flavors(region="test-region").data[0]  # type: ignore[index]
+        assert flavor.group_by is not None
+        assert flavor.group_by.flavorname == "cpu-1"
+        assert flavor.group_by.flavorid == "cpu-1"
+        assert flavor.group_by.flavorstatus == "active"
+        assert flavor.subject == "test-region"
         listed = client.sandbox.api.list(region="test-region", status="active", name="x", page=1, limit=20)
         assert listed.data is not None and listed.data.total_pages == 0
         created = client.sandbox.api.create(

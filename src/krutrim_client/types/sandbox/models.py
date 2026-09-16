@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 from datetime import datetime
 
 from pydantic import Field as FieldInfo
@@ -64,15 +64,36 @@ class PodTemplate(BaseModel):
 
 class FlavorGroupBy(BaseModel):
     flavorname: Optional[str] = None
-    flavor_status: Optional[Literal["active", "inactive"]] = FieldInfo(alias="flavorStatus", default=None)
+    flavorid: Optional[str] = None
+    flavorstatus: Optional[Literal["active", "inactive"]] = None
+    availability: Optional[str] = None
+    cost: Optional[float] = None
+    currency: Optional[str] = None
+    unit: Optional[str] = None
+    type: Optional[str] = None
+    vcpus: Optional[float] = None
+    storage: Optional[float] = None
+    local_disk: Optional[str] = None
+    ram_size: Optional[float] = None
+    vcpu_num: Optional[float] = None
+    gpu_manufacturer_name: Optional[str] = None
+    gpu_ram_size: Optional[float] = None
+    gpu_resource_mapping: Optional[str] = None
+    request_gpu_number: Optional[int] = None
+    node_label: Optional[str] = None
+    empheralcost: Optional[float] = None
+    peristantcost: Optional[float] = None
+
+    @property
+    def flavor_status(self) -> Optional[Literal["active", "inactive"]]:
+        """Backward-compatible alias for ``flavorstatus``."""
+        return self.flavorstatus
 
 
 class FlavorItem(BaseModel):
-    id: Optional[str] = None
-    name: Optional[str] = None
     subject: Optional[str] = None
     group_by: Optional[FlavorGroupBy] = FieldInfo(alias="groupBy", default=None)
-    resources: Optional[Dict[str, Any]] = None
+    time: Optional[str] = None
 
 
 class FlavorListResponse(BaseModel):

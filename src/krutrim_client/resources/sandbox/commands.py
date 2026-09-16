@@ -45,7 +45,7 @@ class CommandsResource(SyncAPIResource):
     ) -> SandboxCommandResponse:
         validate_identifier(sandbox_id)
         validate_command(command, timeout_seconds)
-        body: dict[str, object] = {"cmd": command, "timeout_seconds": timeout_seconds}
+        body: dict[str, object] = {"command": command, "timeout_seconds": timeout_seconds}
         if cwd is not None:
             body["cwd"] = cwd
         if envs is not None:
@@ -87,7 +87,7 @@ class AsyncCommandsResource(AsyncAPIResource):
     ) -> SandboxCommandResponse:
         validate_identifier(sandbox_id)
         validate_command(command, timeout_seconds)
-        body: dict[str, object] = {"cmd": command, "timeout_seconds": timeout_seconds}
+        body: dict[str, object] = {"command": command, "timeout_seconds": timeout_seconds}
         if cwd is not None:
             body["cwd"] = cwd
         if envs is not None:

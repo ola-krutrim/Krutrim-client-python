@@ -62,7 +62,7 @@ class SandboxFileMoveParams(TypedDict, total=False):
 
 
 class SandboxCommandRunParams(TypedDict, total=False):
-    cmd: Required[str]
+    command: Required[Annotated[str, PropertyInfo(alias="cmd")]]
     cwd: str
     envs: Mapping[str, str]
     timeout_seconds: Annotated[int, PropertyInfo(alias="timeoutSeconds")]
