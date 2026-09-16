@@ -66,7 +66,9 @@ and existing sandbox IDs before calling `create`/`connect`.
 ### `client.sandbox.api.list_flavors(*, region=None) -> FlavorListResponse`
 
 Lists compute flavors, optionally filtered by region. Iterate `response.data` (`FlavorItem`
-objects with `id`, `name`, `resources`).
+objects with `subject` — the region — and `group_by`, a `FlavorGroupBy` carrying the flavor
+details: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`,
+`vcpus`, `storage`, `local_disk`, GPU fields, …).
 
 ### `client.sandbox.api.list_templates() -> List[PodTemplate]`
 
@@ -286,7 +288,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | `SandboxPortInfo` | `port`, `status` (`provisioning`/`active`/`closing`/`failed`), `error_message`, `url` |
 | `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
 | `PodTemplate` | `id`, `template_name`, `description`, image/disk/port settings |
-| `FlavorItem` | `id`, `name`, `resources` |
+| `FlavorItem` | `subject` (region), `group_by` (`FlavorGroupBy`: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`, `vcpus`, `storage`, `local_disk`, GPU fields, …), `time` |
 
 ## Exceptions
 

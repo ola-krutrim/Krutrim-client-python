@@ -29,7 +29,8 @@ These examples create an isolated sandbox, upload a small Python program, run it
    with KrutrimClient() as client:
        for flavor in client.sandbox.api.list_flavors(region="In-Bangalore-1").data or []:
            group = flavor.group_by
-           print(flavor.name or (group.flavorname if group else None))
+           if group:
+               print(group.flavorname, group.vcpus, group.storage, group.cost, group.currency)
    ```
 
 ## Run
