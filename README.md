@@ -1,11 +1,11 @@
 # KrutrimClient Python API library
 ## Terms of Use
 
-By downloading or using this SDK, you agree to the terms as mentioned in [Krutrim SDK License](KRUTRIM%20SDK%20LICENSE.md).
+By downloading or using this SDK, you agree to the terms as mentioned in [Krutrim SDK License](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/KRUTRIM%20%20SDK%20LICENSE.md).
 
 ## Documentation
 
-The full API of this library can be found in [api_examples.ipynb](api_examples.ipynb).
+The full API of this library can be found in [api_examples.ipynb](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/api_examples.ipynb).
 
 ## Requirements
 
@@ -24,7 +24,7 @@ pip install krutrim-client
 
 ## Getting Started
 
-See [examples/getting-started.md](examples/getting-started.md) for an end-to-end workflow covering:
+See [examples/getting-started.md](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/examples/getting-started.md) for an end-to-end workflow covering:
 
 - Authentication
 - VPC Creation
@@ -34,7 +34,7 @@ See [examples/getting-started.md](examples/getting-started.md) for an end-to-end
 
 ## Usage
 
-The full API of this library can be found in [api_examples.ipynb](api_examples.ipynb).
+The full API of this library can be found in [api_examples.ipynb](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/api_examples.ipynb).
 
 ```python
 import os
@@ -102,7 +102,7 @@ with KrutrimClient() as client:
         print(result.stdout)
 ```
 
-See the [Sandbox guide](docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior, and the [Sandbox SDK reference](docs/sandbox-sdk-reference.md) for a description of all user-facing sandbox functions.
+See the [Sandbox guide](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior, and the [Sandbox SDK reference](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/docs/sandbox-sdk-reference.md) for a description of all user-facing sandbox functions.
 
 ## Using types
 
