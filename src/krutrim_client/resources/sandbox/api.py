@@ -31,7 +31,13 @@ from .proxy import (
 )
 from ..._types import NOT_GIVEN, Body, Query, Headers, NotGiven
 from ..._utils import maybe_transform, async_maybe_transform
-from ._helpers import validate_ttl, validate_identifier, validate_sandbox_name
+from ._helpers import (
+    validate_ttl,
+    validate_labels,
+    validate_identifier,
+    validate_sandbox_name,
+    serialize_label_selector,
+)
 from .commands import (
     CommandsResource,
     AsyncCommandsResource,
@@ -74,6 +80,7 @@ def _validate_create(
     template_name: str | None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None,
     ttl_seconds: int | None,
+    labels: Mapping[str, str] | None,
 ) -> None:
     validate_sandbox_name(sandbox_name)
     if template_id is not None and template_name is not None:
@@ -82,6 +89,8 @@ def _validate_create(
         raise ValueError("at most 10 network storage attachments are supported")
     if ttl_seconds is not None:
         validate_ttl(ttl_seconds)
+    if labels is not None:
+        validate_labels(labels)
 
 
 def _coerce_templates(raw: object) -> List[PodTemplate]:
@@ -160,6 +169,7 @@ class SandboxAPIResource(SyncAPIResource):
         region: str | None = None,
         status: str | None = None,
         name: str | None = None,
+        labels: Mapping[str, str] | None = None,
         page: int | None = None,
         limit: int | None = None,
         extra_headers: Headers | None = None,
@@ -175,6 +185,8 @@ class SandboxAPIResource(SyncAPIResource):
             for key, value in locals().items()
             if key in {"region", "status", "name", "page", "limit"} and value is not None
         }
+        if labels:
+            query["labels"] = serialize_label_selector(labels)
         return self._get(
             "/omni/sandbox/v1/sandbox",
             cast_to=SandboxListResponse,
@@ -197,6 +209,7 @@ class SandboxAPIResource(SyncAPIResource):
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
+        labels: Mapping[str, str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -208,6 +221,7 @@ class SandboxAPIResource(SyncAPIResource):
             template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
+            labels=labels,
         )
         body: dict[str, object] = {
             "sandbox_name": sandbox_name,
@@ -221,6 +235,7 @@ class SandboxAPIResource(SyncAPIResource):
             "template_name": template_name,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
+            "labels": labels,
         }.items():
             if value is not None:
                 body[key] = value
@@ -362,6 +377,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         region: str | None = None,
         status: str | None = None,
         name: str | None = None,
+        labels: Mapping[str, str] | None = None,
         page: int | None = None,
         limit: int | None = None,
         extra_headers: Headers | None = None,
@@ -377,6 +393,8 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             for key, value in locals().items()
             if key in {"region", "status", "name", "page", "limit"} and value is not None
         }
+        if labels:
+            query["labels"] = serialize_label_selector(labels)
         return await self._get(
             "/omni/sandbox/v1/sandbox",
             cast_to=SandboxListResponse,
@@ -399,6 +417,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
+        labels: Mapping[str, str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -410,6 +429,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
+            labels=labels,
         )
         body: dict[str, object] = {
             "sandbox_name": sandbox_name,
@@ -423,6 +443,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             "template_name": template_name,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
+            "labels": labels,
         }.items():
             if value is not None:
                 body[key] = value
