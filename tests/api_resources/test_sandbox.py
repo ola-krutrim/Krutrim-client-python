@@ -273,7 +273,9 @@ def test_sandbox_labels_on_create_list_filter_and_responses() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         if request.url.path == "/omni/sandbox/v1/sandbox" and request.method == "POST":
-            return json_response(request, create_response(), 202)
+            payload = create_response()
+            payload["data"]["labels"] = dict(LABELS)  # type: ignore[index]
+            return json_response(request, payload, 202)
         if request.url.path == "/omni/sandbox/v1/sandbox" and request.method == "GET":
             row = {**active_response()["data"], "labels": dict(LABELS)}  # type: ignore[dict-item]
             return json_response(request, {"status": 200, "data": {"rows": [row], "total": 1}})
@@ -291,6 +293,7 @@ def test_sandbox_labels_on_create_list_filter_and_responses() -> None:
             labels=LABELS,
         )
         assert created.status == 202
+        assert created.data is not None and created.data.labels == LABELS
         listed = client.sandbox.api.list(labels=LABELS)
         assert listed.data is not None and listed.data.rows is not None
         assert listed.data.rows[0].labels == LABELS

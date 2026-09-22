@@ -146,6 +146,8 @@ class AsyncSandboxData(BaseModel):
     krn: Optional[str] = None
     status: Optional[str] = None
     region: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    """Echo of the caller-supplied labels accepted at create."""
 
 
 class AsyncSandboxResponse(BaseModel):
