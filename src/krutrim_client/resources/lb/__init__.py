@@ -1,19 +1,17 @@
-# File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
-
 from .lb import (
-    HighlvlResource,
-    AsyncHighlvlResource,
-    HighlvlResourceWithRawResponse,
-    AsyncHighlvlResourceWithRawResponse,
-    HighlvlResourceWithStreamingResponse,
-    AsyncHighlvlResourceWithStreamingResponse,
+    LoadBalancerResource,
+    AsyncLoadBalancerResource,
+    LoadBalancerResourceWithRawResponse,
+    AsyncLoadBalancerResourceWithRawResponse,
+    LoadBalancerResourceWithStreamingResponse,
+    AsyncLoadBalancerResourceWithStreamingResponse,
 )
 
 __all__ = [
-    "HighlvlResource",
-    "AsyncHighlvlResource",
-    "HighlvlResourceWithRawResponse",
-    "AsyncHighlvlResourceWithRawResponse",
-    "HighlvlResourceWithStreamingResponse",
-    "AsyncHighlvlResourceWithStreamingResponse",
+    "LoadBalancerResource",
+    "AsyncLoadBalancerResource",
+    "LoadBalancerResourceWithRawResponse",
+    "AsyncLoadBalancerResourceWithRawResponse",
+    "LoadBalancerResourceWithStreamingResponse",
+    "AsyncLoadBalancerResourceWithStreamingResponse",
 ]

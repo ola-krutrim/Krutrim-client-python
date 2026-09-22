@@ -67,7 +67,7 @@ class KrutrimClient(SyncAPIClient):
     sshkey :sshkey.SshkeysResource
     kpod: kpod.KpodResource
     kos: kos.KosResource
-    lb: lb.HighlvlResource
+    lb: lb.LoadBalancerResource
     kks: kks.KksResource
     v1: v1.V1Resource
     addons: addons.AddonsResource
@@ -145,7 +145,7 @@ class KrutrimClient(SyncAPIClient):
         self.sshkey = sshkey.SshkeysResource(self)
         self.kpod = kpod.KpodResource(self)
         self.kos = kos.KosResource(self)
-        self.lb = lb.HighlvlResource(self)
+        self.lb = lb.LoadBalancerResource(self)
         self.certs = certs.CertsResource(self)
         self.tags = tags.TagsResource(self)
         self.asg = asg.AsgResource(self)
@@ -282,7 +282,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
     sshkey: sshkey.AsyncSshkeysResource
     kpod: kpod.AsyncKpodResource
     kos: kos.AsyncKosResource 
-    lb: lb.AsyncHighlvlResource
+    lb: lb.AsyncLoadBalancerResource
     certs: certs.AsyncCertsResource
     tags: tags.AsyncTagsResource
     asg: asg.AsyncAsgResource
@@ -361,7 +361,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.sshkey = sshkey.AsyncSshkeysResource(self)
         self.kpod = kpod.AsyncKpodResource(self)
         self.kos = kos.AsyncKosResource(self)
-        self.lb = lb.AsyncHighlvlResource(self)
+        self.lb = lb.AsyncLoadBalancerResource(self)
         self.certs = certs.AsyncCertsResource(self)
         self.tags = tags.AsyncTagsResource(self)
         self.asg = asg.AsyncAsgResource(self)
@@ -494,7 +494,7 @@ class KrutrimClientWithRawResponse:
         self.sshkey = sshkey.SshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithRawResponse(client.kpod)
         self.kos =kos.KosResourceWithRawResponse(client.kos)
-        self.lb = lb.HighlvlResourceWithRawResponse(client.lb)
+        self.lb = lb.LoadBalancerResourceWithRawResponse(client.lb)
         self.certs = certs.CertsResourceWithRawResponse(client.certs)
         self.tags = tags.TagsResourceWithRawResponse(client.tags)
         self.asg = asg.AsgResourceWithRawResponse(client.asg)
@@ -519,7 +519,7 @@ class AsyncKrutrimClientWithRawResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithRawResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithRawResponse(client.kos)
-        self.lb = lb.AsyncHighlvlResourceWithRawResponse(client.lb)
+        self.lb = lb.AsyncLoadBalancerResourceWithRawResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithRawResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithRawResponse(client.tags)
         self.asg = asg.AsyncAsgResourceWithRawResponse(client.asg)
@@ -544,7 +544,7 @@ class KrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.SshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.KosResourceWithStreamingResponse(client.kos)
-        self.lb = lb.HighlvlResourceWithStreamingResponse(client.lb)
+        self.lb = lb.LoadBalancerResourceWithStreamingResponse(client.lb)
         self.certs = certs.CertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.TagsResourceWithStreamingResponse(client.tags)
         self.asg = asg.AsgResourceWithStreamingResponse(client.asg)
@@ -570,7 +570,7 @@ class AsyncKrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithStreamingResponse(client.kos)
-        self.lb = lb.AsyncHighlvlResourceWithStreamingResponse(client.lb)
+        self.lb = lb.AsyncLoadBalancerResourceWithStreamingResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithStreamingResponse(client.tags)
         self.asg = asg.AsyncAsgResourceWithStreamingResponse(client.asg)

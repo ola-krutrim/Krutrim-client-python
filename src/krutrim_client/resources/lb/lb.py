@@ -1,29 +1,20 @@
-# File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
-
 from __future__ import annotations
 
 from typing import Iterable
+from urllib.parse import quote
 
 import httpx
 
-from ...types.lb import (
-    highlvl_get_full_tg_list_params,
-    highlvl_get_tg_names_only_params,
-    highlvl_create_target_group_params,
-    highlvl_delete_target_group_params,
-    highlvl_update_target_group_params,
-    highlvl_update_load_balancer_params,
-    highlvl_get_detailed_target_groups_params,
-    highlvl_create_load_balancer_orchestration_params
-)
-from ...types.lb.highlvl_create_target_group_response import TargetGroupCreateResponse   
-from ...types.lb.highlvl_create_lb_orchestration_response import LBOrchestrationResp
-
-
-from ..._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven,Omit, omit
+from ..._types import NOT_GIVEN, Body, Omit, Query, Headers, NoneType, NotGiven, omit
 from ..._utils import maybe_transform, async_maybe_transform
 from ..._compat import cached_property
-from ..._constants import SUPPORTED_REGIONS
+from ..._regions import SUPPORTED_REGIONS, unsupported_region_error
+from ...types.lb import (
+    create_target_group_params,
+    update_target_group_params,
+    create_load_balancer_params,
+    update_load_balancer_params,
+)
 from ..._resource import SyncAPIResource, AsyncAPIResource
 from ..._response import (
     to_raw_response_wrapper,
@@ -32,131 +23,334 @@ from ..._response import (
     async_to_streamed_response_wrapper,
 )
 from ..._base_client import make_request_options
+from ...types.lb.list_target_groups_response import ListTargetGroupsResponse
+from ...types.lb.create_target_group_response import CreateTargetGroupResponse
+from ...types.lb.delete_target_group_response import DeleteTargetGroupResponse
+from ...types.lb.list_load_balancers_response import ListLoadBalancersResponse
+from ...types.lb.update_target_group_response import UpdateTargetGroupResponse
+from ...types.lb.create_load_balancer_response import CreateLoadBalancerResponse
 
-__all__ = ["HighlvlResource", "AsyncHighlvlResource"]
+__all__ = [
+    "LoadBalancerResource",
+    "AsyncLoadBalancerResource",
+    "LoadBalancerResourceWithRawResponse",
+    "AsyncLoadBalancerResourceWithRawResponse",
+    "LoadBalancerResourceWithStreamingResponse",
+    "AsyncLoadBalancerResourceWithStreamingResponse",
+]
 
 
-class HighlvlResource(SyncAPIResource):
+class LoadBalancerResource(SyncAPIResource):
     @cached_property
-    def with_raw_response(self) -> HighlvlResourceWithRawResponse:
-        """
-        This property can be used as a prefix for any HTTP method call to return
-        the raw response object instead of the parsed content.
-
-        For more information, see https://www.github.com/stainless-sdks/lb2-python#accessing-raw-response-data-eg-headers
-        """
-        return HighlvlResourceWithRawResponse(self)
+    def with_raw_response(self) -> LoadBalancerResourceWithRawResponse:
+        """Return raw HTTP responses instead of parsed models."""
+        return LoadBalancerResourceWithRawResponse(self)
 
     @cached_property
-    def with_streaming_response(self) -> HighlvlResourceWithStreamingResponse:
-        """
-        An alternative to `.with_raw_response` that doesn't eagerly read the response body.
-
-        For more information, see https://www.github.com/stainless-sdks/lb2-python#with_streaming_response
-        """
-        return HighlvlResourceWithStreamingResponse(self)
-    
-
+    def with_streaming_response(self) -> LoadBalancerResourceWithStreamingResponse:
+        """Return streamed HTTP responses instead of eagerly reading them."""
+        return LoadBalancerResourceWithStreamingResponse(self)
 
     def validate_region(self, x_region: str) -> None:
         if not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError(
-                f"Invalid region '{x_region}'. Supported regions are: "
-                "'In-Bangalore-1' and 'In-Hyderabad-1'."
-            )
+            raise unsupported_region_error()
 
-    def create_load_balancer_orchestration(
+    def _headers(
         self,
         *,
-        k_customer_id: str,
-        x_account_id: str,
+        k_customer_id: str | None,
+        x_account_id: str | None,
         x_region: str,
-        listeners: Iterable[object] | Omit = omit,
-        loadbalancer_data: object | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> LBOrchestrationResp:
-        """
-        Create Load Balancer Orchestration
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
+        extra_headers: Headers | None,
+    ) -> Headers:
         self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"k-customer-id": k_customer_id, "x-account-id": x_account_id, "x-region": x_region})
-        return self._post(
-            "/v3/highlvl/create_load_balancer_orchestration",
-            body=maybe_transform(
-                {
-                    "listeners": listeners,
-                    "loadbalancer_data": loadbalancer_data,
-                },
-                highlvl_create_load_balancer_orchestration_params.HighlvlCreateLoadBalancerOrchestrationParams,
-            ),
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=LBOrchestrationResp,
-        )
+        headers: dict[str, str] = {
+            "Accept": "*/*",
+            "x-region": x_region,
+        }
+        if k_customer_id is not None:
+            headers["k-customer-id"] = k_customer_id
+        if x_account_id is not None:
+            headers["x-account-id"] = x_account_id
+        return {**headers, **(extra_headers or {})}
 
     def create_target_group(
         self,
         *,
+        target_group_name: str,
+        vpc_krn: str,
+        members: Iterable[create_target_group_params.Member],
+        health_monitor: create_target_group_params.HealthMonitor,
+        k_customer_id: str,
+        x_account_id: str,
         x_region: str,
-        health_monitor: highlvl_create_target_group_params.HealthMonitor | Omit = omit,
-        members: Iterable[highlvl_create_target_group_params.Member] | Omit = omit,
-        target_group_name: str | Omit = omit,
-        vpc_id: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        lb_krn: Iterable[str] = (),
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> TargetGroupCreateResponse:
-        """
-        Create Target Group
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
+    ) -> CreateTargetGroupResponse:
+        """Create a target group and its health monitor and members."""
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
         return self._post(
-            "/v1/highlvl/create_target_group",
+            "/api/v3/loadBalancer/targetgroup",
             body=maybe_transform(
                 {
-                    "health_monitor": health_monitor,
-                    "members": members,
                     "target_group_name": target_group_name,
-                    "vpc_id": vpc_id,
+                    "vpc_krn": vpc_krn,
+                    "lb_krn": lb_krn,
+                    "members": members,
+                    "health_monitor": health_monitor,
                 },
-                highlvl_create_target_group_params.HighlvlCreateTargetGroupParams,
+                create_target_group_params.CreateTargetGroupParams,
             ),
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=TargetGroupCreateResponse,
+            cast_to=CreateTargetGroupResponse,
+        )
+
+    def list_target_groups(
+        self,
+        *,
+        vpc_krn: str,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ListTargetGroupsResponse:
+        """List target groups in a VPC."""
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return self._get(
+            "/api/v3/loadBalancer/targetgroups",
+            options=make_request_options(
+                query={"vpc_krn": vpc_krn},
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=ListTargetGroupsResponse,
+        )
+
+    def update_target_group(
+        self,
+        target_group_krn: str,
+        *,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        members: Iterable[update_target_group_params.Member] | Omit = omit,
+        health_monitor: update_target_group_params.HealthMonitor | Omit = omit,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> UpdateTargetGroupResponse:
+        """Update the members and health monitor of a target group."""
+        if not target_group_krn:
+            raise ValueError("'target_group_krn' must be a non-empty string.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        encoded_krn = quote(target_group_krn, safe="")
+        return self._put(
+            f"/api/v3/loadBalancer/targetgroup/{encoded_krn}",
+            body=maybe_transform(
+                {
+                    "krn": target_group_krn,
+                    "members": members,
+                    "health_monitor": health_monitor,
+                },
+                update_target_group_params.UpdateTargetGroupParams,
+            ),
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=UpdateTargetGroupResponse,
+        )
+
+    def delete_target_group(
+        self,
+        target_group_krn: str,
+        *,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> DeleteTargetGroupResponse:
+        """Delete a target group by KRN."""
+        if not target_group_krn:
+            raise ValueError("'target_group_krn' must be a non-empty string.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        encoded_krn = quote(target_group_krn, safe="")
+        return self._delete(
+            f"/api/v3/loadBalancer/targetgroup/{encoded_krn}",
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=DeleteTargetGroupResponse,
+        )
+
+    def create_load_balancer(
+        self,
+        *,
+        loadbalancer_data: create_load_balancer_params.LoadBalancerData,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> CreateLoadBalancerResponse:
+        """Create a load balancer with listeners, pools, policies, and rules."""
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return self._post(
+            "/api/v3/loadbalancer",
+            body=maybe_transform(
+                {"loadbalancer_data": loadbalancer_data},
+                create_load_balancer_params.CreateLoadBalancerParams,
+            ),
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=CreateLoadBalancerResponse,
+        )
+
+    def list_load_balancers_by_vpc(
+        self,
+        *,
+        vpc_krn: str,
+        x_region: str,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
+        page: int | None = None,
+        limit: int | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ListLoadBalancersResponse:
+        """List load balancers in a VPC with pagination."""
+        if page is not None and page < 1:
+            raise ValueError("'page' must be greater than or equal to 1.")
+        if limit is not None and limit < 1:
+            raise ValueError("'limit' must be greater than or equal to 1.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        query: dict[str, object] = {"vpc_krn": vpc_krn}
+        if page is not None:
+            query["page"] = page
+        if limit is not None:
+            query["limit"] = limit
+        return self._get(
+            "/api/v3/loadbalancer/getallbyvpc",
+            options=make_request_options(
+                query=query,
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=ListLoadBalancersResponse,
+        )
+
+    def update_load_balancer(
+        self,
+        lb_krn: str,
+        *,
+        x_region: str,
+        listener_krn: str | Omit = omit,
+        listener: update_load_balancer_params.ListenerUpdate | Omit = omit,
+        loadbalancer: update_load_balancer_params.LoadBalancerUpdate | Omit = omit,
+        policy: Iterable[update_load_balancer_params.PolicyOperation] | Omit = omit,
+        rules: Iterable[update_load_balancer_params.RuleOperation] | Omit = omit,
+        pool: Iterable[update_load_balancer_params.PoolUpdate] | Omit = omit,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """Update load-balancer components in a single operation."""
+        if not lb_krn:
+            raise ValueError("'lb_krn' must be a non-empty string.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return self._put(
+            f"/api/v3/loadbalancer/{lb_krn}",
+            body=maybe_transform(
+                {
+                    "loadbalancer_krn": lb_krn,
+                    "listener_krn": listener_krn,
+                    "listener": listener,
+                    "loadbalancer": loadbalancer,
+                    "policy": policy,
+                    "rules": rules,
+                    "pool": pool,
+                },
+                update_load_balancer_params.UpdateLoadBalancerParams,
+            ),
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=object,
         )
 
     def delete_load_balancer(
@@ -164,572 +358,345 @@ class HighlvlResource(SyncAPIResource):
         lb_krn: str,
         *,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """
-        Delete Load Balancer
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
+        """Delete a load balancer by KRN."""
         if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
+            raise ValueError("'lb_krn' must be a non-empty string.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
         return self._delete(
-            f"/v3/highlvl/loadbalancer/{lb_krn}",
+            f"/api/v3/loadbalancer/{lb_krn}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=NoneType,
         )
 
-    def delete_target_group(
+
+class AsyncLoadBalancerResource(AsyncAPIResource):
+    @cached_property
+    def with_raw_response(self) -> AsyncLoadBalancerResourceWithRawResponse:
+        """Return raw HTTP responses instead of parsed models."""
+        return AsyncLoadBalancerResourceWithRawResponse(self)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncLoadBalancerResourceWithStreamingResponse:
+        """Return streamed HTTP responses instead of eagerly reading them."""
+        return AsyncLoadBalancerResourceWithStreamingResponse(self)
+
+    async def validate_region(self, x_region: str) -> None:
+        if not x_region.strip():
+            raise ValueError("'x_region' must be a non-empty string.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
+
+    async def _headers(
+        self,
+        *,
+        k_customer_id: str | None,
+        x_account_id: str | None,
+        x_region: str,
+        extra_headers: Headers | None,
+    ) -> Headers:
+        await self.validate_region(x_region)
+        headers: dict[str, str] = {
+            "Accept": "*/*",
+            "x-region": x_region,
+        }
+        if k_customer_id is not None:
+            headers["k-customer-id"] = k_customer_id
+        if x_account_id is not None:
+            headers["x-account-id"] = x_account_id
+        return {**headers, **(extra_headers or {})}
+
+    async def create_target_group(
         self,
         *,
         target_group_name: str,
-        vpc_id: str,
-        x_region:str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Delete Target Group
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-        return self._delete(
-            "/v1/highlvl/target_group",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=maybe_transform(
-                    {
-                        "target_group_name": target_group_name,
-                        "vpc_id": vpc_id,
-                    },
-                    highlvl_delete_target_group_params.HighlvlDeleteTargetGroupParams,
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-    def fetch_payload_multiple(
-        self,
-        lb_krn: str,
-        x_region:str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Fetch Detailed LB Payload
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-        return self._get(
-            f"/v3/highlvl/fetch_payload_multiple/{lb_krn}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    def get_detailed_target_groups(
-        self,
-        *,
-        k_customer_id: str,
-        x_account_id: str,
-        x_region: str,
-        vpc_id: str,
-        target_group_name: str | Omit = omit,
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update(
-            {
-                "k-customer-id": k_customer_id,
-                "x-account-id": x_account_id,
-                "x-region": x_region,
-            }
-        )
-
-        return self._get(
-            "/v1/highlvl/get_target_groups",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=maybe_transform(
-                    {"vpc_id": vpc_id, "target_group_name": target_group_name},
-                    highlvl_get_detailed_target_groups_params.HighlvlGetDetailedTargetGroupsParams,
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-
-    def get_full_tg_list(
-        self,
-        *,
-        vpc_id: str,
-        x_region:str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get Full TG List
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-        return self._get(
-            "/v1/highlvl/get_tg_list",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=maybe_transform({"vpc_id": vpc_id}, highlvl_get_full_tg_list_params.HighlvlGetFullTgListParams),
-            ),
-            cast_to=NoneType,
-        )
-
-    def get_task_status(
-        self,
-        task_id: str,
-        x_region:str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get Task Status
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        if not task_id:
-            raise ValueError(f"Expected a non-empty value for `task_id` but received {task_id!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region}) 
-        return self._get(
-            f"/v3/highlvl/task_status/{task_id}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=object,
-        )
-
-    def get_tg_names_only(
-        self,
-        *,
-        vpc_id: str,
-        x_region:str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get TG Names Only
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region}) 
-        return self._get(
-            "/v1/highlvl/get_target_group_names",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=maybe_transform({"vpc_id": vpc_id}, highlvl_get_tg_names_only_params.HighlvlGetTgNamesOnlyParams),
-            ),
-            cast_to=NoneType,
-        )
-
-    def list_load_balancers_by_vpc(
-        self,
         vpc_krn: str,
-        x_region:str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        List Load Balancers by VPC
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        if not vpc_krn:
-            raise ValueError(f"Expected a non-empty value for `vpc_krn` but received {vpc_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region}) 
-        return self._get(
-            f"/v3/highlvl/get_lb_list_new/{vpc_krn}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    def update_load_balancer(
-        self,
-        path_lb_krn: str,
-        *,
-        x_region: str,
+        members: Iterable[create_target_group_params.Member],
+        health_monitor: create_target_group_params.HealthMonitor,
         k_customer_id: str,
         x_account_id: str,
-        listeners: Iterable[object] | Omit = omit,
-        loadbalancer_data: object | Omit = omit,
-        security_groups: Iterable[str] | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Update Load Balancer
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        if not path_lb_krn:
-            raise ValueError(f"Expected a non-empty value for `path_lb_krn` but received {path_lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"k-customer-id": k_customer_id, "x-account-id": x_account_id, "x-region": x_region})
-        payload: dict = {
-            "lb_krn": path_lb_krn,
-        }
-        if listeners is not omit:
-            payload["listeners"] = listeners
-        if loadbalancer_data is not omit:
-            payload["loadbalancer_data"] = loadbalancer_data
-        if security_groups is not omit:
-            payload["security_groups"] = list(security_groups)               
-        return self._put(
-            f"/v3/highlvl/update_load_balancer/{path_lb_krn}",
-            body=payload,
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    def update_target_group(
-        self,
-        *,
         x_region: str,
-        k_customer_id: str,
-        x_account_id: str,
-        health_monitor: highlvl_update_target_group_params.HealthMonitor | Omit = omit,
-        members: Iterable[highlvl_update_target_group_params.Member] | Omit = omit,
-        target_group_name: str | Omit = omit,
-        vpc_id: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        lb_krn: Iterable[str] = (),
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Update Target Group Members/Health
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update(
-            {
-                "k-customer-id": k_customer_id,
-                "x-account-id": x_account_id,
-                "x-region": x_region,
-            }
+    ) -> CreateTargetGroupResponse:
+        """Create a target group and its health monitor and members."""
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
         )
-        return self._put(
-            "/v1/highlvl/updatetg",
-            body=maybe_transform(
+        return await self._post(
+            "/api/v3/loadBalancer/targetgroup",
+            body=await async_maybe_transform(
                 {
-                    "health_monitor": health_monitor,
-                    "members": members,
                     "target_group_name": target_group_name,
-                    "vpc_id": vpc_id,
+                    "vpc_krn": vpc_krn,
+                    "lb_krn": lb_krn,
+                    "members": members,
+                    "health_monitor": health_monitor,
                 },
-                highlvl_update_target_group_params.HighlvlUpdateTargetGroupParams,
+                create_target_group_params.CreateTargetGroupParams,
             ),
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=NoneType,
+            cast_to=CreateTargetGroupResponse,
         )
-    def get_load_balancer_details(
+
+    async def list_target_groups(
+        self,
+        *,
+        vpc_krn: str,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ListTargetGroupsResponse:
+        """List target groups in a VPC."""
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return await self._get(
+            "/api/v3/loadBalancer/targetgroups",
+            options=make_request_options(
+                query={"vpc_krn": vpc_krn},
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=ListTargetGroupsResponse,
+        )
+
+    async def update_target_group(
+        self,
+        target_group_krn: str,
+        *,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        members: Iterable[update_target_group_params.Member] | Omit = omit,
+        health_monitor: update_target_group_params.HealthMonitor | Omit = omit,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> UpdateTargetGroupResponse:
+        """Update the members and health monitor of a target group."""
+        if not target_group_krn:
+            raise ValueError("'target_group_krn' must be a non-empty string.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        encoded_krn = quote(target_group_krn, safe="")
+        return await self._put(
+            f"/api/v3/loadBalancer/targetgroup/{encoded_krn}",
+            body=await async_maybe_transform(
+                {
+                    "krn": target_group_krn,
+                    "members": members,
+                    "health_monitor": health_monitor,
+                },
+                update_target_group_params.UpdateTargetGroupParams,
+            ),
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=UpdateTargetGroupResponse,
+        )
+
+    async def delete_target_group(
+        self,
+        target_group_krn: str,
+        *,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> DeleteTargetGroupResponse:
+        """Delete a target group by KRN."""
+        if not target_group_krn:
+            raise ValueError("'target_group_krn' must be a non-empty string.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        encoded_krn = quote(target_group_krn, safe="")
+        return await self._delete(
+            f"/api/v3/loadBalancer/targetgroup/{encoded_krn}",
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=DeleteTargetGroupResponse,
+        )
+
+    async def create_load_balancer(
+        self,
+        *,
+        loadbalancer_data: create_load_balancer_params.LoadBalancerData,
+        k_customer_id: str,
+        x_account_id: str,
+        x_region: str,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> CreateLoadBalancerResponse:
+        """Create a load balancer with listeners, pools, policies, and rules."""
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return await self._post(
+            "/api/v3/loadbalancer",
+            body=await async_maybe_transform(
+                {"loadbalancer_data": loadbalancer_data},
+                create_load_balancer_params.CreateLoadBalancerParams,
+            ),
+            options=make_request_options(
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=CreateLoadBalancerResponse,
+        )
+
+    async def list_load_balancers_by_vpc(
+        self,
+        *,
+        vpc_krn: str,
+        x_region: str,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
+        page: int | None = None,
+        limit: int | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> ListLoadBalancersResponse:
+        """List load balancers in a VPC with pagination."""
+        if page is not None and page < 1:
+            raise ValueError("'page' must be greater than or equal to 1.")
+        if limit is not None and limit < 1:
+            raise ValueError("'limit' must be greater than or equal to 1.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        query: dict[str, object] = {"vpc_krn": vpc_krn}
+        if page is not None:
+            query["page"] = page
+        if limit is not None:
+            query["limit"] = limit
+        return await self._get(
+            "/api/v3/loadbalancer/getallbyvpc",
+            options=make_request_options(
+                query=query,
+                extra_headers=headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+            cast_to=ListLoadBalancersResponse,
+        )
+
+    async def update_load_balancer(
         self,
         lb_krn: str,
         *,
         x_region: str,
+        listener_krn: str | Omit = omit,
+        listener: update_load_balancer_params.ListenerUpdate | Omit = omit,
+        loadbalancer: update_load_balancer_params.LoadBalancerUpdate | Omit = omit,
+        policy: Iterable[update_load_balancer_params.PolicyOperation] | Omit = omit,
+        rules: Iterable[update_load_balancer_params.RuleOperation] | Omit = omit,
+        pool: Iterable[update_load_balancer_params.PoolUpdate] | Omit = omit,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> object:
-        """
-        Get Load Balancer Details
-
-        Args:
-        lb_krn: Load Balancer KRN
-        x_region: Region header (`In-Bangalore-1` or `In-Hyderabad-1`)
-        """
-        self.validate_region(x_region)
-
+        """Update load-balancer components in a single operation."""
         if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-
-        return self._get(
-            f"/v3/highlvl/lb_details_new/{lb_krn}",
+            raise ValueError("'lb_krn' must be a non-empty string.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        return await self._put(
+            f"/api/v3/loadbalancer/{lb_krn}",
+            body=await async_maybe_transform(
+                {
+                    "loadbalancer_krn": lb_krn,
+                    "listener_krn": listener_krn,
+                    "listener": listener,
+                    "loadbalancer": loadbalancer,
+                    "policy": policy,
+                    "rules": rules,
+                    "pool": pool,
+                },
+                update_load_balancer_params.UpdateLoadBalancerParams,
+            ),
             options=make_request_options(
-                extra_headers=extra_headers,
+                extra_headers=headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
             ),
             cast_to=object,
-        )
-
-class AsyncHighlvlResource(AsyncAPIResource):
-    @cached_property
-    def with_raw_response(self) -> AsyncHighlvlResourceWithRawResponse:
-        """
-        This property can be used as a prefix for any HTTP method call to return
-        the raw response object instead of the parsed content.
-
-        For more information, see https://www.github.com/stainless-sdks/lb2-python#accessing-raw-response-data-eg-headers
-        """
-        return AsyncHighlvlResourceWithRawResponse(self)
-
-    @cached_property
-    def with_streaming_response(self) -> AsyncHighlvlResourceWithStreamingResponse:
-        """
-        An alternative to `.with_raw_response` that doesn't eagerly read the response body.
-
-        For more information, see https://www.github.com/stainless-sdks/lb2-python#with_streaming_response
-        """
-        return AsyncHighlvlResourceWithStreamingResponse(self)
-    async def validate_region(x_region: str) -> None:
-        if not isinstance(x_region, str) or not x_region.strip():
-            raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in SUPPORTED_REGIONS:
-            raise ValueError(
-                f"Invalid region '{x_region}'. Supported regions are: "
-                "'In-Bangalore-1' and 'In-Hyderabad-1'."
-            )
-
-    async def create_load_balancer_orchestration(
-        self,
-        *,
-        k_customer_id: str,
-        x_account_id: str,
-        x_region: str,
-        listeners: Iterable[object] | Omit = omit,
-        loadbalancer_data: object | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Create Load Balancer Orchestration
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"k-customer-id": k_customer_id, "x-account-id": x_account_id, "x-region": x_region})
-        return await self._post(
-            "/v3/highlvl/create_load_balancer_orchestration",
-            body=await async_maybe_transform(
-                {
-                    "listeners": listeners,
-                    "loadbalancer_data": loadbalancer_data,
-                },
-                highlvl_create_load_balancer_orchestration_params.HighlvlCreateLoadBalancerOrchestrationParams,
-            ),
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def create_target_group(
-        self,
-        *,
-        x_region: str,
-        health_monitor: highlvl_create_target_group_params.HealthMonitor | Omit = omit,
-        members: Iterable[highlvl_create_target_group_params.Member] | Omit = omit,
-        target_group_name: str | Omit = omit,
-        vpc_id: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Create Target Group
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-        return await self._post(
-            "/v1/highlvl/create_target_group",
-            body=await async_maybe_transform(
-                {
-                    "health_monitor": health_monitor,
-                    "members": members,
-                    "target_group_name": target_group_name,
-                    "vpc_id": vpc_id,
-                },
-                highlvl_create_target_group_params.HighlvlCreateTargetGroupParams,
-            ),
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
         )
 
     async def delete_load_balancer(
@@ -737,623 +704,81 @@ class AsyncHighlvlResource(AsyncAPIResource):
         lb_krn: str,
         *,
         x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> None:
-        """
-        Delete Load Balancer
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
+        """Delete a load balancer by KRN."""
         if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
+            raise ValueError("'lb_krn' must be a non-empty string.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
         return await self._delete(
-            f"/v3/highlvl/loadbalancer/{lb_krn}",
+            f"/api/v3/loadbalancer/{lb_krn}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def delete_target_group(
-        self,
-        *,
-        target_group_name: str,
-        vpc_id: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Delete Target Group
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return await self._delete(
-            "/v1/highlvl/target_group",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=await async_maybe_transform(
-                    {
-                        "target_group_name": target_group_name,
-                        "vpc_id": vpc_id,
-                    },
-                    highlvl_delete_target_group_params.HighlvlDeleteTargetGroupParams,
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-    async def fetch_payload_multiple(
-        self,
-        lb_krn: str,
-        x_region:str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Fetch Detailed LB Payload
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-        return await self._get(
-            f"/v3/highlvl/fetch_payload_multiple/{lb_krn}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def get_detailed_target_groups(
-        self,
-        *,
-        vpc_id: str,
-        x_region:str,
-        target_group_name: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get Detailed Target Groups
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region}) 
-        return await self._get(
-            "/v1/highlvl/get_target_groups",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=await async_maybe_transform(
-                    {
-                        "vpc_id": vpc_id,
-                        "target_group_name": target_group_name,
-                    },
-                    highlvl_get_detailed_target_groups_params.HighlvlGetDetailedTargetGroupsParams,
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-    async def get_full_tg_list(
-        self,
-        *,
-        vpc_id: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get Full TG List
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return await self._get(
-            "/v1/highlvl/get_tg_list",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=await async_maybe_transform(
-                    {"vpc_id": vpc_id}, highlvl_get_full_tg_list_params.HighlvlGetFullTgListParams
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-    async def get_task_status(
-        self,
-        task_id: str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get Task Status
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        if not task_id:
-            raise ValueError(f"Expected a non-empty value for `task_id` but received {task_id!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return await self._get(
-            f"/v3/highlvl/task_status/{task_id}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def get_tg_names_only(
-        self,
-        *,
-        vpc_id: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Get TG Names Only
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        return await self._get(
-            "/v1/highlvl/get_target_group_names",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body=extra_body,
-                timeout=timeout,
-                query=await async_maybe_transform(
-                    {"vpc_id": vpc_id}, highlvl_get_tg_names_only_params.HighlvlGetTgNamesOnlyParams
-                ),
-            ),
-            cast_to=NoneType,
-        )
-
-    async def list_load_balancers_by_vpc(
-        self,
-        vpc_krn: str,
-        x_region:str,
-        *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        List Load Balancers by VPC
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        if not vpc_krn:
-            raise ValueError(f"Expected a non-empty value for `vpc_krn` but received {vpc_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region}) 
-        return await self._get(
-            f"/v3/highlvl/get_lb_list_new/{vpc_krn}",
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def update_load_balancer(
-        self,
-        path_lb_krn: str,
-        *,
-        x_region: str,
-        k_customer_id: str,
-        x_account_id: str,
-        listeners: Iterable[object] | Omit = omit,
-        loadbalancer_data: object | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Update Load Balancer
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        if not path_lb_krn:
-            raise ValueError(f"Expected a non-empty value for `path_lb_krn` but received {path_lb_krn!r}")
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"k-customer-id": k_customer_id, "x-account-id": x_account_id, "x-region": x_region})
-        payload: dict = {
-            "lb_krn": path_lb_krn,
-        }
-        if listeners is not omit:
-            payload["listeners"] = listeners
-        if loadbalancer_data is not omit:
-            payload["loadbalancer_data"] = loadbalancer_data
-        return await self._put(
-            f"/v3/highlvl/update_load_balancer/{path_lb_krn}",
-            body=payload,
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def update_target_group(
-        self,
-        *,
-        x_region: str,
-        k_customer_id: str,
-        x_account_id: str,
-        health_monitor: highlvl_update_target_group_params.HealthMonitor | Omit = omit,
-        members: Iterable[highlvl_update_target_group_params.Member] | Omit = omit,
-        target_group_name: str | Omit = omit,
-        vpc_id: str | Omit = omit,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """
-        Update Target Group Members/Health
-
-        Args:
-          extra_headers: Send extra headers
-
-          extra_query: Add additional query parameters to the request
-
-          extra_body: Add additional JSON properties to the request
-
-          timeout: Override the client-level default timeout for this request, in seconds
-        """
-        await self.validate_region(x_region)
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update(
-            {
-                "k-customer-id": k_customer_id,
-                "x-account-id": x_account_id,
-                "x-region": x_region,
-            }
-        )
-        return await self._put(
-            "/v1/highlvl/updatetg",
-            body=await async_maybe_transform(
-                {
-                    "health_monitor": health_monitor,
-                    "members": members,
-                    "target_group_name": target_group_name,
-                    "vpc_id": vpc_id,
-                },
-                highlvl_update_target_group_params.HighlvlUpdateTargetGroupParams,
-            ),
-            options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-            ),
-            cast_to=NoneType,
-        )
-
-    async def get_load_balancer_details(
-        self,
-        lb_krn: str,
-        *,
-        x_region: str,
-        extra_headers: Headers | None = None,
-        extra_query: Query | None = None,
-        extra_body: Body | None = None,
-        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> object:
-        """
-        Get Load Balancer Details
-        """
-        await self.validate_region(x_region)
-
-        if not lb_krn:
-            raise ValueError(f"Expected a non-empty value for `lb_krn` but received {lb_krn!r}")
-
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
-        extra_headers.update({"x-region": x_region})
-
-        return await self._get(
-            f"/v3/highlvl/lb_details_new/{lb_krn}",
-            options=make_request_options(
-                extra_headers=extra_headers,
+                extra_headers=headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=object,
+            cast_to=NoneType,
         )
 
 
-class HighlvlResourceWithRawResponse:
-    def __init__(self, highlvl: HighlvlResource) -> None:
-        self._highlvl = highlvl
-
-        self.create_load_balancer_orchestration = to_raw_response_wrapper(
-            highlvl.create_load_balancer_orchestration,
-        )
-        self.create_target_group = to_raw_response_wrapper(
-            highlvl.create_target_group,
-        )
-        self.delete_load_balancer = to_raw_response_wrapper(
-            highlvl.delete_load_balancer,
-        )
-        self.delete_target_group = to_raw_response_wrapper(
-            highlvl.delete_target_group,
-        )
-        self.fetch_payload_multiple = to_raw_response_wrapper(
-            highlvl.fetch_payload_multiple,
-        )
-        self.get_detailed_target_groups = to_raw_response_wrapper(
-            highlvl.get_detailed_target_groups,
-        )
-        self.get_full_tg_list = to_raw_response_wrapper(
-            highlvl.get_full_tg_list,
-        )
-        self.get_task_status = to_raw_response_wrapper(
-            highlvl.get_task_status,
-        )
-        self.get_tg_names_only = to_raw_response_wrapper(
-            highlvl.get_tg_names_only,
-        )
-        self.list_load_balancers_by_vpc = to_raw_response_wrapper(
-            highlvl.list_load_balancers_by_vpc,
-        )
-        self.update_load_balancer = to_raw_response_wrapper(
-            highlvl.update_load_balancer,
-        )
-        self.update_target_group = to_raw_response_wrapper(
-            highlvl.update_target_group,
-        )
-        self.get_load_balancer_details = to_raw_response_wrapper(
-            highlvl.get_load_balancer_details,
-)
+class LoadBalancerResourceWithRawResponse:
+    def __init__(self, load_balancer: LoadBalancerResource) -> None:
+        self._load_balancer = load_balancer
+        self.create_target_group = to_raw_response_wrapper(load_balancer.create_target_group)
+        self.list_target_groups = to_raw_response_wrapper(load_balancer.list_target_groups)
+        self.update_target_group = to_raw_response_wrapper(load_balancer.update_target_group)
+        self.delete_target_group = to_raw_response_wrapper(load_balancer.delete_target_group)
+        self.create_load_balancer = to_raw_response_wrapper(load_balancer.create_load_balancer)
+        self.list_load_balancers_by_vpc = to_raw_response_wrapper(load_balancer.list_load_balancers_by_vpc)
+        self.update_load_balancer = to_raw_response_wrapper(load_balancer.update_load_balancer)
+        self.delete_load_balancer = to_raw_response_wrapper(load_balancer.delete_load_balancer)
 
 
-class AsyncHighlvlResourceWithRawResponse:
-    def __init__(self, highlvl: AsyncHighlvlResource) -> None:
-        self._highlvl = highlvl
-
-        self.create_load_balancer_orchestration = async_to_raw_response_wrapper(
-            highlvl.create_load_balancer_orchestration,
-        )
-        self.create_target_group = async_to_raw_response_wrapper(
-            highlvl.create_target_group,
-        )
-        self.delete_load_balancer = async_to_raw_response_wrapper(
-            highlvl.delete_load_balancer,
-        )
-        self.delete_target_group = async_to_raw_response_wrapper(
-            highlvl.delete_target_group,
-        )
-        self.fetch_payload_multiple = async_to_raw_response_wrapper(
-            highlvl.fetch_payload_multiple,
-        )
-        self.get_detailed_target_groups = async_to_raw_response_wrapper(
-            highlvl.get_detailed_target_groups,
-        )
-        self.get_full_tg_list = async_to_raw_response_wrapper(
-            highlvl.get_full_tg_list,
-        )
-        self.get_task_status = async_to_raw_response_wrapper(
-            highlvl.get_task_status,
-        )
-        self.get_tg_names_only = async_to_raw_response_wrapper(
-            highlvl.get_tg_names_only,
-        )
-        self.list_load_balancers_by_vpc = async_to_raw_response_wrapper(
-            highlvl.list_load_balancers_by_vpc,
-        )
-        self.update_load_balancer = async_to_raw_response_wrapper(
-            highlvl.update_load_balancer,
-        )
-        self.update_target_group = async_to_raw_response_wrapper(
-            highlvl.update_target_group,
-        )
-        self.get_load_balancer_details = async_to_raw_response_wrapper(
-            highlvl.get_load_balancer_details,
-)
+class AsyncLoadBalancerResourceWithRawResponse:
+    def __init__(self, load_balancer: AsyncLoadBalancerResource) -> None:
+        self._load_balancer = load_balancer
+        self.create_target_group = async_to_raw_response_wrapper(load_balancer.create_target_group)
+        self.list_target_groups = async_to_raw_response_wrapper(load_balancer.list_target_groups)
+        self.update_target_group = async_to_raw_response_wrapper(load_balancer.update_target_group)
+        self.delete_target_group = async_to_raw_response_wrapper(load_balancer.delete_target_group)
+        self.create_load_balancer = async_to_raw_response_wrapper(load_balancer.create_load_balancer)
+        self.list_load_balancers_by_vpc = async_to_raw_response_wrapper(load_balancer.list_load_balancers_by_vpc)
+        self.update_load_balancer = async_to_raw_response_wrapper(load_balancer.update_load_balancer)
+        self.delete_load_balancer = async_to_raw_response_wrapper(load_balancer.delete_load_balancer)
 
 
-class HighlvlResourceWithStreamingResponse:
-    def __init__(self, highlvl: HighlvlResource) -> None:
-        self._highlvl = highlvl
-
-        self.create_load_balancer_orchestration = to_streamed_response_wrapper(
-            highlvl.create_load_balancer_orchestration,
-        )
-        self.create_target_group = to_streamed_response_wrapper(
-            highlvl.create_target_group,
-        )
-        self.delete_load_balancer = to_streamed_response_wrapper(
-            highlvl.delete_load_balancer,
-        )
-        self.delete_target_group = to_streamed_response_wrapper(
-            highlvl.delete_target_group,
-        )
-        self.fetch_payload_multiple = to_streamed_response_wrapper(
-            highlvl.fetch_payload_multiple,
-        )
-        self.get_detailed_target_groups = to_streamed_response_wrapper(
-            highlvl.get_detailed_target_groups,
-        )
-        self.get_full_tg_list = to_streamed_response_wrapper(
-            highlvl.get_full_tg_list,
-        )
-        self.get_task_status = to_streamed_response_wrapper(
-            highlvl.get_task_status,
-        )
-        self.get_tg_names_only = to_streamed_response_wrapper(
-            highlvl.get_tg_names_only,
-        )
-        self.list_load_balancers_by_vpc = to_streamed_response_wrapper(
-            highlvl.list_load_balancers_by_vpc,
-        )
-        self.update_load_balancer = to_streamed_response_wrapper(
-            highlvl.update_load_balancer,
-        )
-        self.update_target_group = to_streamed_response_wrapper(
-            highlvl.update_target_group,
-        )
-        self.get_load_balancer_details = to_streamed_response_wrapper(
-            highlvl.get_load_balancer_details,
-)
+class LoadBalancerResourceWithStreamingResponse:
+    def __init__(self, load_balancer: LoadBalancerResource) -> None:
+        self._load_balancer = load_balancer
+        self.create_target_group = to_streamed_response_wrapper(load_balancer.create_target_group)
+        self.list_target_groups = to_streamed_response_wrapper(load_balancer.list_target_groups)
+        self.update_target_group = to_streamed_response_wrapper(load_balancer.update_target_group)
+        self.delete_target_group = to_streamed_response_wrapper(load_balancer.delete_target_group)
+        self.create_load_balancer = to_streamed_response_wrapper(load_balancer.create_load_balancer)
+        self.list_load_balancers_by_vpc = to_streamed_response_wrapper(load_balancer.list_load_balancers_by_vpc)
+        self.update_load_balancer = to_streamed_response_wrapper(load_balancer.update_load_balancer)
+        self.delete_load_balancer = to_streamed_response_wrapper(load_balancer.delete_load_balancer)
 
 
-class AsyncHighlvlResourceWithStreamingResponse:
-    def __init__(self, highlvl: AsyncHighlvlResource) -> None:
-        self._highlvl = highlvl
-
-        self.create_load_balancer_orchestration = async_to_streamed_response_wrapper(
-            highlvl.create_load_balancer_orchestration,
-        )
-        self.create_target_group = async_to_streamed_response_wrapper(
-            highlvl.create_target_group,
-        )
-        self.delete_load_balancer = async_to_streamed_response_wrapper(
-            highlvl.delete_load_balancer,
-        )
-        self.delete_target_group = async_to_streamed_response_wrapper(
-            highlvl.delete_target_group,
-        )
-        self.fetch_payload_multiple = async_to_streamed_response_wrapper(
-            highlvl.fetch_payload_multiple,
-        )
-        self.get_detailed_target_groups = async_to_streamed_response_wrapper(
-            highlvl.get_detailed_target_groups,
-        )
-        self.get_full_tg_list = async_to_streamed_response_wrapper(
-            highlvl.get_full_tg_list,
-        )
-        self.get_task_status = async_to_streamed_response_wrapper(
-            highlvl.get_task_status,
-        )
-        self.get_tg_names_only = async_to_streamed_response_wrapper(
-            highlvl.get_tg_names_only,
-        )
-        self.list_load_balancers_by_vpc = async_to_streamed_response_wrapper(
-            highlvl.list_load_balancers_by_vpc,
-        )
-        self.update_load_balancer = async_to_streamed_response_wrapper(
-            highlvl.update_load_balancer,
-        )
-        self.update_target_group = async_to_streamed_response_wrapper(
-            highlvl.update_target_group,
-        )
-        self.get_load_balancer_details = async_to_streamed_response_wrapper(
-            highlvl.get_load_balancer_details,
-)
+class AsyncLoadBalancerResourceWithStreamingResponse:
+    def __init__(self, load_balancer: AsyncLoadBalancerResource) -> None:
+        self._load_balancer = load_balancer
+        self.create_target_group = async_to_streamed_response_wrapper(load_balancer.create_target_group)
+        self.list_target_groups = async_to_streamed_response_wrapper(load_balancer.list_target_groups)
+        self.update_target_group = async_to_streamed_response_wrapper(load_balancer.update_target_group)
+        self.delete_target_group = async_to_streamed_response_wrapper(load_balancer.delete_target_group)
+        self.create_load_balancer = async_to_streamed_response_wrapper(load_balancer.create_load_balancer)
+        self.list_load_balancers_by_vpc = async_to_streamed_response_wrapper(load_balancer.list_load_balancers_by_vpc)
+        self.update_load_balancer = async_to_streamed_response_wrapper(load_balancer.update_load_balancer)
+        self.delete_load_balancer = async_to_streamed_response_wrapper(load_balancer.delete_load_balancer)

@@ -5,21 +5,23 @@ from typing import Type, Callable
 import pytest
 
 from krutrim_client._constants import SUPPORTED_REGIONS
-from krutrim_client.resources.lb.lb import HighlvlResource, AsyncHighlvlResource
+from krutrim_client.resources.lb.lb import LoadBalancerResource, AsyncLoadBalancerResource
 from krutrim_client.resources.asg.asgV1 import V1Resource, AsyncV1Resource
 from krutrim_client.resources.highlvlvpc import HighlvlvpcResource
 
 
 @pytest.mark.parametrize("region", SUPPORTED_REGIONS)
 def test_load_balancer_supports_region(region: str) -> None:
-    resource = object.__new__(HighlvlResource)
+    resource = object.__new__(LoadBalancerResource)
 
     resource.validate_region(region)
 
 
 @pytest.mark.parametrize("region", SUPPORTED_REGIONS)
 async def test_async_load_balancer_supports_region(region: str) -> None:
-    await AsyncHighlvlResource.validate_region(region)
+    resource = object.__new__(AsyncLoadBalancerResource)
+
+    await resource.validate_region(region)
 
 
 @pytest.mark.parametrize("region", SUPPORTED_REGIONS)
@@ -90,7 +92,7 @@ def test_asg_update_launch_template_preserves_supported_regions(region: str) -> 
 @pytest.mark.parametrize(
     "validator",
     [
-        lambda: object.__new__(HighlvlResource).validate_region("In-Delhi-1"),
+        lambda: object.__new__(LoadBalancerResource).validate_region("In-Delhi-1"),
         lambda: object.__new__(HighlvlvpcResource).validate_create_image_parameters(
             "image", "instance-krn", "In-Delhi-1"
         ),

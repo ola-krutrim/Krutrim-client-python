@@ -1,22 +1,24 @@
 import os
+
 from dotenv import load_dotenv
+
 from krutrim_client import KrutrimClient
 
-# Load env
 load_dotenv()
-api_key = os.getenv("API_KEY")
 
-# Init client
+api_key = os.getenv("api_key")
 client = KrutrimClient(api_key=api_key)
+
 try:
-    resp = client.lb.with_raw_response.get_detailed_target_groups(
-        x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
-        k_customer_id = "enter the k_customer_id",
-        x_account_id = "enter the x_account_id",
-        vpc_id="enter vpc id",
-        target_group_name= "enter target group name"
+    # GET /api/v3/loadBalancer/targetgroups?vpc_krn=...
+    resp = client.lb.list_target_groups(
+        vpc_krn="enter the vpc krn",
+        k_customer_id="enter the customer id",
+        x_account_id="enter the account id",
+        x_region="enter the region name",
+        # x_region possible values: "In-Bangalore-1", "In-Hyderabad-1"
     )
-    print("Response:", resp.json())
+    print(f"Target groups: {resp}")
+
 except Exception as e:
-    print(f"Error has occurred: {e}")
+    print(f"Exception occurred: {e}")
