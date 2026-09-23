@@ -25,6 +25,7 @@ from ..types.highlvlvpc import (
     highlvlvpc_retrieve_instance_params,
     highlvlvpc_list_instance_info_params,
     highlvlvpc_get_vpc_task_status_params,
+    highlvlvpc_get_instance_task_status_params,
     highlvlvpc_create_image_params,
     highlvlvpc_list_image_params,
     highlvlvpc_delete_image_params,
@@ -522,6 +523,29 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         if x_region not in SUPPORTED_REGIONS:
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+
+
+    def validate_get_instance_task_status_params(
+    self,
+    task_id: str,
+    extra_headers=None,
+    extra_query=None,
+    extra_body=None,
+    timeout=None
+    ):
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise ValueError("'task_id' must be a non-empty string.")
+
+        for name, param in {
+            "extra_headers": extra_headers,
+            "extra_query": extra_query,
+            "extra_body": extra_body,
+        }.items():
+            if param is not None and not isinstance(param, dict):
+                raise ValueError(f"'{name}' must be a dict if provided.")
+
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
 
     def validate_search_instances_params(
@@ -1203,6 +1227,56 @@ class HighlvlvpcResource(SyncAPIResource):
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
             cast_to=SuccessResponse,
+        )
+
+    def get_instance_task_status(
+        self,
+        *,
+        task_id: str,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """
+        Get the status of an instance (VM) create/delete task
+
+        Matches:
+        GET /vm/v1/get_instance_task_status?task_id=...
+
+        Args:
+          task_id: The task ID of the instance operation (create/delete)
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        self.validate_get_instance_task_status_params(
+            task_id=task_id,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+        )
+        return self._get(
+            "/vm/v1/get_instance_task_status",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"task_id": task_id},
+                    highlvlvpc_get_instance_task_status_params.HighlvlvpcGetInstanceTaskStatusParams,
+                ),
+            ),
+            cast_to=object,
         )
 
     
@@ -2675,6 +2749,29 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
 
 
+    async def validate_get_instance_task_status_params(
+    self,
+    task_id: str,
+    extra_headers=None,
+    extra_query=None,
+    extra_body=None,
+    timeout=None
+    ):
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise ValueError("'task_id' must be a non-empty string.")
+
+        for name, param in {
+            "extra_headers": extra_headers,
+            "extra_query": extra_query,
+            "extra_body": extra_body,
+        }.items():
+            if param is not None and not isinstance(param, dict):
+                raise ValueError(f"'{name}' must be a dict if provided.")
+
+        if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
+            raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
+
+
     async def validate_search_instances_params(
         self,
         vpc_id: str,
@@ -3358,6 +3455,57 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
             cast_to=SuccessResponse,
+        )
+
+    
+    async def get_instance_task_status(
+        self,
+        *,
+        task_id: str,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """
+        Get the status of an instance (VM) create/delete task
+
+        Matches:
+        GET /vm/v1/get_instance_task_status?task_id=...
+
+        Args:
+          task_id: The task ID of the instance operation (create/delete)
+
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        await self.validate_get_instance_task_status_params(
+            task_id=task_id,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=extra_body,
+            timeout=timeout,
+        )
+        return await self._get(
+            "/vm/v1/get_instance_task_status",
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                query=maybe_transform(
+                    {"task_id": task_id},
+                    highlvlvpc_get_instance_task_status_params.HighlvlvpcGetInstanceTaskStatusParams,
+                ),
+            ),
+            cast_to=object,
         )
 
     
@@ -4454,6 +4602,9 @@ class HighlvlvpcResourceWithRawResponse:
         self.get_vpc_task_status = to_raw_response_wrapper(
             highlvlvpc.get_vpc_task_status,
         )
+        self.get_instance_task_status = to_raw_response_wrapper(
+            highlvlvpc.get_instance_task_status,
+        )
         self.list_instance_info = to_raw_response_wrapper(
             highlvlvpc.list_instance_info,
         )
@@ -4549,6 +4700,9 @@ class AsyncHighlvlvpcResourceWithRawResponse:
         )
         self.get_vpc_task_status = async_to_raw_response_wrapper(
             highlvlvpc.get_vpc_task_status,
+        )
+        self.get_instance_task_status = async_to_raw_response_wrapper(
+            highlvlvpc.get_instance_task_status,
         )
         self.list_instance_info = async_to_raw_response_wrapper(
             highlvlvpc.list_instance_info,
@@ -4648,6 +4802,9 @@ class HighlvlvpcResourceWithStreamingResponse:
         self.get_vpc_task_status = to_streamed_response_wrapper(
             highlvlvpc.get_vpc_task_status,
         )
+        self.get_instance_task_status = to_streamed_response_wrapper(
+            highlvlvpc.get_instance_task_status,
+        )
         self.list_instance_info = to_streamed_response_wrapper(
             highlvlvpc.list_instance_info,
         )
@@ -4746,6 +4903,9 @@ class AsyncHighlvlvpcResourceWithStreamingResponse:
         )
         self.get_vpc_task_status = async_to_streamed_response_wrapper(
             highlvlvpc.get_vpc_task_status,
+        )
+        self.get_instance_task_status = async_to_streamed_response_wrapper(
+            highlvlvpc.get_instance_task_status,
         )
         self.list_instance_info = async_to_streamed_response_wrapper(
             highlvlvpc.list_instance_info,
