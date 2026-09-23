@@ -17,7 +17,7 @@ class ResourcesProxy(LazyProxy[Any]):
     def __load__(self) -> Any:
         import importlib
 
-        mod = importlib.import_module("krutrimClient.resources")
+        mod = importlib.import_module("krutrim_client.resources")
         return mod
 
 
