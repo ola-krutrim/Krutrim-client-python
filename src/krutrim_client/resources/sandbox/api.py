@@ -285,6 +285,13 @@ class SandboxAPIResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxDeleteResponse:
+        """Delete a sandbox by its identifier.
+
+        Deletion is asynchronous on the server: a sandbox may still appear in a
+        subsequent ``list()`` call for a brief window after this call returns
+        successfully before it disappears. Treat a single post-delete ``list()``
+        check as inconclusive; poll/retry rather than assuming deletion failed.
+        """
         validate_identifier(sandbox_id)
         return self._delete(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}",
@@ -487,6 +494,13 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxDeleteResponse:
+        """Delete a sandbox by its identifier.
+
+        Deletion is asynchronous on the server: a sandbox may still appear in a
+        subsequent ``list()`` call for a brief window after this call returns
+        successfully before it disappears. Treat a single post-delete ``list()``
+        check as inconclusive; poll/retry rather than assuming deletion failed.
+        """
         validate_identifier(sandbox_id)
         return await self._delete(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}",

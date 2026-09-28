@@ -144,6 +144,18 @@ class SandboxResponse(BaseModel):
     created_at: Optional[datetime] = FieldInfo(alias="createdAt", default=None)
     updated_at: Optional[datetime] = FieldInfo(alias="updatedAt", default=None)
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``.
+
+        The high-level ``Sandbox`` wrapper returned by ``sandbox.create(...)``
+        exposes the identifier as ``sandbox_id``. This model backs both
+        ``list()`` rows and ``retrieve()``, which otherwise only expose ``id``,
+        so the same attribute now works regardless of which call produced the
+        object (see #143).
+        """
+        return self.id
+
 
 class SandboxListData(BaseModel):
     rows: Optional[List[SandboxResponse]] = None
@@ -166,6 +178,11 @@ class AsyncSandboxData(BaseModel):
     status: Optional[str] = None
     region: Optional[str] = None
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
+
 
 class AsyncSandboxResponse(BaseModel):
     status: Optional[int] = None
@@ -182,6 +199,11 @@ class SandboxGetResponse(BaseModel):
 class SandboxDeleteData(BaseModel):
     id: Optional[str] = None
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
+
 
 class SandboxDeleteResponse(BaseModel):
     status: Optional[int] = None
@@ -193,6 +215,11 @@ class SandboxTTLData(BaseModel):
     id: Optional[str] = None
     ttl_seconds: Optional[int] = FieldInfo(alias="ttlSeconds", default=None)
     expires_at: Optional[datetime] = FieldInfo(alias="expiresAt", default=None)
+
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
 
 
 class SandboxTTLResponse(BaseModel):
