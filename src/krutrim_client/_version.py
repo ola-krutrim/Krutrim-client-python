@@ -1,3 +1,3 @@
 
 __title__ = "krutrim_client"
-__version__ = "0.6.6"
+__version__ = "0.8.0"
