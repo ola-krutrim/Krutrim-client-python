@@ -61,6 +61,7 @@ from ...types.sandbox import (
     SandboxSetTTLParams,
     AsyncSandboxResponse,
     SandboxDeleteResponse,
+    TemplateListResponse,
     NetworkStorageAttachmentInput,
 )
 
@@ -84,7 +85,7 @@ def _validate_create(
         validate_ttl(ttl_seconds)
 
 
-def _coerce_templates(raw: object) -> List[PodTemplate]:
+def _coerce_templates(raw: object) -> TemplateListResponse:
     """Normalize the template listing.
 
     The deployed gateway labels this JSON payload ``text/plain``, so the
@@ -92,7 +93,7 @@ def _coerce_templates(raw: object) -> List[PodTemplate]:
     """
     if isinstance(raw, str):
         raw = cast(object, construct_type(value=json.loads(raw), type_=List[PodTemplate]))
-    return cast(List[PodTemplate], raw)
+    return TemplateListResponse(cast(List[PodTemplate], raw))
 
 
 class SandboxAPIResource(SyncAPIResource):
@@ -126,7 +127,7 @@ class SandboxAPIResource(SyncAPIResource):
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> List[PodTemplate]:
+    ) -> TemplateListResponse:
         return _coerce_templates(
             self._get(
                 "/omni/sandbox/v1/template",
@@ -284,6 +285,13 @@ class SandboxAPIResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxDeleteResponse:
+        """Delete a sandbox by its identifier.
+
+        Deletion is asynchronous on the server: a sandbox may still appear in a
+        subsequent ``list()`` call for a brief window after this call returns
+        successfully before it disappears. Treat a single post-delete ``list()``
+        check as inconclusive; poll/retry rather than assuming deletion failed.
+        """
         validate_identifier(sandbox_id)
         return self._delete(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}",
@@ -328,7 +336,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> List[PodTemplate]:
+    ) -> TemplateListResponse:
         return _coerce_templates(
             await self._get(
                 "/omni/sandbox/v1/template",
@@ -486,6 +494,13 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxDeleteResponse:
+        """Delete a sandbox by its identifier.
+
+        Deletion is asynchronous on the server: a sandbox may still appear in a
+        subsequent ``list()`` call for a brief window after this call returns
+        successfully before it disappears. Treat a single post-delete ``list()``
+        check as inconclusive; poll/retry rather than assuming deletion failed.
+        """
         validate_identifier(sandbox_id)
         return await self._delete(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}",

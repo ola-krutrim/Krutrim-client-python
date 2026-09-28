@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 
 from pydantic import Field as FieldInfo
@@ -8,6 +8,7 @@ from ..._models import BaseModel
 __all__ = [
     "NetworkStorageWorkflowInput",
     "PodTemplate",
+    "TemplateListResponse",
     "FlavorGroupBy",
     "FlavorItem",
     "FlavorListResponse",
@@ -60,6 +61,25 @@ class PodTemplate(BaseModel):
     template_type: Optional[Literal["official", "private"]] = None
     account_id: Optional[str] = None
     user_id: Optional[str] = None
+
+
+class TemplateListResponse(List[PodTemplate]):
+    """The result of ``list_templates``.
+
+    Behaves exactly like a plain ``list`` of :class:`PodTemplate` objects
+    (indexing, iteration, ``len()``, etc. all work as before), but also
+    exposes ``model_dump()`` so it can be handled the same way as the other
+    ``list_*`` response models on this resource (``list()`` ->
+    ``SandboxListResponse``, ``list_flavors()`` -> ``FlavorListResponse``).
+    """
+
+    def model_dump(self, *args: Any, **kwargs: Any) -> List[Dict[str, Any]]:
+        return [item.model_dump(*args, **kwargs) for item in self]
+
+    def model_dump_json(self, *args: Any, **kwargs: Any) -> str:
+        import json
+
+        return json.dumps(self.model_dump(*args, **kwargs))
 
 
 class FlavorGroupBy(BaseModel):
@@ -124,6 +144,18 @@ class SandboxResponse(BaseModel):
     created_at: Optional[datetime] = FieldInfo(alias="createdAt", default=None)
     updated_at: Optional[datetime] = FieldInfo(alias="updatedAt", default=None)
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``.
+
+        The high-level ``Sandbox`` wrapper returned by ``sandbox.create(...)``
+        exposes the identifier as ``sandbox_id``. This model backs both
+        ``list()`` rows and ``retrieve()``, which otherwise only expose ``id``,
+        so the same attribute now works regardless of which call produced the
+        object (see #143).
+        """
+        return self.id
+
 
 class SandboxListData(BaseModel):
     rows: Optional[List[SandboxResponse]] = None
@@ -146,6 +178,11 @@ class AsyncSandboxData(BaseModel):
     status: Optional[str] = None
     region: Optional[str] = None
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
+
 
 class AsyncSandboxResponse(BaseModel):
     status: Optional[int] = None
@@ -162,6 +199,11 @@ class SandboxGetResponse(BaseModel):
 class SandboxDeleteData(BaseModel):
     id: Optional[str] = None
 
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
+
 
 class SandboxDeleteResponse(BaseModel):
     status: Optional[int] = None
@@ -173,6 +215,11 @@ class SandboxTTLData(BaseModel):
     id: Optional[str] = None
     ttl_seconds: Optional[int] = FieldInfo(alias="ttlSeconds", default=None)
     expires_at: Optional[datetime] = FieldInfo(alias="expiresAt", default=None)
+
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
 
 
 class SandboxTTLResponse(BaseModel):
