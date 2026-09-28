@@ -292,8 +292,9 @@ class SecurityGroupResource(SyncAPIResource):
 
     def list_by_vpc(
         self,
-        vpc_krn_identifier: str,
+        vpc_krn_identifier: str | None = None,
         *,
+        vpc_id: str | None = None,
         x_region: str,
         limit: int | NotGiven = NOT_GIVEN,
         offset: int | NotGiven = NOT_GIVEN,
@@ -308,6 +309,13 @@ class SecurityGroupResource(SyncAPIResource):
         List security groups by VPC KRN identifier
 
         Args:
+          vpc_id: The VPC KRN identifier. Accepted as a keyword argument for consistency with
+              the other VPC-scoped list methods (e.g. ``list_instance_info``,
+              ``list_floating_ips``, ``search_instances``).
+
+          vpc_krn_identifier: Deprecated alias for ``vpc_id``, kept for backwards compatibility. May also be
+              passed positionally.
+
           limit: The maximum number of records to return (for pagination).
 
           offset: The number of records to skip from the beginning of the list (for pagination).
@@ -320,8 +328,11 @@ class SecurityGroupResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if vpc_id is not None and vpc_krn_identifier is not None and vpc_id != vpc_krn_identifier:
+            raise ValueError("Pass only one of `vpc_id` or `vpc_krn_identifier`, not both")
+        vpc_krn_identifier = vpc_id if vpc_id is not None else vpc_krn_identifier
         if not vpc_krn_identifier:
-            raise ValueError(f"Expected a non-empty value for `vpc_krn_identifier` but received {vpc_krn_identifier!r}")
+            raise ValueError(f"Expected a non-empty value for `vpc_id` but received {vpc_krn_identifier!r}")
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._get(
             f"/securityGroup/v1/{vpc_krn_identifier}",
@@ -872,8 +883,9 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
 
     async def list_by_vpc(
         self,
-        vpc_krn_identifier: str,
+        vpc_krn_identifier: str | None = None,
         *,
+        vpc_id: str | None = None,
         x_region: str,
         limit: int | NotGiven = NOT_GIVEN,
         offset: int | NotGiven = NOT_GIVEN,
@@ -888,6 +900,13 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
         List security groups by VPC KRN identifier
 
         Args:
+          vpc_id: The VPC KRN identifier. Accepted as a keyword argument for consistency with
+              the other VPC-scoped list methods (e.g. ``list_instance_info``,
+              ``list_floating_ips``, ``search_instances``).
+
+          vpc_krn_identifier: Deprecated alias for ``vpc_id``, kept for backwards compatibility. May also be
+              passed positionally.
+
           limit: The maximum number of records to return (for pagination).
 
           offset: The number of records to skip from the beginning of the list (for pagination).
@@ -900,8 +919,11 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if vpc_id is not None and vpc_krn_identifier is not None and vpc_id != vpc_krn_identifier:
+            raise ValueError("Pass only one of `vpc_id` or `vpc_krn_identifier`, not both")
+        vpc_krn_identifier = vpc_id if vpc_id is not None else vpc_krn_identifier
         if not vpc_krn_identifier:
-            raise ValueError(f"Expected a non-empty value for `vpc_krn_identifier` but received {vpc_krn_identifier!r}")
+            raise ValueError(f"Expected a non-empty value for `vpc_id` but received {vpc_krn_identifier!r}")
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._get(
             f"/securityGroup/v1/{vpc_krn_identifier}",

@@ -61,6 +61,7 @@ from ...types.sandbox import (
     SandboxSetTTLParams,
     AsyncSandboxResponse,
     SandboxDeleteResponse,
+    TemplateListResponse,
     NetworkStorageAttachmentInput,
 )
 
@@ -84,7 +85,7 @@ def _validate_create(
         validate_ttl(ttl_seconds)
 
 
-def _coerce_templates(raw: object) -> List[PodTemplate]:
+def _coerce_templates(raw: object) -> TemplateListResponse:
     """Normalize the template listing.
 
     The deployed gateway labels this JSON payload ``text/plain``, so the
@@ -92,7 +93,7 @@ def _coerce_templates(raw: object) -> List[PodTemplate]:
     """
     if isinstance(raw, str):
         raw = cast(object, construct_type(value=json.loads(raw), type_=List[PodTemplate]))
-    return cast(List[PodTemplate], raw)
+    return TemplateListResponse(cast(List[PodTemplate], raw))
 
 
 class SandboxAPIResource(SyncAPIResource):
@@ -126,7 +127,7 @@ class SandboxAPIResource(SyncAPIResource):
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> List[PodTemplate]:
+    ) -> TemplateListResponse:
         return _coerce_templates(
             self._get(
                 "/omni/sandbox/v1/template",
@@ -328,7 +329,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> List[PodTemplate]:
+    ) -> TemplateListResponse:
         return _coerce_templates(
             await self._get(
                 "/omni/sandbox/v1/template",

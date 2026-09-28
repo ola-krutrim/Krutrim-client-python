@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 
 from pydantic import Field as FieldInfo
@@ -8,6 +8,7 @@ from ..._models import BaseModel
 __all__ = [
     "NetworkStorageWorkflowInput",
     "PodTemplate",
+    "TemplateListResponse",
     "FlavorGroupBy",
     "FlavorItem",
     "FlavorListResponse",
@@ -60,6 +61,25 @@ class PodTemplate(BaseModel):
     template_type: Optional[Literal["official", "private"]] = None
     account_id: Optional[str] = None
     user_id: Optional[str] = None
+
+
+class TemplateListResponse(List[PodTemplate]):
+    """The result of ``list_templates``.
+
+    Behaves exactly like a plain ``list`` of :class:`PodTemplate` objects
+    (indexing, iteration, ``len()``, etc. all work as before), but also
+    exposes ``model_dump()`` so it can be handled the same way as the other
+    ``list_*`` response models on this resource (``list()`` ->
+    ``SandboxListResponse``, ``list_flavors()`` -> ``FlavorListResponse``).
+    """
+
+    def model_dump(self, *args: Any, **kwargs: Any) -> List[Dict[str, Any]]:
+        return [item.model_dump(*args, **kwargs) for item in self]
+
+    def model_dump_json(self, *args: Any, **kwargs: Any) -> str:
+        import json
+
+        return json.dumps(self.model_dump(*args, **kwargs))
 
 
 class FlavorGroupBy(BaseModel):
