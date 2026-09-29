@@ -31,7 +31,13 @@ from .proxy import (
 )
 from ..._types import NOT_GIVEN, Body, Query, Headers, NotGiven
 from ..._utils import maybe_transform, async_maybe_transform
-from ._helpers import validate_ttl, validate_identifier, validate_sandbox_name
+from ._helpers import (
+    validate_ttl,
+    normalize_allowlist,
+    validate_identifier,
+    validate_sandbox_name,
+    validate_network_policy,
+)
 from .commands import (
     CommandsResource,
     AsyncCommandsResource,
@@ -60,8 +66,10 @@ from ...types.sandbox import (
     SandboxListResponse,
     SandboxSetTTLParams,
     AsyncSandboxResponse,
-    SandboxDeleteResponse,
     TemplateListResponse,
+    SandboxDeleteResponse,
+    SandboxNetworkPolicyParams,
+    SandboxNetworkPolicyResponse,
     NetworkStorageAttachmentInput,
 )
 
@@ -83,6 +91,32 @@ def _validate_create(
         raise ValueError("at most 10 network storage attachments are supported")
     if ttl_seconds is not None:
         validate_ttl(ttl_seconds)
+
+
+def _network_policy_body(
+    *,
+    allow_internet_access: bool | None,
+    outbound_cidr_allowlist: str | Sequence[str] | None,
+    outbound_domain_allowlist: str | Sequence[str] | None,
+    inbound_cidr_allowlist: str | Sequence[str] | None,
+) -> dict[str, object]:
+    validate_network_policy(
+        allow_internet_access=allow_internet_access,
+        outbound_cidr_allowlist=outbound_cidr_allowlist,
+        outbound_domain_allowlist=outbound_domain_allowlist,
+        inbound_cidr_allowlist=inbound_cidr_allowlist,
+    )
+    body: dict[str, object] = {}
+    if allow_internet_access is not None:
+        body["allow_internet_access"] = allow_internet_access
+    for key, value in {
+        "outbound_cidr_allowlist": outbound_cidr_allowlist,
+        "outbound_domain_allowlist": outbound_domain_allowlist,
+        "inbound_cidr_allowlist": inbound_cidr_allowlist,
+    }.items():
+        if value is not None:
+            body[key] = normalize_allowlist(value, field=key)
+    return body
 
 
 def _coerce_templates(raw: object) -> TemplateListResponse:
@@ -198,6 +232,10 @@ class SandboxAPIResource(SyncAPIResource):
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -225,6 +263,14 @@ class SandboxAPIResource(SyncAPIResource):
         }.items():
             if value is not None:
                 body[key] = value
+        body.update(
+            _network_policy_body(
+                allow_internet_access=allow_internet_access,
+                outbound_cidr_allowlist=outbound_cidr_allowlist,
+                outbound_domain_allowlist=outbound_domain_allowlist,
+                inbound_cidr_allowlist=inbound_cidr_allowlist,
+            )
+        )
         return self._post(
             "/omni/sandbox/v1/sandbox",
             cast_to=AsyncSandboxResponse,
@@ -268,6 +314,45 @@ class SandboxAPIResource(SyncAPIResource):
             f"/omni/sandbox/v1/sandbox/{sandbox_id}/ttl",
             cast_to=SandboxTTLResponse,
             body=maybe_transform({"ttl_seconds": ttl_seconds}, SandboxSetTTLParams),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+        )
+
+    def update_network_policy(
+        self,
+        sandbox_id: str,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyResponse:
+        """Replace the network policy of an active sandbox.
+
+        This is a full replacement: any allowlist omitted here is cleared, and an
+        omitted ``allow_internet_access`` resets to ``True`` (the server default).
+        The sandbox must be active; otherwise the server returns 409
+        (``ConflictError``).
+        """
+        validate_identifier(sandbox_id)
+        body = _network_policy_body(
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+        )
+        return self._post(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/network",
+            cast_to=SandboxNetworkPolicyResponse,
+            body=maybe_transform(body, SandboxNetworkPolicyParams),
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -407,6 +492,10 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -434,6 +523,14 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         }.items():
             if value is not None:
                 body[key] = value
+        body.update(
+            _network_policy_body(
+                allow_internet_access=allow_internet_access,
+                outbound_cidr_allowlist=outbound_cidr_allowlist,
+                outbound_domain_allowlist=outbound_domain_allowlist,
+                inbound_cidr_allowlist=inbound_cidr_allowlist,
+            )
+        )
         return await self._post(
             "/omni/sandbox/v1/sandbox",
             cast_to=AsyncSandboxResponse,
@@ -485,6 +582,45 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             ),
         )
 
+    async def update_network_policy(
+        self,
+        sandbox_id: str,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyResponse:
+        """Replace the network policy of an active sandbox.
+
+        This is a full replacement: any allowlist omitted here is cleared, and an
+        omitted ``allow_internet_access`` resets to ``True`` (the server default).
+        The sandbox must be active; otherwise the server returns 409
+        (``ConflictError``).
+        """
+        validate_identifier(sandbox_id)
+        body = _network_policy_body(
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+        )
+        return await self._post(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/network",
+            cast_to=SandboxNetworkPolicyResponse,
+            body=await async_maybe_transform(body, SandboxNetworkPolicyParams),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+        )
+
     async def delete(
         self,
         sandbox_id: str,
@@ -523,6 +659,7 @@ class SandboxAPIResourceWithRawResponse:
         self.create = to_raw_response_wrapper(api.create)
         self.retrieve = to_raw_response_wrapper(api.retrieve)
         self.set_ttl = to_raw_response_wrapper(api.set_ttl)
+        self.update_network_policy = to_raw_response_wrapper(api.update_network_policy)
         self.delete = to_raw_response_wrapper(api.delete)
 
     @cached_property
@@ -551,6 +688,7 @@ class AsyncSandboxAPIResourceWithRawResponse:
         self.create = async_to_raw_response_wrapper(api.create)
         self.retrieve = async_to_raw_response_wrapper(api.retrieve)
         self.set_ttl = async_to_raw_response_wrapper(api.set_ttl)
+        self.update_network_policy = async_to_raw_response_wrapper(api.update_network_policy)
         self.delete = async_to_raw_response_wrapper(api.delete)
 
     @cached_property
@@ -579,6 +717,7 @@ class SandboxAPIResourceWithStreamingResponse:
         self.create = to_streamed_response_wrapper(api.create)
         self.retrieve = to_streamed_response_wrapper(api.retrieve)
         self.set_ttl = to_streamed_response_wrapper(api.set_ttl)
+        self.update_network_policy = to_streamed_response_wrapper(api.update_network_policy)
         self.delete = to_streamed_response_wrapper(api.delete)
 
     @cached_property
@@ -607,6 +746,7 @@ class AsyncSandboxAPIResourceWithStreamingResponse:
         self.create = async_to_streamed_response_wrapper(api.create)
         self.retrieve = async_to_streamed_response_wrapper(api.retrieve)
         self.set_ttl = async_to_streamed_response_wrapper(api.set_ttl)
+        self.update_network_policy = async_to_streamed_response_wrapper(api.update_network_policy)
         self.delete = async_to_streamed_response_wrapper(api.delete)
 
     @cached_property

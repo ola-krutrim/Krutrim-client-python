@@ -26,6 +26,7 @@ from ...types.sandbox import (
     SandboxResponse,
     SandboxEntryInfo,
     SandboxCommandResult,
+    SandboxNetworkPolicyData,
     NetworkStorageAttachmentInput,
 )
 
@@ -94,6 +95,10 @@ class SandboxResource(SyncAPIResource):
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
         timeout: int | None = None,
         wait_timeout: float = 300.0,
         request_timeout: RequestTimeout = NOT_GIVEN,
@@ -106,6 +111,10 @@ class SandboxResource(SyncAPIResource):
             template_name=template_name,
             network_storages=network_storages,
             environment_variables=environment_variables,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
             ttl_seconds=timeout,
             timeout=request_timeout,
         )
@@ -221,6 +230,10 @@ class AsyncSandboxResource(AsyncAPIResource):
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
         timeout: int | None = None,
         wait_timeout: float = 300.0,
         request_timeout: RequestTimeout = NOT_GIVEN,
@@ -233,6 +246,10 @@ class AsyncSandboxResource(AsyncAPIResource):
             template_name=template_name,
             network_storages=network_storages,
             environment_variables=environment_variables,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
             ttl_seconds=timeout,
             timeout=request_timeout,
         )
@@ -372,6 +389,28 @@ class Sandbox:
             self._metadata.ttl_seconds = response.data.ttl_seconds
             self._metadata.expires_at = response.data.expires_at
 
+    def update_network_policy(
+        self,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        request_timeout: RequestTimeout = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyData:
+        """Replace this sandbox's network policy (full replacement: omitted fields reset)."""
+        response = self._api.update_network_policy(
+            self.sandbox_id,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+            timeout=request_timeout,
+        )
+        if response.data is None:
+            raise _missing_data("network policy update", self.sandbox_id, self._metadata)
+        return response.data
+
     def is_running(self, *, request_timeout: RequestTimeout = NOT_GIVEN) -> bool:
         try:
             response = self._api.retrieve(self.sandbox_id, timeout=request_timeout)
@@ -472,6 +511,28 @@ class AsyncSandbox:
         if response.data is not None:
             self._metadata.ttl_seconds = response.data.ttl_seconds
             self._metadata.expires_at = response.data.expires_at
+
+    async def update_network_policy(
+        self,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | Sequence[str] | None = None,
+        outbound_domain_allowlist: str | Sequence[str] | None = None,
+        inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        request_timeout: RequestTimeout = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyData:
+        """Replace this sandbox's network policy (full replacement: omitted fields reset)."""
+        response = await self._api.update_network_policy(
+            self.sandbox_id,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+            timeout=request_timeout,
+        )
+        if response.data is None:
+            raise _missing_data("network policy update", self.sandbox_id, self._metadata)
+        return response.data
 
     async def is_running(self, *, request_timeout: RequestTimeout = NOT_GIVEN) -> bool:
         try:
