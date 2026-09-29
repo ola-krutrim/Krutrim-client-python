@@ -830,3 +830,46 @@ def test_low_level_status_errors_are_preserved() -> None:
         with pytest.raises(krutrim_client.ConflictError) as exc_info:
             client.sandbox.api.ports.open(SANDBOX_ID, 3000)
         assert exc_info.value.response.status_code == 409
+
+
+def test_normalize_allowlist_accepts_string_and_sequence() -> None:
+    from krutrim_client.resources.sandbox._helpers import normalize_allowlist
+
+    assert normalize_allowlist("1.1.1.1,8.8.8.8/32", field="outbound_cidr_allowlist") == "1.1.1.1,8.8.8.8/32"
+    assert (
+        normalize_allowlist(["api.openai.com", " *.github.com "], field="outbound_domain_allowlist")
+        == "api.openai.com,*.github.com"
+    )
+    assert normalize_allowlist(("10.0.0.0/8",), field="inbound_cidr_allowlist") == "10.0.0.0/8"
+
+
+@pytest.mark.parametrize("value", ["", "   ", [], [""], ["   "], ["a,b"]])
+def test_normalize_allowlist_rejects_empty_and_comma_entries(value: object) -> None:
+    from krutrim_client.resources.sandbox._helpers import normalize_allowlist
+
+    with pytest.raises(ValueError, match="outbound_domain_allowlist"):
+        normalize_allowlist(value, field="outbound_domain_allowlist")  # type: ignore[arg-type]
+
+
+def test_validate_network_policy_exclusion_rule() -> None:
+    from krutrim_client.resources.sandbox._helpers import validate_network_policy
+
+    with pytest.raises(ValueError, match="allow_internet_access=False"):
+        validate_network_policy(
+            allow_internet_access=False,
+            outbound_cidr_allowlist=None,
+            outbound_domain_allowlist="example.com",
+            inbound_cidr_allowlist=None,
+        )
+    validate_network_policy(
+        allow_internet_access=False,
+        outbound_cidr_allowlist=None,
+        outbound_domain_allowlist=None,
+        inbound_cidr_allowlist=None,
+    )
+    validate_network_policy(
+        allow_internet_access=True,
+        outbound_cidr_allowlist="1.1.1.1",
+        outbound_domain_allowlist=None,
+        inbound_cidr_allowlist=None,
+    )
