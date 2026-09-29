@@ -1084,3 +1084,72 @@ def test_update_network_policy_validation_errors() -> None:
             client.sandbox.api.update_network_policy(
                 SANDBOX_ID, allow_internet_access=False, outbound_domain_allowlist="example.com"
             )
+
+
+def _network_lifecycle_handler(requests: list[httpx.Request]) -> Callable[[httpx.Request], httpx.Response]:
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path == "/omni/sandbox/v1/sandbox" and request.method == "POST":
+            return json_response(request, create_response(), 202)
+        if path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}" and request.method == "GET":
+            return json_response(request, active_response())
+        if path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}/network":
+            return json_response(request, network_policy_response())
+        if path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}" and request.method == "DELETE":
+            return json_response(request, {"status": 202, "data": {"id": SANDBOX_ID}}, 202)
+        raise AssertionError(f"unexpected request: {request.method} {path}")
+
+    return handler
+
+
+def test_managed_create_and_handle_network_policy() -> None:
+    requests: list[httpx.Request] = []
+    with make_client(_network_lifecycle_handler(requests)) as client:
+        with client.sandbox.create(
+            flavor_name="cpu-1",
+            region="test-region",
+            sandbox_name="net-sandbox",
+            outbound_domain_allowlist=["api.openai.com"],
+        ) as sandbox:
+            policy = sandbox.update_network_policy(
+                allow_internet_access=True,
+                outbound_domain_allowlist=["api.openai.com", "*.github.com"],
+            )
+            assert policy.sandbox_id == SANDBOX_ID
+            assert policy.outbound_domain_allowlist == "api.openai.com,*.github.com"
+    assert json.loads(requests[0].content)["outboundDomainAllowlist"] == "api.openai.com"
+    update_request = next(r for r in requests if r.url.path.endswith("/network"))
+    assert json.loads(update_request.content) == {
+        "allowInternetAccess": True,
+        "outboundDomainAllowlist": "api.openai.com,*.github.com",
+    }
+
+
+async def test_async_managed_create_and_handle_network_policy() -> None:
+    requests: list[httpx.Request] = []
+    async with make_async_client(_network_lifecycle_handler(requests)) as client:
+        sandbox = await client.sandbox.create(
+            flavor_name="cpu-1",
+            region="test-region",
+            sandbox_name="net-sandbox",
+            inbound_cidr_allowlist="203.0.113.0/24",
+        )
+        async with sandbox:
+            policy = await sandbox.update_network_policy(outbound_cidr_allowlist=["1.1.1.1"])
+            assert policy.sandbox_id == SANDBOX_ID
+    assert json.loads(requests[0].content)["inboundCidrAllowlist"] == "203.0.113.0/24"
+    update_request = next(r for r in requests if r.url.path.endswith("/network"))
+    assert json.loads(update_request.content) == {"outboundCidrAllowlist": "1.1.1.1"}
+
+
+def test_update_network_policy_missing_data_raises() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/network"):
+            return json_response(request, {"status": 200, "message": "ok"})
+        return json_response(request, active_response())
+
+    with make_client(handler) as client:
+        sandbox = client.sandbox.connect(SANDBOX_ID)
+        with pytest.raises(krutrim_client.SandboxException, match="network policy update"):
+            sandbox.update_network_policy(allow_internet_access=True)
