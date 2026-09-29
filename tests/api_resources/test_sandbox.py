@@ -1002,3 +1002,85 @@ def test_create_network_policy_validation_errors(kwargs: dict[str, Any], message
     with make_client(lambda request: (_ for _ in ()).throw(AssertionError(request))) as client:
         with pytest.raises(ValueError, match=message):
             client.sandbox.api.create(sandbox_name="valid", region="test-region", flavor_name="cpu-1", **kwargs)
+
+
+def network_policy_response() -> dict[str, object]:
+    return {
+        "status": 200,
+        "message": "network policy updated",
+        "data": {
+            "id": SANDBOX_ID,
+            "allowInternetAccess": True,
+            "outboundDomainAllowlist": "api.openai.com,*.github.com",
+        },
+    }
+
+
+def test_sync_update_network_policy_paths_and_wrappers() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.url.path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}/network"
+        assert request.method == "POST"
+        return json_response(request, network_policy_response())
+
+    with make_client(handler) as client:
+        response = client.sandbox.api.update_network_policy(
+            SANDBOX_ID,
+            allow_internet_access=True,
+            outbound_domain_allowlist=["api.openai.com", "*.github.com"],
+        )
+        assert response.data is not None
+        assert response.data.sandbox_id == SANDBOX_ID
+        assert response.data.outbound_domain_allowlist == "api.openai.com,*.github.com"
+
+        client.sandbox.api.update_network_policy(SANDBOX_ID)
+
+        raw = client.with_raw_response.sandbox.api.update_network_policy(SANDBOX_ID, allow_internet_access=True)
+        assert raw.status_code == 200
+        assert raw.parse().data.id == SANDBOX_ID  # type: ignore[union-attr]
+        with client.with_streaming_response.sandbox.api.update_network_policy(
+            SANDBOX_ID, outbound_cidr_allowlist="1.1.1.1"
+        ) as streamed:
+            assert streamed.parse().data.id == SANDBOX_ID  # type: ignore[union-attr]
+
+    assert json.loads(requests[0].content) == {
+        "allowInternetAccess": True,
+        "outboundDomainAllowlist": "api.openai.com,*.github.com",
+    }
+    assert json.loads(requests[1].content) == {}
+    assert json.loads(requests[3].content) == {"outboundCidrAllowlist": "1.1.1.1"}
+
+
+async def test_async_update_network_policy_parity() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return json_response(request, network_policy_response())
+
+    async with make_async_client(handler) as client:
+        response = await client.sandbox.api.update_network_policy(
+            SANDBOX_ID, outbound_cidr_allowlist=["1.1.1.1", "8.8.8.8"]
+        )
+        assert response.data is not None and response.data.sandbox_id == SANDBOX_ID
+        raw = await client.with_raw_response.sandbox.api.update_network_policy(SANDBOX_ID)
+        assert (await raw.parse()).data.id == SANDBOX_ID  # type: ignore[union-attr]
+        async with client.with_streaming_response.sandbox.api.update_network_policy(
+            SANDBOX_ID, allow_internet_access=False
+        ) as streamed:
+            assert (await streamed.parse()).data.id == SANDBOX_ID  # type: ignore[union-attr]
+    assert requests[0].url.path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}/network"
+    assert json.loads(requests[0].content) == {"outboundCidrAllowlist": "1.1.1.1,8.8.8.8"}
+    assert json.loads(requests[2].content) == {"allowInternetAccess": False}
+
+
+def test_update_network_policy_validation_errors() -> None:
+    with make_client(lambda request: (_ for _ in ()).throw(AssertionError(request))) as client:
+        with pytest.raises(ValueError, match="identifier"):
+            client.sandbox.api.update_network_policy("")
+        with pytest.raises(ValueError, match="allow_internet_access=False"):
+            client.sandbox.api.update_network_policy(
+                SANDBOX_ID, allow_internet_access=False, outbound_domain_allowlist="example.com"
+            )
