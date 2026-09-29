@@ -26,7 +26,9 @@ from .models import (
     SandboxCommandResponse as SandboxCommandResponse,
     SandboxPortListResponse as SandboxPortListResponse,
     SandboxEntryListResponse as SandboxEntryListResponse,
+    SandboxNetworkPolicyData as SandboxNetworkPolicyData,
     NetworkStorageWorkflowInput as NetworkStorageWorkflowInput,
+    SandboxNetworkPolicyResponse as SandboxNetworkPolicyResponse,
 )
 from .params import (
     SandboxListParams as SandboxListParams,
@@ -38,5 +40,6 @@ from .params import (
     SandboxPortOpenParams as SandboxPortOpenParams,
     SandboxCommandRunParams as SandboxCommandRunParams,
     SandboxProxyRequestParams as SandboxProxyRequestParams,
+    SandboxNetworkPolicyParams as SandboxNetworkPolicyParams,
     NetworkStorageAttachmentInput as NetworkStorageAttachmentInput,
 )

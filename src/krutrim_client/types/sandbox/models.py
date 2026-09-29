@@ -22,6 +22,8 @@ __all__ = [
     "SandboxDeleteResponse",
     "SandboxTTLData",
     "SandboxTTLResponse",
+    "SandboxNetworkPolicyData",
+    "SandboxNetworkPolicyResponse",
     "SandboxFileData",
     "SandboxFileResponse",
     "SandboxEntryInfo",
@@ -226,6 +228,25 @@ class SandboxTTLResponse(BaseModel):
     status: Optional[int] = None
     message: Optional[str] = None
     data: Optional[SandboxTTLData] = None
+
+
+class SandboxNetworkPolicyData(BaseModel):
+    id: Optional[str] = None
+    allow_internet_access: Optional[bool] = FieldInfo(alias="allowInternetAccess", default=None)
+    outbound_cidr_allowlist: Optional[str] = FieldInfo(alias="outboundCidrAllowlist", default=None)
+    outbound_domain_allowlist: Optional[str] = FieldInfo(alias="outboundDomainAllowlist", default=None)
+    inbound_cidr_allowlist: Optional[str] = FieldInfo(alias="inboundCidrAllowlist", default=None)
+
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        """Alias for ``id``, consistent with ``SandboxResponse.sandbox_id`` (see #143)."""
+        return self.id
+
+
+class SandboxNetworkPolicyResponse(BaseModel):
+    status: Optional[int] = None
+    message: Optional[str] = None
+    data: Optional[SandboxNetworkPolicyData] = None
 
 
 class SandboxFileData(BaseModel):

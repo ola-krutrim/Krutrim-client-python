@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import re
 import json
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, cast
 from pathlib import Path
 
 import anyio
@@ -873,3 +873,51 @@ def test_validate_network_policy_exclusion_rule() -> None:
         outbound_domain_allowlist=None,
         inbound_cidr_allowlist=None,
     )
+
+
+def test_network_policy_params_transform_to_wire_aliases() -> None:
+    from krutrim_client._utils import maybe_transform
+    from krutrim_client.types.sandbox import SandboxNetworkPolicyParams
+
+    body = {
+        "allow_internet_access": True,
+        "outbound_cidr_allowlist": "1.1.1.1",
+        "outbound_domain_allowlist": "api.openai.com,*.github.com",
+        "inbound_cidr_allowlist": "10.0.0.0/8",
+    }
+    assert maybe_transform(body, SandboxNetworkPolicyParams) == {
+        "allowInternetAccess": True,
+        "outboundCidrAllowlist": "1.1.1.1",
+        "outboundDomainAllowlist": "api.openai.com,*.github.com",
+        "inboundCidrAllowlist": "10.0.0.0/8",
+    }
+
+
+def test_network_policy_models_parse_wire_aliases() -> None:
+    from krutrim_client._models import construct_type
+    from krutrim_client.types.sandbox import SandboxNetworkPolicyResponse
+
+    response = cast(
+        SandboxNetworkPolicyResponse,
+        construct_type(
+            value={
+                "status": 200,
+                "message": "ok",
+                "data": {
+                    "id": SANDBOX_ID,
+                    "allowInternetAccess": False,
+                    "outboundCidrAllowlist": "1.1.1.1",
+                    "outboundDomainAllowlist": "api.openai.com",
+                    "inboundCidrAllowlist": "10.0.0.0/8",
+                },
+            },
+            type_=SandboxNetworkPolicyResponse,
+        ),
+    )
+    assert response.data is not None
+    assert response.data.sandbox_id == SANDBOX_ID
+    assert response.data.id == SANDBOX_ID
+    assert response.data.allow_internet_access is False
+    assert response.data.outbound_cidr_allowlist == "1.1.1.1"
+    assert response.data.outbound_domain_allowlist == "api.openai.com"
+    assert response.data.inbound_cidr_allowlist == "10.0.0.0/8"
