@@ -921,3 +921,84 @@ def test_network_policy_models_parse_wire_aliases() -> None:
     assert response.data.outbound_cidr_allowlist == "1.1.1.1"
     assert response.data.outbound_domain_allowlist == "api.openai.com"
     assert response.data.inbound_cidr_allowlist == "10.0.0.0/8"
+
+
+def _sandbox_create_ok(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/omni/sandbox/v1/sandbox" and request.method == "POST"
+    return json_response(request, create_response(), 202)
+
+
+def test_create_network_policy_kwargs_map_to_wire_fields() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return _sandbox_create_ok(request)
+
+    with make_client(handler) as client:
+        client.sandbox.api.create(
+            sandbox_name="net-sandbox",
+            region="test-region",
+            flavor_name="cpu-1",
+            allow_internet_access=True,
+            outbound_cidr_allowlist=["1.1.1.1", " 142.250.183.0/24 "],
+            outbound_domain_allowlist="api.openai.com,*.github.com",
+            inbound_cidr_allowlist=("10.0.0.0/8",),
+        )
+        client.sandbox.api.create(
+            sandbox_name="offline-sandbox",
+            region="test-region",
+            flavor_name="cpu-1",
+            allow_internet_access=False,
+        )
+    assert json.loads(requests[0].content) == {
+        "sandboxName": "net-sandbox",
+        "region": "test-region",
+        "flavorName": "cpu-1",
+        "allowInternetAccess": True,
+        "outboundCidrAllowlist": "1.1.1.1,142.250.183.0/24",
+        "outboundDomainAllowlist": "api.openai.com,*.github.com",
+        "inboundCidrAllowlist": "10.0.0.0/8",
+    }
+    assert json.loads(requests[1].content) == {
+        "sandboxName": "offline-sandbox",
+        "region": "test-region",
+        "flavorName": "cpu-1",
+        "allowInternetAccess": False,
+    }
+
+
+async def test_async_create_network_policy_kwargs_map_to_wire_fields() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return _sandbox_create_ok(request)
+
+    async with make_async_client(handler) as client:
+        await client.sandbox.api.create(
+            sandbox_name="net-sandbox",
+            region="test-region",
+            flavor_name="cpu-1",
+            outbound_domain_allowlist=["api.openai.com"],
+        )
+    body = json.loads(requests[0].content)
+    assert body["outboundDomainAllowlist"] == "api.openai.com"
+    assert "allowInternetAccess" not in body
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"allow_internet_access": False, "outbound_cidr_allowlist": "1.1.1.1"}, "allow_internet_access=False"),
+        ({"allow_internet_access": False, "inbound_cidr_allowlist": ["10.0.0.0/8"]}, "allow_internet_access=False"),
+        ({"outbound_cidr_allowlist": ""}, "outbound_cidr_allowlist"),
+        ({"outbound_domain_allowlist": []}, "outbound_domain_allowlist"),
+        ({"inbound_cidr_allowlist": [" "]}, "inbound_cidr_allowlist"),
+        ({"outbound_domain_allowlist": ["a.com,b.com"]}, "must not contain commas"),
+    ],
+)
+def test_create_network_policy_validation_errors(kwargs: dict[str, Any], message: str) -> None:
+    with make_client(lambda request: (_ for _ in ()).throw(AssertionError(request))) as client:
+        with pytest.raises(ValueError, match=message):
+            client.sandbox.api.create(sandbox_name="valid", region="test-region", flavor_name="cpu-1", **kwargs)
