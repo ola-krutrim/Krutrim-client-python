@@ -193,6 +193,7 @@ class SandboxAPIResource(SyncAPIResource):
         sandbox_name: str,
         region: str,
         flavor_name: str,
+        image_uri: str | None = None,
         template_id: int | None = None,
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
@@ -218,6 +219,7 @@ class SandboxAPIResource(SyncAPIResource):
         if network_storages is not None:
             body["network_storages"] = list(network_storages)
         for key, value in {
+            "image_uri": image_uri,
             "template_id": template_id,
             "template_name": template_name,
             "environment_variables": environment_variables,
@@ -402,6 +404,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         sandbox_name: str,
         region: str,
         flavor_name: str,
+        image_uri: str | None = None,
         template_id: int | None = None,
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
@@ -427,6 +430,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         if network_storages is not None:
             body["network_storages"] = list(network_storages)
         for key, value in {
+            "image_uri": image_uri,
             "template_id": template_id,
             "template_name": template_name,
             "environment_variables": environment_variables,
