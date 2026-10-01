@@ -264,6 +264,68 @@ async def test_async_low_level_lifecycle_parity_and_immediate_create() -> None:
             assert (await streamed.parse()).data.status == "active"  # type: ignore[union-attr]
 
 
+LABELS = {"buzz.agent-pubkey": "ab12cd34", "team": "sdk"}
+
+
+def test_sandbox_labels_on_create_list_filter_and_responses() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/omni/sandbox/v1/sandbox" and request.method == "POST":
+            payload = create_response()
+            payload["data"]["labels"] = dict(LABELS)  # type: ignore[index]
+            return json_response(request, payload, 202)
+        if request.url.path == "/omni/sandbox/v1/sandbox" and request.method == "GET":
+            row = {**active_response()["data"], "labels": dict(LABELS)}  # type: ignore[dict-item]
+            return json_response(request, {"status": 200, "data": {"rows": [row], "total": 1}})
+        if request.url.path.endswith(SANDBOX_ID) and request.method == "GET":
+            payload = active_response()
+            payload["data"]["labels"] = dict(LABELS)  # type: ignore[index]
+            return json_response(request, payload)
+        raise AssertionError(f"unexpected request: {request.method} {request.url.path}")
+
+    with make_client(handler) as client:
+        created = client.sandbox.api.create(
+            sandbox_name="test-sandbox",
+            region="test-region",
+            flavor_name="cpu-1",
+            labels=LABELS,
+        )
+        assert created.status == 202
+        assert created.data is not None and created.data.labels == LABELS
+        listed = client.sandbox.api.list(labels=LABELS)
+        assert listed.data is not None and listed.data.rows is not None
+        assert listed.data.rows[0].labels == LABELS
+        retrieved = client.sandbox.api.retrieve(SANDBOX_ID)
+        assert retrieved.data is not None and retrieved.data.labels == LABELS
+
+    assert json.loads(requests[0].content)["labels"] == LABELS
+    assert dict(requests[1].url.params) == {"labels": "buzz.agent-pubkey=ab12cd34,team=sdk"}
+
+
+async def test_async_sandbox_labels_parity() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "POST":
+            return json_response(request, create_response(), 202)
+        return json_response(request, {"status": 200, "data": {"rows": [], "total": 0}})
+
+    async with make_async_client(handler) as client:
+        await client.sandbox.api.create(
+            sandbox_name="test-sandbox",
+            region="test-region",
+            flavor_name="cpu-1",
+            labels=LABELS,
+        )
+        await client.sandbox.api.list(labels=LABELS)
+
+    assert json.loads(requests[0].content)["labels"] == LABELS
+    assert dict(requests[1].url.params) == {"labels": "buzz.agent-pubkey=ab12cd34,team=sdk"}
+
+
 @pytest.mark.parametrize(
     ("call", "message"),
     [
@@ -284,6 +346,36 @@ async def test_async_low_level_lifecycle_parity_and_immediate_create() -> None:
             "at most 10",
         ),
         (lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", ttl_seconds=59), "between 60"),
+        (
+            lambda api: api.create(
+                sandbox_name="valid",
+                region="r",
+                flavor_name="f",
+                labels={f"key-{index}": "v" for index in range(17)},
+            ),
+            "at most 16 labels",
+        ),
+        (
+            lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", labels={"k" * 64: "v"}),
+            "exceeds 63",
+        ),
+        (
+            lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", labels={"k": "v" * 256}),
+            "exceeds 255",
+        ),
+        (
+            lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", labels={"": "v"}),
+            "cannot be empty",
+        ),
+        (
+            lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", labels={"k=v": "v"}),
+            "must not contain",
+        ),
+        (
+            lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", labels={"k": "a,b"}),
+            "must not contain",
+        ),
+        (lambda api: api.list(labels={"k,": "v"}), "must not contain"),
         (lambda api: api.retrieve(""), "non-empty"),
         (lambda api: api.list(page=0), "at least 1"),
         (lambda api: api.list(limit=101), "between 1 and 100"),
@@ -315,6 +407,7 @@ def test_sync_managed_create_connect_lifecycle_and_timeout_mapping() -> None:
             sandbox_name="test-sandbox",
             region="test-region",
             flavor_name="cpu-1",
+            labels={"team": "sdk"},
             timeout=900,
             request_timeout=30,
         )
@@ -326,6 +419,7 @@ def test_sync_managed_create_connect_lifecycle_and_timeout_mapping() -> None:
         assert connected.sandbox_id == SANDBOX_ID
 
     create_request = requests[0]
+    assert json.loads(create_request.content)["labels"] == {"team": "sdk"}
     assert json.loads(create_request.content)["ttlSeconds"] == 900
     assert create_request.extensions["timeout"]["read"] == 30
     assert len([request for request in requests if request.method == "POST"]) == 1
@@ -418,8 +512,10 @@ def test_managed_disappearance_and_deadline() -> None:
 
 async def test_async_managed_wait_uses_async_sleep() -> None:
     states = iter(["deploying", "active"])
+    requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
         if request.method == "POST":
             return json_response(request, create_response(), 202)
         return json_response(request, active_response(status=next(states)))
@@ -431,9 +527,10 @@ async def test_async_managed_wait_uses_async_sleep() -> None:
             sleeps.append(delay)
 
         client.sandbox._sleep = fake_sleep
-        sandbox = await client.sandbox.create(region="test-region", flavor_name="cpu-1")
+        sandbox = await client.sandbox.create(region="test-region", flavor_name="cpu-1", labels={"team": "sdk"})
         assert sandbox.sandbox_id == SANDBOX_ID
         assert sleeps == [0.25]
+        assert json.loads(requests[0].content)["labels"] == {"team": "sdk"}
 
 
 async def test_async_create_retries_initial_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
