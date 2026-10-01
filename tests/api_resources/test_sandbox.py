@@ -18,6 +18,7 @@ from krutrim_client._response import (
     StreamedBinaryAPIResponse,
     AsyncStreamedBinaryAPIResponse,
 )
+from krutrim_client.types.sandbox import SandboxResponse
 
 SANDBOX_ID = "57863027-0a7f-4e31-bea9-b0b9dec906cf"
 BASE_URL = "https://sandbox.test"
@@ -262,6 +263,192 @@ async def test_async_low_level_lifecycle_parity_and_immediate_create() -> None:
         assert (await raw.parse()).data.status == "active"  # type: ignore[union-attr]
         async with client.with_streaming_response.sandbox.api.retrieve(SANDBOX_ID) as streamed:
             assert (await streamed.parse()).data.status == "active"  # type: ignore[union-attr]
+
+
+BYOC_IMAGE = "docker.io/myorg/sandbox:v1"
+BYOC_DIGEST = "docker.io/myorg/sandbox@sha256:" + "a" * 64
+
+
+def _byoc_create_handler(image_uri: str | None) -> Callable[[httpx.Request], httpx.Response]:
+    expected_body = {"sandboxName": "test-sandbox", "region": "test-region", "flavorName": "cpu-1"}
+    if image_uri is not None:
+        expected_body["imageUri"] = image_uri
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/omni/sandbox/v1/sandbox":
+            assert json.loads(request.content) == expected_body
+            return json_response(request, create_response(), 202)
+        assert request.method == "GET"
+        assert request.url.path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}"
+        return json_response(
+            request,
+            {
+                "status": 200,
+                "data": {
+                    "id": SANDBOX_ID,
+                    "status": "active",
+                    "imageUri": BYOC_DIGEST if image_uri is not None else "default",
+                },
+            },
+        )
+
+    return handler
+
+
+@pytest.mark.parametrize("image_uri", [None, BYOC_IMAGE, BYOC_DIGEST])
+@pytest.mark.parametrize("view", ["normal", "raw", "streaming", "managed"])
+def test_sync_byoc_create(image_uri: str | None, view: str) -> None:
+    with make_client(_byoc_create_handler(image_uri)) as client:
+        if view == "managed":
+            sandbox = client.sandbox.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+            assert sandbox.sandbox_id == SANDBOX_ID
+            assert sandbox.metadata.image_uri == (BYOC_DIGEST if image_uri is not None else "default")
+            return
+        if view == "raw":
+            raw = client.with_raw_response.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+            assert raw.status_code == 202
+            created = raw.parse()
+        elif view == "streaming":
+            with client.with_streaming_response.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            ) as streamed:
+                assert streamed.status_code == 202
+                created = streamed.parse()
+        else:
+            created = client.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+        assert created.data is not None
+        assert created.data.id == SANDBOX_ID
+        assert created.data.status == "deploying"
+
+
+@pytest.mark.parametrize("image_uri", [None, BYOC_IMAGE, BYOC_DIGEST])
+@pytest.mark.parametrize("view", ["normal", "raw", "streaming", "managed"])
+async def test_async_byoc_create(image_uri: str | None, view: str) -> None:
+    async with make_async_client(_byoc_create_handler(image_uri)) as client:
+        if view == "managed":
+            sandbox = await client.sandbox.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+            assert sandbox.sandbox_id == SANDBOX_ID
+            assert sandbox.metadata.image_uri == (BYOC_DIGEST if image_uri is not None else "default")
+            return
+        if view == "raw":
+            raw = await client.with_raw_response.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+            assert raw.status_code == 202
+            created = await raw.parse()
+        elif view == "streaming":
+            async with client.with_streaming_response.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            ) as streamed:
+                assert streamed.status_code == 202
+                created = await streamed.parse()
+        else:
+            created = await client.sandbox.api.create(
+                sandbox_name="test-sandbox", region="test-region", flavor_name="cpu-1", image_uri=image_uri
+            )
+        assert created.data is not None
+        assert created.data.id == SANDBOX_ID
+        assert created.data.status == "deploying"
+
+
+def _byoc_metadata_handler(image_uri: str | None) -> Callable[[httpx.Request], httpx.Response]:
+    metadata = {"id": SANDBOX_ID, "status": "active"}
+    if image_uri is not None:
+        metadata["imageUri"] = image_uri
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        if request.url.path == "/omni/sandbox/v1/sandbox":
+            return json_response(request, {"status": 200, "data": {"rows": [metadata], "total": 1, "totalPages": 1}})
+        assert request.url.path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}"
+        return json_response(request, {"status": 200, "data": metadata})
+
+    return handler
+
+
+@pytest.mark.parametrize("image_uri", [None, "default", BYOC_DIGEST])
+def test_sync_byoc_response_metadata(image_uri: str | None) -> None:
+    with make_client(_byoc_metadata_handler(image_uri)) as client:
+        retrieved = client.sandbox.api.retrieve(SANDBOX_ID)
+        assert retrieved.data is not None
+        assert retrieved.data.image_uri == image_uri
+        listed = client.sandbox.api.list()
+        assert listed.data is not None and listed.data.rows is not None
+        assert listed.data.rows[0].image_uri == image_uri
+        assert client.sandbox.connect(SANDBOX_ID).metadata.image_uri == image_uri
+
+
+@pytest.mark.parametrize("image_uri", [None, "default", BYOC_DIGEST])
+async def test_async_byoc_response_metadata(image_uri: str | None) -> None:
+    async with make_async_client(_byoc_metadata_handler(image_uri)) as client:
+        retrieved = await client.sandbox.api.retrieve(SANDBOX_ID)
+        assert retrieved.data is not None
+        assert retrieved.data.image_uri == image_uri
+        listed = await client.sandbox.api.list()
+        assert listed.data is not None and listed.data.rows is not None
+        assert listed.data.rows[0].image_uri == image_uri
+        assert (await client.sandbox.connect(SANDBOX_ID)).metadata.image_uri == image_uri
+
+
+def _byoc_failure_handler(deployment_failure: bool) -> Callable[[httpx.Request], httpx.Response]:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            assert json.loads(request.content)["imageUri"] == BYOC_IMAGE
+            if not deployment_failure:
+                return json_response(request, {"message": "image must be publicly pullable"}, 400)
+            return json_response(request, create_response(), 202)
+        return json_response(
+            request,
+            {
+                "status": 200,
+                "data": {
+                    "id": SANDBOX_ID,
+                    "status": "failed_deploy",
+                    "imageUri": BYOC_DIGEST,
+                    "errorMessage": "sandbox agent unavailable",
+                },
+            },
+        )
+
+    return handler
+
+
+@pytest.mark.parametrize("deployment_failure", [False, True])
+def test_sync_byoc_errors(deployment_failure: bool) -> None:
+    with make_client(_byoc_failure_handler(deployment_failure)) as client:
+        error = krutrim_client.SandboxException if deployment_failure else krutrim_client.BadRequestError
+        message = "sandbox agent unavailable" if deployment_failure else "image must be publicly pullable"
+        with pytest.raises(error, match=message) as exc_info:
+            client.sandbox.create(region="test-region", flavor_name="cpu-1", image_uri=BYOC_IMAGE)
+        if isinstance(exc_info.value, krutrim_client.SandboxException):
+            assert exc_info.value.sandbox_id == SANDBOX_ID
+            assert isinstance(exc_info.value.metadata, SandboxResponse)
+            assert exc_info.value.metadata.image_uri == BYOC_DIGEST
+        else:
+            assert exc_info.value.status_code == 400
+
+
+@pytest.mark.parametrize("deployment_failure", [False, True])
+async def test_async_byoc_errors(deployment_failure: bool) -> None:
+    async with make_async_client(_byoc_failure_handler(deployment_failure)) as client:
+        error = krutrim_client.SandboxException if deployment_failure else krutrim_client.BadRequestError
+        message = "sandbox agent unavailable" if deployment_failure else "image must be publicly pullable"
+        with pytest.raises(error, match=message) as exc_info:
+            await client.sandbox.create(region="test-region", flavor_name="cpu-1", image_uri=BYOC_IMAGE)
+        if isinstance(exc_info.value, krutrim_client.SandboxException):
+            assert exc_info.value.sandbox_id == SANDBOX_ID
+            assert isinstance(exc_info.value.metadata, SandboxResponse)
+            assert exc_info.value.metadata.image_uri == BYOC_DIGEST
+        else:
+            assert exc_info.value.status_code == 400
 
 
 LABELS = {"buzz.agent-pubkey": "ab12cd34", "team": "sdk"}

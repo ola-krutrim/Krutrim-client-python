@@ -32,6 +32,7 @@ class SandboxCreateParams(TypedDict, total=False):
     sandbox_name: Required[Annotated[str, PropertyInfo(alias="sandboxName")]]
     region: Required[str]
     flavor_name: Required[Annotated[str, PropertyInfo(alias="flavorName")]]
+    image_uri: Annotated[str, PropertyInfo(alias="imageUri")]
     template_id: Annotated[int, PropertyInfo(alias="templateId")]
     template_name: Annotated[str, PropertyInfo(alias="templateName")]
     network_storages: Annotated[List[NetworkStorageAttachmentInput], PropertyInfo(alias="networkStorages")]

@@ -95,6 +95,7 @@ def create(
     flavor_name: str,                                   # required, e.g. "sandbox-nano"
     region: str,                                        # required, e.g. "In-Bangalore-1"
     sandbox_name: str | None = None,                    # auto-generated "sandbox-<12 hex>" if omitted
+    image_uri: str | None = None,                       # public BYOC image; omitted/None = platform image
     template_id: int | None = None,                     # mutually exclusive with template_name
     template_name: str | None = None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,  # max 10
@@ -118,6 +119,14 @@ Behavior:
   deleting, or it disappears after being seen.
 - Raises `SandboxTimeoutError` when `wait_timeout` elapses before the sandbox is `active`.
 - Raises `ValueError` for invalid names, lifetimes, or `template_id`+`template_name` together.
+- `image_uri` is sent as `imageUri` only when non-`None`. The backend validates that
+  the image is publicly pullable, has a `linux/amd64` manifest, is at most 4 GiB
+  compressed, and uses a registry resolving only to public IPs, then pins it to a
+  digest. The image must bundle the sandbox agent runtime. The template controls
+  startup and health checks; template environment variables override user values.
+- BYOC uses the same HTTP and readiness exceptions as platform images; no image
+  validation or registry access is performed by the SDK. See the
+  [BYOC guide](sandbox.md#bring-your-own-container-byoc) for sync/async examples.
 
 ### `connect(sandbox_id, *, wait_timeout=300.0, request_timeout=NOT_GIVEN) -> Sandbox`
 
@@ -138,6 +147,11 @@ Returned by `create`/`connect`; every method targets the bound sandbox.
 | `sandbox_krn` | `str \| None` | Krutrim resource name. |
 | `metadata` | `SandboxResponse` | Last fetched metadata (refreshed by `is_running`). |
 | `files` / `commands` / `ports` / `proxy` | helpers | Documented below. |
+
+`metadata.image_uri` is the digest-pinned custom image, `"default"` for the platform
+image, or `None` when the backend omits the field. The same field is available on
+`client.sandbox.api.retrieve(...).data` and `client.sandbox.api.list(...).data.rows`
+items.
 
 ### `run_command(command, *, cwd=None, envs=None, timeout=60, request_timeout=NOT_GIVEN) -> SandboxCommandResult`
 
@@ -232,6 +246,9 @@ sandbox.files.remove("/app/work/in.json")
 ## Ports — `sandbox.ports`
 
 Valid range 1024–65535; the service allows at most 20 open ports per sandbox.
+The runtime's serving port is reserved by the platform template; opening it raises
+`BadRequestError` (HTTP 400). This port is determined by the backend, not hardcoded
+in the SDK.
 
 ### `open(port) -> SandboxPortInfo`
 
