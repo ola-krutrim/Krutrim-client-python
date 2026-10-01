@@ -38,12 +38,14 @@ class SandboxCreateParams(TypedDict, total=False):
     network_storages: Annotated[List[NetworkStorageAttachmentInput], PropertyInfo(alias="networkStorages")]
     environment_variables: Annotated[Mapping[str, str], PropertyInfo(alias="environmentVariables")]
     ttl_seconds: Annotated[int, PropertyInfo(alias="ttlSeconds")]
+    labels: Mapping[str, str]
 
 
 class SandboxListParams(TypedDict, total=False):
     region: str
     status: str
     name: str
+    labels: str
     page: int
     limit: int
 

@@ -74,10 +74,12 @@ details: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `curr
 
 Lists runtime templates. Use a template's `template_name` (or `id`) with `create`.
 
-### `client.sandbox.api.list(*, region=None, status=None, name=None, page=None, limit=None) -> SandboxListResponse`
+### `client.sandbox.api.list(*, region=None, status=None, name=None, labels=None, page=None, limit=None) -> SandboxListResponse`
 
-Paginated listing of your sandboxes (`page >= 1`, `limit` 1–100). Rows are in
-`response.data.rows`; each row's `id` can be passed to `connect`.
+Paginated listing of your sandboxes (`page >= 1`, `limit` 1–100). Pass `labels` as a
+`Mapping[str, str]` to return only sandboxes carrying **all** requested labels (sent as
+`?labels=k=v,k2=v2`). Rows are in `response.data.rows`; each row's `id` can be passed to
+`connect`.
 
 ---
 
@@ -98,6 +100,7 @@ def create(
     template_name: str | None = None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,  # max 10
     environment_variables: Mapping[str, str] | None = None,
+    labels: Mapping[str, str] | None = None,            # caller metadata, filterable on list
     timeout: int | None = None,                         # sandbox lifetime in seconds (60–604800)
     wait_timeout: float = 300.0,                        # total readiness deadline (> 0)
     request_timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,  # per-HTTP-call
@@ -107,6 +110,9 @@ def create(
 Behavior:
 
 - `sandbox_name` must be DNS-1035 (lowercase letters, digits, hyphens; starts with a letter).
+- `labels` are caller-supplied metadata stored by the service, returned on get/list, and
+  filterable via `client.sandbox.api.list(labels=...)`. At most 16; keys ≤ 63 chars with no
+  `=` or `,`; values ≤ 255 chars with no `,`.
 - Polls readiness with exponential backoff (0.25 s doubling, capped at 2 s); transient
   `404`s right after creation are tolerated until the sandbox first becomes visible.
 - Raises `SandboxException` if deployment fails (`failed_deploy`), the sandbox starts
@@ -303,7 +309,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | `SandboxEntryInfo` | `name`, `path`, `type` (`file`/`dir`), `size`, `mode`, `modified_time` |
 | `SandboxFileData` | `path`, `name`, `type` |
 | `SandboxPortInfo` | `port`, `status` (`provisioning`/`active`/`closing`/`failed`), `error_message`, `url` |
-| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
+| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `labels`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
 | `PodTemplate` | `id`, `template_name`, `description`, image/disk/port settings |
 | `FlavorItem` | `subject` (region), `group_by` (`FlavorGroupBy`: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`, `vcpus`, `storage`, `local_disk`, GPU fields, …), `time` |
 
@@ -330,3 +336,4 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | Directory listing `depth` | 1–10 |
 | `template_id` / `template_name` | mutually exclusive |
 | `network_storages` | at most 10 attachments |
+| `labels` | at most 16; key ≤ 63 chars, no `=`/`,`; value ≤ 255 chars, no `,` |

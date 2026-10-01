@@ -95,6 +95,7 @@ class SandboxResource(SyncAPIResource):
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
+        labels: Mapping[str, str] | None = None,
         timeout: int | None = None,
         wait_timeout: float = 300.0,
         request_timeout: RequestTimeout = NOT_GIVEN,
@@ -109,6 +110,7 @@ class SandboxResource(SyncAPIResource):
             network_storages=network_storages,
             environment_variables=environment_variables,
             ttl_seconds=timeout,
+            labels=labels,
             timeout=request_timeout,
         )
         if created.data is None or not created.data.id:
@@ -224,6 +226,7 @@ class AsyncSandboxResource(AsyncAPIResource):
         template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
+        labels: Mapping[str, str] | None = None,
         timeout: int | None = None,
         wait_timeout: float = 300.0,
         request_timeout: RequestTimeout = NOT_GIVEN,
@@ -238,6 +241,7 @@ class AsyncSandboxResource(AsyncAPIResource):
             network_storages=network_storages,
             environment_variables=environment_variables,
             ttl_seconds=timeout,
+            labels=labels,
             timeout=request_timeout,
         )
         if created.data is None or not created.data.id:
