@@ -37,6 +37,8 @@ from ._helpers import (
     validate_identifier,
     validate_sandbox_name,
     validate_network_policy,
+    validate_labels,
+    serialize_label_selector,
 )
 from .commands import (
     CommandsResource,
@@ -79,18 +81,17 @@ __all__ = ["SandboxAPIResource", "AsyncSandboxAPIResource"]
 def _validate_create(
     *,
     sandbox_name: str,
-    template_id: int | None,
-    template_name: str | None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None,
     ttl_seconds: int | None,
+    labels: Mapping[str, str] | None,
 ) -> None:
     validate_sandbox_name(sandbox_name)
-    if template_id is not None and template_name is not None:
-        raise ValueError("template_id and template_name are mutually exclusive")
     if network_storages is not None and len(network_storages) > 10:
         raise ValueError("at most 10 network storage attachments are supported")
     if ttl_seconds is not None:
         validate_ttl(ttl_seconds)
+    if labels is not None:
+        validate_labels(labels)
 
 
 def _network_policy_body(
@@ -195,6 +196,7 @@ class SandboxAPIResource(SyncAPIResource):
         region: str | None = None,
         status: str | None = None,
         name: str | None = None,
+        labels: Mapping[str, str] | None = None,
         page: int | None = None,
         limit: int | None = None,
         extra_headers: Headers | None = None,
@@ -210,6 +212,8 @@ class SandboxAPIResource(SyncAPIResource):
             for key, value in locals().items()
             if key in {"region", "status", "name", "page", "limit"} and value is not None
         }
+        if labels:
+            query["labels"] = serialize_label_selector(labels)
         return self._get(
             "/omni/sandbox/v1/sandbox",
             cast_to=SandboxListResponse,
@@ -227,8 +231,7 @@ class SandboxAPIResource(SyncAPIResource):
         sandbox_name: str,
         region: str,
         flavor_name: str,
-        template_id: int | None = None,
-        template_name: str | None = None,
+        image_uri: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
@@ -236,6 +239,7 @@ class SandboxAPIResource(SyncAPIResource):
         outbound_cidr_allowlist: str | Sequence[str] | None = None,
         outbound_domain_allowlist: str | Sequence[str] | None = None,
         inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        labels: Mapping[str, str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -243,10 +247,9 @@ class SandboxAPIResource(SyncAPIResource):
     ) -> AsyncSandboxResponse:
         _validate_create(
             sandbox_name=sandbox_name,
-            template_id=template_id,
-            template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
+            labels=labels,
         )
         body: dict[str, object] = {
             "sandbox_name": sandbox_name,
@@ -256,10 +259,10 @@ class SandboxAPIResource(SyncAPIResource):
         if network_storages is not None:
             body["network_storages"] = list(network_storages)
         for key, value in {
-            "template_id": template_id,
-            "template_name": template_name,
+            "image_uri": image_uri,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
+            "labels": labels,
         }.items():
             if value is not None:
                 body[key] = value
@@ -455,6 +458,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         region: str | None = None,
         status: str | None = None,
         name: str | None = None,
+        labels: Mapping[str, str] | None = None,
         page: int | None = None,
         limit: int | None = None,
         extra_headers: Headers | None = None,
@@ -470,6 +474,8 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             for key, value in locals().items()
             if key in {"region", "status", "name", "page", "limit"} and value is not None
         }
+        if labels:
+            query["labels"] = serialize_label_selector(labels)
         return await self._get(
             "/omni/sandbox/v1/sandbox",
             cast_to=SandboxListResponse,
@@ -487,8 +493,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         sandbox_name: str,
         region: str,
         flavor_name: str,
-        template_id: int | None = None,
-        template_name: str | None = None,
+        image_uri: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
@@ -496,6 +501,7 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         outbound_cidr_allowlist: str | Sequence[str] | None = None,
         outbound_domain_allowlist: str | Sequence[str] | None = None,
         inbound_cidr_allowlist: str | Sequence[str] | None = None,
+        labels: Mapping[str, str] | None = None,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -503,10 +509,9 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
     ) -> AsyncSandboxResponse:
         _validate_create(
             sandbox_name=sandbox_name,
-            template_id=template_id,
-            template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
+            labels=labels,
         )
         body: dict[str, object] = {
             "sandbox_name": sandbox_name,
@@ -516,10 +521,10 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         if network_storages is not None:
             body["network_storages"] = list(network_storages)
         for key, value in {
-            "template_id": template_id,
-            "template_name": template_name,
+            "image_uri": image_uri,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
+            "labels": labels,
         }.items():
             if value is not None:
                 body[key] = value

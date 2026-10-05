@@ -62,7 +62,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 ## Discovery
 
 These three calls live on `client.sandbox.api` because they have no managed wrapper, but they
-are part of the normal user workflow: use them to find valid `flavor_name`, `template_name`,
+are part of the normal user workflow: use them to find valid `flavor_name`
 and existing sandbox IDs before calling `create`/`connect`.
 
 ### `client.sandbox.api.list_flavors(*, region=None) -> FlavorListResponse`
@@ -74,12 +74,14 @@ details: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `curr
 
 ### `client.sandbox.api.list_templates() -> List[PodTemplate]`
 
-Lists runtime templates. Use a template's `template_name` (or `id`) with `create`.
+Lists runtime templates. Use a template's `id` with `create`.
 
-### `client.sandbox.api.list(*, region=None, status=None, name=None, page=None, limit=None) -> SandboxListResponse`
+### `client.sandbox.api.list(*, region=None, status=None, name=None, labels=None, page=None, limit=None) -> SandboxListResponse`
 
-Paginated listing of your sandboxes (`page >= 1`, `limit` 1–100). Rows are in
-`response.data.rows`; each row's `id` can be passed to `connect`.
+Paginated listing of your sandboxes (`page >= 1`, `limit` 1–100). Pass `labels` as a
+`Mapping[str, str]` to return only sandboxes carrying **all** requested labels (sent as
+`?labels=k=v,k2=v2`). Rows are in `response.data.rows`; each row's `id` can be passed to
+`connect`.
 
 ---
 
@@ -95,14 +97,14 @@ def create(
     flavor_name: str,                                   # required, e.g. "sandbox-nano"
     region: str,                                        # required, e.g. "In-Bangalore-1"
     sandbox_name: str | None = None,                    # auto-generated "sandbox-<12 hex>" if omitted
-    template_id: int | None = None,                     # mutually exclusive with template_name
-    template_name: str | None = None,
+    image_uri: str | None = None,                       # public BYOC image; omitted/None = platform image
     network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,  # max 10
     environment_variables: Mapping[str, str] | None = None,
     allow_internet_access: bool | None = None,          # False blocks all outbound traffic
     outbound_cidr_allowlist: str | Sequence[str] | None = None,   # public IPv4 CIDRs
     outbound_domain_allowlist: str | Sequence[str] | None = None, # domains over TCP/443
     inbound_cidr_allowlist: str | Sequence[str] | None = None,    # restrict data-path callers
+    labels: Mapping[str, str] | None = None,            # caller metadata, filterable on list
     timeout: int | None = None,                         # sandbox lifetime in seconds (60–604800)
     wait_timeout: float = 300.0,                        # total readiness deadline (> 0)
     request_timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,  # per-HTTP-call
@@ -112,12 +114,22 @@ def create(
 Behavior:
 
 - `sandbox_name` must be DNS-1035 (lowercase letters, digits, hyphens; starts with a letter).
+- `labels` are caller-supplied metadata stored by the service, returned on get/list, and
+  filterable via `client.sandbox.api.list(labels=...)`. At most 16; keys ≤ 63 chars with no
+  `=` or `,`; values ≤ 255 chars with no `,`.
 - Polls readiness with exponential backoff (0.25 s doubling, capped at 2 s); transient
   `404`s right after creation are tolerated until the sandbox first becomes visible.
 - Raises `SandboxException` if deployment fails (`failed_deploy`), the sandbox starts
   deleting, or it disappears after being seen.
 - Raises `SandboxTimeoutError` when `wait_timeout` elapses before the sandbox is `active`.
-- Raises `ValueError` for invalid names, lifetimes, or `template_id`+`template_name` together.
+- Raises `ValueError` for invalid names or lifetimes.
+- `image_uri` is sent as `imageUri` only when non-`None`. The backend validates that
+  the image is publicly pullable, has a `linux/amd64` manifest, is at most 4 GiB
+  compressed, and uses a registry resolving only to public IPs, then pins it to a
+  digest. The image must bundle the sandbox agent runtime.
+- BYOC uses the same HTTP and readiness exceptions as platform images; no image
+  validation or registry access is performed by the SDK. See the
+  [BYOC guide](sandbox.md#bring-your-own-container-byoc) for sync/async examples.
 
 ### `connect(sandbox_id, *, wait_timeout=300.0, request_timeout=NOT_GIVEN) -> Sandbox`
 
@@ -138,6 +150,11 @@ Returned by `create`/`connect`; every method targets the bound sandbox.
 | `sandbox_krn` | `str \| None` | Krutrim resource name. |
 | `metadata` | `SandboxResponse` | Last fetched metadata (refreshed by `is_running`). |
 | `files` / `commands` / `ports` / `proxy` | helpers | Documented below. |
+
+`metadata.image_uri` is the digest-pinned custom image, `"default"` for the platform
+image, or `None` when the backend omits the field. The same field is available on
+`client.sandbox.api.retrieve(...).data` and `client.sandbox.api.list(...).data.rows`
+items.
 
 ### `run_command(command, *, cwd=None, envs=None, timeout=60, request_timeout=NOT_GIVEN) -> SandboxCommandResult`
 
@@ -250,6 +267,9 @@ sandbox.files.remove("/app/work/in.json")
 ## Ports — `sandbox.ports`
 
 Valid range 1024–65535; the service allows at most 20 open ports per sandbox.
+The runtime's serving port is reserved by the platform template; opening it raises
+`BadRequestError` (HTTP 400). This port is determined by the backend, not hardcoded
+in the SDK.
 
 ### `open(port) -> SandboxPortInfo`
 
@@ -311,7 +331,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | `SandboxFileData` | `path`, `name`, `type` |
 | `SandboxPortInfo` | `port`, `status` (`provisioning`/`active`/`closing`/`failed`), `error_message`, `url` |
 | `SandboxNetworkPolicyData` | `id` (alias `sandbox_id`), `allow_internet_access`, `outbound_cidr_allowlist`, `outbound_domain_allowlist`, `inbound_cidr_allowlist` |
-| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
+| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `labels`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
 | `PodTemplate` | `id`, `template_name`, `description`, image/disk/port settings |
 | `FlavorItem` | `subject` (region), `group_by` (`FlavorGroupBy`: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`, `vcpus`, `storage`, `local_disk`, GPU fields, …), `time` |
 
@@ -336,7 +356,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | Ports | 1024–65535; max 20 open per sandbox |
 | File / proxy body size | ≤ 100 MB |
 | Directory listing `depth` | 1–10 |
-| `template_id` / `template_name` | mutually exclusive |
 | `network_storages` | at most 10 attachments |
 | `allow_internet_access=False` | cannot be combined with any allowlist |
 | Allowlist entries | non-empty, no commas within an entry |
+| `labels` | at most 16; key ≤ 63 chars, no `=`/`,`; value ≤ 255 chars, no `,` |

@@ -33,8 +33,7 @@ class SandboxCreateParams(TypedDict, total=False):
     sandbox_name: Required[Annotated[str, PropertyInfo(alias="sandboxName")]]
     region: Required[str]
     flavor_name: Required[Annotated[str, PropertyInfo(alias="flavorName")]]
-    template_id: Annotated[int, PropertyInfo(alias="templateId")]
-    template_name: Annotated[str, PropertyInfo(alias="templateName")]
+    image_uri: Annotated[str, PropertyInfo(alias="imageUri")]
     network_storages: Annotated[List[NetworkStorageAttachmentInput], PropertyInfo(alias="networkStorages")]
     environment_variables: Annotated[Mapping[str, str], PropertyInfo(alias="environmentVariables")]
     ttl_seconds: Annotated[int, PropertyInfo(alias="ttlSeconds")]
@@ -42,12 +41,14 @@ class SandboxCreateParams(TypedDict, total=False):
     outbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="outboundCidrAllowlist")]
     outbound_domain_allowlist: Annotated[str, PropertyInfo(alias="outboundDomainAllowlist")]
     inbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="inboundCidrAllowlist")]
+    labels: Mapping[str, str]
 
 
 class SandboxListParams(TypedDict, total=False):
     region: str
     status: str
     name: str
+    labels: str
     page: int
     limit: int
 

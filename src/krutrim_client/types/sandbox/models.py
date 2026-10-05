@@ -141,6 +141,7 @@ class SandboxResponse(BaseModel):
     gpu_type: Optional[str] = FieldInfo(alias="gpuType", default=None)
     network_storages: Optional[List[NetworkStorageWorkflowInput]] = FieldInfo(alias="networkStorages", default=None)
     environment_variables: Optional[Dict[str, str]] = FieldInfo(alias="environmentVariables", default=None)
+    labels: Optional[Dict[str, str]] = None
     ttl_seconds: Optional[int] = FieldInfo(alias="ttlSeconds", default=None)
     expires_at: Optional[datetime] = FieldInfo(alias="expiresAt", default=None)
     created_at: Optional[datetime] = FieldInfo(alias="createdAt", default=None)
@@ -179,6 +180,8 @@ class AsyncSandboxData(BaseModel):
     krn: Optional[str] = None
     status: Optional[str] = None
     region: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    """Echo of the caller-supplied labels accepted at create."""
 
     @property
     def sandbox_id(self) -> Optional[str]:

@@ -58,6 +58,59 @@ async with AsyncKrutrimClient() as client:
         print(result.stdout)
 ```
 
+## Bring your own container (BYOC)
+
+Pass `image_uri` to create a sandbox from your own public container image. Omit it
+or pass `None` to use the platform-provided runtime image.
+
+```python
+with KrutrimClient() as client:
+    with client.sandbox.create(
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
+        image_uri="docker.io/myorg/my-sandbox-image:v1",
+        timeout=900,
+    ) as sandbox:
+        print(sandbox.metadata.image_uri)  # custom image pinned to its digest
+        print(sandbox.run_command("python3 --version").stdout)
+```
+
+Replace the example image with one you have published. The backend requires a
+publicly pullable image with a `linux/amd64` manifest, at most 4 GiB compressed,
+from a registry that resolves only to public IPs. The image must bundle the
+sandbox agent runtime; an arbitrary application image is not sufficient.
+Validation and digest pinning happen on the backend, not in the SDK.
+
+The platform template still controls the startup command and health check.
+Template environment variables override user-supplied values, including the
+agent's `PORT`. The runtime's reserved serving port cannot be opened as a user
+port; the backend returns HTTP 400 (`BadRequestError`). Run your application on
+a different port.
+
+The async API accepts the same parameter:
+
+```python
+async with AsyncKrutrimClient() as client:
+    async with await client.sandbox.create(
+        flavor_name="sandbox-nano",
+        region="In-Bangalore-1",
+        image_uri="docker.io/myorg/my-sandbox-image:v1",
+    ) as sandbox:
+        print(sandbox.metadata.image_uri)
+```
+
+`client.sandbox.api.create(image_uri=..., ...)` and its sync/async raw and
+streaming views also support BYOC, returning the existing immediate HTTP 202
+response without readiness polling. Retrieve/list responses expose `image_uri`:
+the digest-pinned reference for a custom image, or `"default"` for the platform
+image. The field is `None` when absent from older backend responses. On managed
+handles, access it through `sandbox.metadata.image_uri`.
+
+Image validation failures preserve the normal SDK HTTP exception, such as
+`BadRequestError` for HTTP 400. If creation is accepted but the image fails to
+start, managed creation raises `SandboxException` with the backend error message
+and last known metadata. A readiness deadline raises `SandboxTimeoutError`.
+
 ## Discovery and exact API access
 
 Discover available compute and runtime choices before creating a sandbox:
@@ -74,10 +127,18 @@ accepted = client.sandbox.api.create(
     sandbox_name="batch-worker",
     region="In-Bangalore-1",
     flavor_name="sandbox-nano",
-    template_name="python-runtime-sandbox",
     ttl_seconds=900,
+    labels={"buzz.agent-pubkey": "ab12cd34"},
 )
 print(accepted.data.id, accepted.data.status)
+```
+
+Labels are caller-supplied metadata (at most 16; keys ≤ 63 chars without `=` or `,`, values
+≤ 255 chars without `,`). They come back on get/list responses and drive server-side
+filtering — only sandboxes carrying all requested labels are returned:
+
+```python
+mine = client.sandbox.api.list(labels={"buzz.agent-pubkey": "ab12cd34"})
 ```
 
 All low-level lifecycle, filesystem, command, and port operations have sync/async normal, raw-response, and streaming-response views. Binary downloads and proxy calls use binary response classes:
@@ -159,7 +220,7 @@ Ports 1024–65535 can be opened, listed, and closed through `sandbox.ports`. Op
 
 HTTP failures continue to use the existing SDK hierarchy, such as `NotFoundError`, `ConflictError`, and `APITimeoutError`. Managed readiness failures raise `SandboxException`; a readiness deadline raises `SandboxTimeoutError`. Both include `sandbox_id` and the last known metadata when available.
 
-The service contract currently specifies: TTL 60–604,800 seconds, at most 10 network-storage attachments, files and proxy bodies up to 100 MB, directory depth 1–10, command timeout 1–270 seconds, ports 1024–65535, and at most 20 open ports per sandbox. Stateful rules such as region/flavor compatibility and active-only operations are enforced by the service.
+The service contract currently specifies: TTL 60–604,800 seconds, at most 10 network-storage attachments, at most 16 labels (keys ≤ 63 chars without `=` or `,`, values ≤ 255 chars without `,`), files and proxy bodies up to 100 MB, directory depth 1–10, command timeout 1–270 seconds, ports 1024–65535, and at most 20 open ports per sandbox. Stateful rules such as region/flavor compatibility and active-only operations are enforced by the service.
 
 ## Public-gateway assumptions
 
