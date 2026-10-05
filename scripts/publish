@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$(dirname "$0")/.."
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${YELLOW}==============================================${NC}"
+echo -e "${YELLOW}  Krutrim Client - Automated PyPI Publisher  ${NC}"
+echo -e "${YELLOW}==============================================${NC}"
+
+# Detect virtual environment if not already activated
+if [ -z "$VIRTUAL_ENV" ]; then
+  if [ -d ".venv/bin" ]; then
+    echo -e "${CYAN}==> Activating local .venv...${NC}"
+    source .venv/bin/activate
+  elif [ -d "../Krutrim-Client-Cloudx-Python/.venv/bin" ]; then
+    echo -e "${CYAN}==> Activating testing .venv...${NC}"
+    source ../Krutrim-Client-Cloudx-Python/.venv/bin/activate
+  fi
+fi
+
+# Load credentials from .env if present
+if [ -f .env ]; then
+  pypi_token=$(grep -E '^(PYPI_API_TOKEN|TWINE_PASSWORD)=' .env | cut -d '=' -f2- | tr -d '"'\'' ' || true)
+  if [ -n "$pypi_token" ] && [ -z "$TWINE_PASSWORD" ]; then
+    export TWINE_USERNAME="__token__"
+    export TWINE_PASSWORD="$pypi_token"
+  fi
+fi
+
+# If PYPI_API_TOKEN is set in environment, map it to TWINE credentials
+if [ -n "$PYPI_API_TOKEN" ] && [ -z "$TWINE_PASSWORD" ]; then
+  export TWINE_USERNAME="__token__"
+  export TWINE_PASSWORD="$PYPI_API_TOKEN"
+fi
+
+# Check credentials
+if [ -z "$TWINE_PASSWORD" ] && [ ! -f "$HOME/.pypirc" ]; then
+  echo -e "${RED}Error:${NC} No PyPI credentials found."
+  echo "To automate uploads without typing your token every time, configure credentials once:"
+  echo
+  echo "  Option A (Recommended): Create ~/.pypirc"
+  echo "    cat << 'EOF' > ~/.pypirc"
+  echo "    [pypi]"
+  echo "    username = __token__"
+  echo "    password = pypi-YOUR_TOKEN"
+  echo "    EOF"
+  echo "    chmod 600 ~/.pypirc"
+  echo
+  echo "  Option B: Put token in .env or shell environment:"
+  echo "    echo 'TWINE_PASSWORD=pypi-YOUR_TOKEN' >> .env"
+  echo "    echo 'TWINE_USERNAME=__token__' >> .env"
+  echo
+  exit 1
+fi
+
+# 1. Clean previous builds
+echo -e "${CYAN}==> 1. Cleaning old build artifacts...${NC}"
+rm -rf dist/ build/ src/*.egg-info *.egg-info
+
+# 2. Build distribution
+echo -e "${CYAN}==> 2. Building wheel and source distribution...${NC}"
+if command -v pyproject-build >/dev/null 2>&1; then
+  pyproject-build
+elif python3 -c "import build" >/dev/null 2>&1; then
+  python3 -m build
+else
+  echo -e "${YELLOW}Installing build tool...${NC}"
+  pip install --quiet build
+  python3 -m build
+fi
+
+# 3. Check distribution
+echo -e "${CYAN}==> 3. Checking built distribution packages with twine...${NC}"
+if ! command -v twine >/dev/null 2>&1; then
+  echo -e "${YELLOW}Installing twine...${NC}"
+  pip install --quiet twine
+fi
+
+twine check dist/*
+
+# 4. Upload non-interactively
+echo -e "${CYAN}==> 4. Uploading packages to PyPI...${NC}"
+if [ -n "$TWINE_PASSWORD" ]; then
+  export TWINE_USERNAME="${TWINE_USERNAME:-__token__}"
+  twine upload --non-interactive dist/*
+else
+  # Twine will use ~/.pypirc automatically
+  twine upload --non-interactive dist/*
+fi
+
+echo
+echo -e "${GREEN}✔ Release successfully published to PyPI!${NC}"
