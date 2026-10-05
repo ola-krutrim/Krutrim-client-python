@@ -190,7 +190,6 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
             sandbox_name="test-sandbox",
             region="test-region",
             flavor_name="cpu-1",
-            template_name="python",
             network_storages=[{"network_storage_id": "storage-1", "network_storage_mount_path": "/app/data"}],
             environment_variables={"TOKEN": "ZW5jb2RlZA=="},
             ttl_seconds=900,
@@ -229,7 +228,6 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
         "sandboxName": "test-sandbox",
         "region": "test-region",
         "flavorName": "cpu-1",
-        "templateName": "python",
         "networkStorages": [{"networkStorageId": "storage-1", "networkStorageMountPath": "/app/data"}],
         "environmentVariables": {"TOKEN": "ZW5jb2RlZA=="},
         "ttlSeconds": 900,
@@ -254,11 +252,9 @@ async def test_async_low_level_lifecycle_parity_and_immediate_create() -> None:
             sandbox_name="test-sandbox",
             region="test-region",
             flavor_name="cpu-1",
-            template_id=7,
         )
         assert created.status == 202
         assert len(requests) == 1
-        assert json.loads(requests[0].content)["templateId"] == 7
         raw = await client.with_raw_response.sandbox.api.retrieve(SANDBOX_ID)
         assert (await raw.parse()).data.status == "active"  # type: ignore[union-attr]
         async with client.with_streaming_response.sandbox.api.retrieve(SANDBOX_ID) as streamed:
@@ -517,12 +513,6 @@ async def test_async_sandbox_labels_parity() -> None:
     ("call", "message"),
     [
         (lambda api: api.create(sandbox_name="Bad_Name", region="r", flavor_name="f"), "DNS-1035"),
-        (
-            lambda api: api.create(
-                sandbox_name="valid", region="r", flavor_name="f", template_id=1, template_name="python"
-            ),
-            "mutually exclusive",
-        ),
         (
             lambda api: api.create(
                 sandbox_name="valid",

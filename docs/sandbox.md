@@ -127,7 +127,6 @@ accepted = client.sandbox.api.create(
     sandbox_name="batch-worker",
     region="In-Bangalore-1",
     flavor_name="sandbox-nano",
-    template_name="python-runtime-sandbox",
     ttl_seconds=900,
     labels={"buzz.agent-pubkey": "ab12cd34"},
 )
