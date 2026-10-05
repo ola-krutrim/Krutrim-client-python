@@ -14,8 +14,11 @@ from ._client import (
     KrutrimClient,
     RequestOptions,
     AsyncKrutrimClient,
+    Environment,
+    ENVIRONMENTS,
 )
 from ._models import BaseModel
+from ._regions import SUPPORTED_REGIONS, Region
 from ._version import __title__, __version__
 from ._response import APIResponse as APIResponse, AsyncAPIResponse as AsyncAPIResponse
 from ._constants import DEFAULT_TIMEOUT, DEFAULT_MAX_RETRIES, DEFAULT_CONNECTION_LIMITS
@@ -68,6 +71,10 @@ __all__ = [
     "RateLimitError",
     "InternalServerError",
     "Timeout",
+    "Region",
+    "SUPPORTED_REGIONS",
+    "Environment",
+    "ENVIRONMENTS",
     "RequestOptions",
     "Client",
     "AsyncClient",

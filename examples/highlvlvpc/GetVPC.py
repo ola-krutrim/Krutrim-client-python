@@ -11,8 +11,6 @@ client = KrutrimClient(api_key = api_key)
 try:    
     GetVPC_resp = client.highlvlvpc.retrieve_vpc(
         vpc_id = "Enter the VPC ID",
-        x_region = "Enter the region",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
 
     print(f"Successfully executed the GetVPC:  {GetVPC_resp}")

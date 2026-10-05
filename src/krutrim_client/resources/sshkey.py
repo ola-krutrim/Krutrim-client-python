@@ -45,7 +45,7 @@ class SshkeysResource(SyncAPIResource):
         key_name: str,
         public_key: str,
         x_region: str,
-        customer_id: str,
+        customer_id: str | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -62,7 +62,7 @@ class SshkeysResource(SyncAPIResource):
 
           public_key: The actual public SSH key string (e.g., starting with "ssh-rsa").
 
-          customer_id: The customer ID for the SSH key.
+          customer_id: The customer ID for the SSH key (optional).
 
           extra_headers: Send extra headers
 
@@ -74,9 +74,10 @@ class SshkeysResource(SyncAPIResource):
         """
         extra_headers = {
             "x-region": x_region,
-            "k-customer-id": customer_id,
             **(extra_headers or {}),
         }
+        if is_given(customer_id) and customer_id is not None:
+            extra_headers["k-customer-id"] = customer_id
         return self._post(
             "/v2/sshkeys",
             body=maybe_transform(
@@ -157,7 +158,7 @@ class SshkeysResource(SyncAPIResource):
         ssh_key_id: str,
         *,
         x_region: str,
-        customer_id: str,
+        customer_id: str | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -171,7 +172,7 @@ class SshkeysResource(SyncAPIResource):
         Args:
           ssh_key_id: The UUID of the SSH key to delete.
 
-          customer_id: The customer ID associated with the SSH key.
+          customer_id: The customer ID associated with the SSH key (optional).
 
           extra_headers: Send extra headers
 
@@ -185,9 +186,10 @@ class SshkeysResource(SyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `ssh_key_id` but received {ssh_key_id!r}")
         extra_headers = {
             "x-region": x_region,
-            "k-customer-id": customer_id,
             **(extra_headers or {}),
         }
+        if is_given(customer_id) and customer_id is not None:
+            extra_headers["k-customer-id"] = customer_id
         return self._delete(
             f"/v2/sshkeys/{ssh_key_id}",
             options=make_request_options(
@@ -219,7 +221,7 @@ class AsyncSshkeysResource(AsyncAPIResource):
         key_name: str,
         public_key: str,
         x_region: str,
-        customer_id: str,
+        customer_id: str | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -236,7 +238,7 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           public_key: The actual public SSH key string (e.g., starting with "ssh-rsa").
 
-          customer_id: The customer ID for the SSH key.
+          customer_id: The customer ID for the SSH key (optional).
 
           extra_headers: Send extra headers
 
@@ -248,9 +250,10 @@ class AsyncSshkeysResource(AsyncAPIResource):
         """
         extra_headers = {
             "x-region": x_region,
-            "k-customer-id": customer_id,
             **(extra_headers or {}),
         }
+        if is_given(customer_id) and customer_id is not None:
+            extra_headers["k-customer-id"] = customer_id
         return await self._post(
             "/v2/sshkeys",
             body=await async_maybe_transform(
@@ -331,7 +334,7 @@ class AsyncSshkeysResource(AsyncAPIResource):
         ssh_key_id: str,
         *,
         x_region: str,
-        customer_id: str,
+        customer_id: str | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -345,7 +348,7 @@ class AsyncSshkeysResource(AsyncAPIResource):
         Args:
           ssh_key_id: The UUID of the SSH key to delete.
 
-          customer_id: The customer ID associated with the SSH key.
+          customer_id: The customer ID associated with the SSH key (optional).
 
           extra_headers: Send extra headers
 
@@ -359,9 +362,10 @@ class AsyncSshkeysResource(AsyncAPIResource):
             raise ValueError(f"Expected a non-empty value for `ssh_key_id` but received {ssh_key_id!r}")
         extra_headers = {
             "x-region": x_region,
-            "k-customer-id": customer_id,
             **(extra_headers or {}),
         }
+        if is_given(customer_id) and customer_id is not None:
+            extra_headers["k-customer-id"] = customer_id
         return await self._delete(
             f"/v2/sshkeys/{ssh_key_id}",
             options=make_request_options(

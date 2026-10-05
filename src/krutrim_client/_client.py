@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Union, Mapping
-from typing_extensions import Self, override
+from typing_extensions import Self, override, Literal
 
 import httpx
 
@@ -55,7 +55,51 @@ __all__ = [
     "AsyncKrutrimClient",
     "Client",
     "AsyncClient",
+    "Environment",
+    "ENVIRONMENTS",
 ]
+
+
+Environment = Literal["production", "cloud", "cloudx"]
+
+ENVIRONMENTS: dict[str, str] = {
+    "cloud": "https://cloud.olakrutrim.com",
+    "cloudx": "https://cloudx.olakrutrim.com",
+    "production": "https://cloud.olakrutrim.com",
+}
+
+_DEFAULT_ENVIRONMENT: Environment = "cloud"
+_DEFAULT_BASE_URL: str = "https://cloud.olakrutrim.com"
+
+
+def _resolve_base_url(
+    *,
+    base_url: str | httpx.URL | None = None,
+    environment: Environment | None = None,
+) -> str | httpx.URL:
+    if base_url is not None and environment is not None:
+        raise ValueError("Both base_url and environment were given; only one should be sent")
+
+    if base_url is not None:
+        return base_url
+
+    if environment is not None:
+        if environment not in ENVIRONMENTS:
+            raise ValueError(f"Unknown environment: {environment!r}. Must be one of: {list(ENVIRONMENTS.keys())}")
+        return ENVIRONMENTS[environment]
+
+    for env_var in ("KRUTRIMCLIENT_BASE_URL", "krutrim_client_BASE_URL", "KRUTRIM_CLIENT_BASE_URL"):
+        url = os.environ.get(env_var)
+        if url:
+            return url
+
+    env_name = os.environ.get("KRUTRIM_ENVIRONMENT") or os.environ.get("KRUTRIMCLIENT_ENVIRONMENT")
+    if env_name:
+        if env_name in ENVIRONMENTS:
+            return ENVIRONMENTS[env_name]
+        raise ValueError(f"Unknown environment from env var: {env_name!r}. Must be one of: {list(ENVIRONMENTS.keys())}")
+
+    return _DEFAULT_BASE_URL
 
 
 class KrutrimClient(SyncAPIClient):
@@ -64,10 +108,10 @@ class KrutrimClient(SyncAPIClient):
     kbs: kbs.KbsResource
     securityGroup: securityGroup.SecurityGroupResource
     startStopVM: startStopVM.StartStopResource
-    sshkey :sshkey.SshkeysResource
+    sshkey: sshkey.SshkeysResource
     kpod: kpod.KpodResource
     kos: kos.KosResource
-    lb: lb.HighlvlResource
+    lb: lb.LoadBalancerResource
     kks: kks.KksResource
     v1: v1.V1Resource
     addons: addons.AddonsResource
@@ -94,6 +138,7 @@ class KrutrimClient(SyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: Mapping[str, str] | None = None,
@@ -122,10 +167,7 @@ class KrutrimClient(SyncAPIClient):
             api_key = ""
         self.api_key = api_key
 
-        if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
-        if base_url is None:
-            base_url = f"https://cloud.olakrutrim.com"
+        base_url = _resolve_base_url(base_url=base_url, environment=environment)
 
         super().__init__(
             version=__version__,
@@ -139,13 +181,13 @@ class KrutrimClient(SyncAPIClient):
         )
 
         self.highlvlvpc = highlvlvpc.HighlvlvpcResource(self)
-        self.kbs =  kbs.KbsResource(self)
+        self.kbs = kbs.KbsResource(self)
         self.securityGroup = securityGroup.SecurityGroupResource(self)
         self.startStopVM = startStopVM.StartStopResource(self)
         self.sshkey = sshkey.SshkeysResource(self)
         self.kpod = kpod.KpodResource(self)
         self.kos = kos.KosResource(self)
-        self.lb = lb.HighlvlResource(self)
+        self.lb = lb.LoadBalancerResource(self)
         self.certs = certs.CertsResource(self)
         self.tags = tags.TagsResource(self)
         self.asg = asg.AsgResource(self)
@@ -162,10 +204,6 @@ class KrutrimClient(SyncAPIClient):
         self.sandbox = SandboxResource(self)
         self.with_raw_response = KrutrimClientWithRawResponse(self)
         self.with_streaming_response = KrutrimClientWithStreamedResponse(self)
-
-        
-
-        
 
     @property
     @override
@@ -193,6 +231,7 @@ class KrutrimClient(SyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.Client | None = None,
         max_retries: int | NotGiven = NOT_GIVEN,
@@ -223,10 +262,15 @@ class KrutrimClient(SyncAPIClient):
         elif set_default_query is not None:
             params = set_default_query
 
+        if base_url is not None or environment is not None:
+            resolved_base_url = _resolve_base_url(base_url=base_url, environment=environment)
+        else:
+            resolved_base_url = self.base_url
+
         http_client = http_client or self._client
         return self.__class__(
             api_key=api_key or self.api_key,
-            base_url=base_url or self.base_url,
+            base_url=resolved_base_url,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
             max_retries=max_retries if is_given(max_retries) else self.max_retries,
@@ -234,6 +278,7 @@ class KrutrimClient(SyncAPIClient):
             default_query=params,
             **_extra_kwargs,
         )
+
 
     # Alias for `copy` for nicer inline usage, e.g.
     # client.with_options(timeout=10).foo.create(...)
@@ -282,7 +327,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
     sshkey: sshkey.AsyncSshkeysResource
     kpod: kpod.AsyncKpodResource
     kos: kos.AsyncKosResource 
-    lb: lb.AsyncHighlvlResource
+    lb: lb.AsyncLoadBalancerResource
     certs: certs.AsyncCertsResource
     tags: tags.AsyncTagsResource
     asg: asg.AsyncAsgResource
@@ -308,6 +353,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: Mapping[str, str] | None = None,
@@ -338,10 +384,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
             )
         self.api_key = api_key
 
-        if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
-        if base_url is None:
-            base_url = f"https://cloud.olakrutrim.com"
+        base_url = _resolve_base_url(base_url=base_url, environment=environment)
 
         super().__init__(
             version=__version__,
@@ -361,7 +404,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         self.sshkey = sshkey.AsyncSshkeysResource(self)
         self.kpod = kpod.AsyncKpodResource(self)
         self.kos = kos.AsyncKosResource(self)
-        self.lb = lb.AsyncHighlvlResource(self)
+        self.lb = lb.AsyncLoadBalancerResource(self)
         self.certs = certs.AsyncCertsResource(self)
         self.tags = tags.AsyncTagsResource(self)
         self.asg = asg.AsyncAsgResource(self)
@@ -404,6 +447,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.AsyncClient | None = None,
         max_retries: int | NotGiven = NOT_GIVEN,
@@ -434,10 +478,15 @@ class AsyncKrutrimClient(AsyncAPIClient):
         elif set_default_query is not None:
             params = set_default_query
 
+        if base_url is not None or environment is not None:
+            resolved_base_url = _resolve_base_url(base_url=base_url, environment=environment)
+        else:
+            resolved_base_url = self.base_url
+
         http_client = http_client or self._client
         return self.__class__(
             api_key=api_key or self.api_key,
-            base_url=base_url or self.base_url,
+            base_url=resolved_base_url,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
             max_retries=max_retries if is_given(max_retries) else self.max_retries,
@@ -493,8 +542,8 @@ class KrutrimClientWithRawResponse:
         self.startStopVM = startStopVM.StartStopResourceWithRawResponse(client.startStopVM)
         self.sshkey = sshkey.SshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithRawResponse(client.kpod)
-        self.kos =kos.KosResourceWithRawResponse(client.kos)
-        self.lb = lb.HighlvlResourceWithRawResponse(client.lb)
+        self.kos = kos.KosResourceWithRawResponse(client.kos)
+        self.lb = lb.LoadBalancerResourceWithRawResponse(client.lb)
         self.certs = certs.CertsResourceWithRawResponse(client.certs)
         self.tags = tags.TagsResourceWithRawResponse(client.tags)
         self.asg = asg.AsgResourceWithRawResponse(client.asg)
@@ -519,7 +568,7 @@ class AsyncKrutrimClientWithRawResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithRawResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithRawResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithRawResponse(client.kos)
-        self.lb = lb.AsyncHighlvlResourceWithRawResponse(client.lb)
+        self.lb = lb.AsyncLoadBalancerResourceWithRawResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithRawResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithRawResponse(client.tags)
         self.asg = asg.AsyncAsgResourceWithRawResponse(client.asg)
@@ -544,7 +593,7 @@ class KrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.SshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.KpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.KosResourceWithStreamingResponse(client.kos)
-        self.lb = lb.HighlvlResourceWithStreamingResponse(client.lb)
+        self.lb = lb.LoadBalancerResourceWithStreamingResponse(client.lb)
         self.certs = certs.CertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.TagsResourceWithStreamingResponse(client.tags)
         self.asg = asg.AsgResourceWithStreamingResponse(client.asg)
@@ -570,7 +619,7 @@ class AsyncKrutrimClientWithStreamedResponse:
         self.sshkey = sshkey.AsyncSshkeysResourceWithStreamingResponse(client.sshkey)
         self.kpod = kpod.AsyncKpodResourceWithStreamingResponse(client.kpod)
         self.kos = kos.AsyncKosResourceWithStreamingResponse(client.kos)
-        self.lb = lb.AsyncHighlvlResourceWithStreamingResponse(client.lb)
+        self.lb = lb.AsyncLoadBalancerResourceWithStreamingResponse(client.lb)
         self.certs = certs.AsyncCertsResourceWithStreamingResponse(client.certs)
         self.tags = tags.AsyncTagsResourceWithStreamingResponse(client.tags)
         self.asg = asg.AsyncAsgResourceWithStreamingResponse(client.asg)

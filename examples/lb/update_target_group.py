@@ -1,57 +1,39 @@
 import os
+
 from dotenv import load_dotenv
+
 from krutrim_client import KrutrimClient
 
-# Load env
 load_dotenv()
-api_key = os.getenv("API_KEY")
 
-# Init client
+api_key = os.getenv("api_key")
 client = KrutrimClient(api_key=api_key)
-try:
-    resp = client.lb.with_raw_response.update_target_group(
-        x_region="enter the region",  
-        
-        target_group_name="enter the target groupname", 
-        
-        k_customer_id="enter the kcustomerid",  
-        
-        x_account_id="enter the xaccountid",  
-        
-        vpc_id="enter the vpcid",
-        
-        
-        members=[],
-        
-        health_monitor={}
-    )
 
-    print("Response:", resp.json())
+try:
+    # PUT /api/v3/loadBalancer/targetgroup/{target_group_krn}
+    resp = client.lb.update_target_group(
+        "enter the target group krn",
+        members=[
+            {
+                "name": "enter the member name",
+                "weight": 1,
+                "address": "enter the member IP address",
+                "protocol_port": 700,
+            }
+        ],
+        health_monitor={
+            "delay": 10,
+            "timeout": 5,
+            "max_retries": 2,
+            "health_check_path": "/",
+            "name": "enter the health monitor name",
+        },
+        k_customer_id="enter the customer id",
+        x_account_id="enter the account id",
+        x_region="enter the region name",
+        # x_region possible values: "In-Bangalore-1", "In-Hyderabad-1"
+    )
+    print(f"Update target group result: {resp}")
 
 except Exception as e:
-    print(f"Error has occurred: {e}")
-
-
-
-
-            # {
-            # "name": "member_test_celery_1_10",
-            # "address": "10.230.166.233",
-            # "protocol_port": 3000,
-            # "weight": 1
-            # },
-            # {
-            # "name": "member_test_celery_2_10",
-            # "address": "10.0.4.175",
-            # "protocol_port": 5000,
-            # "weight": 1
-            # }
-
-
-
-        # "h_type": "HTTP",
-        # "timeout": 10,
-        # "delay": 13,
-        # "name": "LB-fullaccess-HM",
-        # "url_path": "/",
-        # "max_retries": 2
+    print(f"Exception occurred: {e}")

@@ -166,6 +166,9 @@ class IAMResource(SyncAPIResource):
         extra_headers: Headers | None = None,
     ) -> object:
 
+        if not role_krn:
+            raise ValueError("Expected non-empty role_krn")
+
         headers = self._auth_headers(extra_headers)
 
 

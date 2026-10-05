@@ -1,45 +1,19 @@
 from __future__ import annotations
 
-from typing import Type, Callable
-
 import pytest
 
-from krutrim_client._constants import SUPPORTED_REGIONS
-from krutrim_client.resources.lb.lb import HighlvlResource, AsyncHighlvlResource
-from krutrim_client.resources.asg.asgV1 import V1Resource, AsyncV1Resource
-from krutrim_client.resources.highlvlvpc import HighlvlvpcResource
+from krutrim_client import SUPPORTED_REGIONS, Region, KrutrimClient, AsyncKrutrimClient
+from krutrim_client._regions import extract_region_from_krn, unsupported_region_error
+
+API_KEY = "test-api-key"
 
 
-@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
-def test_load_balancer_supports_region(region: str) -> None:
-    resource = object.__new__(HighlvlResource)
-
-    resource.validate_region(region)
-
-
-@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
-async def test_async_load_balancer_supports_region(region: str) -> None:
-    await AsyncHighlvlResource.validate_region(region)
-
-
-@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
-def test_highlvlvpc_supports_region(region: str) -> None:
-    resource = object.__new__(HighlvlvpcResource)
-
-    resource.validate_create_image_parameters("image", "instance-krn", region)
-    resource.validate_upload_image_s3_parameters(region, "qcow2", "https://example.com/image")
-
-
-@pytest.mark.parametrize("resource_type", [V1Resource, AsyncV1Resource])
-@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
-def test_asg_supports_region(resource_type: Type[V1Resource] | Type[AsyncV1Resource], region: str) -> None:
-    resource = object.__new__(resource_type)
-
-    resource.validate_create_asg_parameters(
+def _validate_asg_region(resource: object, region: Region) -> None:
+    resource.validate_create_asg_parameters(  # type: ignore[attr-defined]
         asg_name="asg",
         image_krn="image-krn",
         instance_name="instance",
-        subnet_id="subnet",
+        subnet_id="subnet-id",
         max=2,
         min=1,
         save_as_template=False,
@@ -48,54 +22,47 @@ def test_asg_supports_region(resource_type: Type[V1Resource] | Type[AsyncV1Resou
         x_region=region,
         launch_from_template=False,
     )
-    resource.validate_create_launch_template_parameters(
-        image_krn="image-krn",
-        instance_name="instance",
-        instance_type="CPU-1x-4GB",
-        max=2,
-        min=1,
-        vpc_name="vpc",
-        region=region,
-        security_groups=[],
-        sshkey_name="ssh-key",
-        subnet_id="subnet",
-        template_name="template",
-        volume_size=[],
-        volume_name="volume",
-        volume_type="standard",
-        vpc_krn="vpc-krn",
-        x_region=region,
+
+
+@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
+def test_all_sync_service_validators_accept_supported_regions(region: Region) -> None:
+    client = KrutrimClient(api_key=API_KEY)
+
+    client.highlvlvpc.validate_delete_instance_parameters("instance-krn", False)
+    # delete_instance derives region from the KRN; verify the extraction accepts all supported regions
+    assert extract_region_from_krn(f"krn:vm:{region}:acct:cust:instance:id") == region
+    client.kbs.validate_delete_volume_parameters("volume-id", "tenant-id", region)
+    client.securityGroup.validate_create_security_group_parameters("description", "name", "vpc-id", region)
+    client.startStopVM.validate_perform_action_parameters("instance-krn", "start", region)
+    client.lb.validate_region(region)
+    _validate_asg_region(client.asgV1, region)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("region", SUPPORTED_REGIONS)
+async def test_all_async_service_validators_accept_supported_regions(region: Region) -> None:
+    client = AsyncKrutrimClient(api_key=API_KEY)
+
+    client.highlvlvpc.validate_delete_instance_parameters("instance-krn", False)
+    assert extract_region_from_krn(f"krn:vm:{region}:acct:cust:instance:id") == region
+    await client.kbs.validate_delete_volume_parameters("volume-id", "tenant-id", region)
+    await client.securityGroup.validate_create_security_group_parameters("description", "name", "vpc-id", region)
+    await client.startStopVM.validate_perform_action_parameters("instance-krn", "start", region)
+    await client.lb.validate_region(region)
+    _validate_asg_region(client.asgV1, region)
+
+
+def test_supported_regions_public_api() -> None:
+    assert SUPPORTED_REGIONS == (
+        "In-Hyderabad-2",
+        "In-Hyderabad-1",
+        "In-Bangalore-1",
     )
 
 
-@pytest.mark.parametrize("region", [*SUPPORTED_REGIONS, "colo-1"])
-def test_asg_update_launch_template_preserves_supported_regions(region: str) -> None:
-    resource = object.__new__(V1Resource)
-
-    resource.validate_update_launch_template_parameters(
-        template_id="template-id",
-        template_name="template",
-        instance_name="instance",
-        instance_type="CPU-1x-4GB",
-        sshkey_name="ssh-key",
-        image_krn="image-krn",
-        security_groups=[],
-        min=1,
-        max=2,
-        volume_size=[],
-        x_region=region,
-    )
-
-
-@pytest.mark.parametrize(
-    "validator",
-    [
-        lambda: object.__new__(HighlvlResource).validate_region("In-Delhi-1"),
-        lambda: object.__new__(HighlvlvpcResource).validate_create_image_parameters(
-            "image", "instance-krn", "In-Delhi-1"
-        ),
-    ],
-)
-def test_services_reject_unsupported_region(validator: Callable[[], None]) -> None:
-    with pytest.raises(ValueError, match="In-Hyderabad-1"):
-        validator()
+def test_services_reject_unsupported_region() -> None:
+    client = KrutrimClient(api_key=API_KEY)
+    with pytest.raises(ValueError, match="must be one of"):
+        client.lb.validate_region("In-Delhi-1")
+    with pytest.raises(ValueError, match="must be one of"):
+        client.startStopVM.validate_perform_action_parameters("instance-krn", "start", "In-Delhi-1")

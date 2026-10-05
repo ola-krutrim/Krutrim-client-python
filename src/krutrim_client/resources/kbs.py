@@ -7,9 +7,10 @@ from typing_extensions import Literal
 from .._resource import SyncAPIResource, AsyncAPIResource
 from .._base_client import make_request_options
 import httpx
-from .._utils import maybe_transform, async_maybe_transform
+from .._utils import maybe_transform, async_maybe_transform, is_given
 from .._compat import cached_property
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
+from .._regions import SUPPORTED_REGIONS, unsupported_region_error
 # from ..types.kbs import 
 
 from ..types.kbs import (
@@ -54,14 +55,14 @@ class KbsResource(SyncAPIResource):
 
 
     def validate_delete_volume_parameters(
-    self,
-    id: str,
-    k_tenant_id: str,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        id: str,
+        k_tenant_id: str,
+        x_region: str | None = None,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None,
     ):
         # Validate 'id'
         if not isinstance(id, str) or not id.strip():
@@ -84,22 +85,20 @@ class KbsResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
-
-
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
     def validate_create_volume_parameters(
-    self,
-    availability_zone,
-    multiattach,
-    name,
-    size,
-    x_region,
-    volumetype,
-    k_tenant_id,
-    timeout=None
-    
+        self,
+        availability_zone,
+        multiattach,
+        name,
+        size,
+        volumetype,
+        k_tenant_id,
+        x_region=None,
+        timeout=None,
     ):
         # Required string parameters
         for param_name, param_value in {
@@ -119,23 +118,23 @@ class KbsResource(SyncAPIResource):
         if not isinstance(size, int) or size <= 0:
             raise ValueError("'size' must be a positive integer.")
 
-
         # Optional: timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
 
 
 
-    def delete_volume (
+    def delete_volume(
         self,
         id: str,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -156,19 +155,20 @@ class KbsResource(SyncAPIResource):
           timeout: Override the client-level default timeout for this request, in seconds
         """
         self.validate_delete_volume_parameters(
-            id = id,
-            k_tenant_id = k_tenant_id,
+            id=id,
+            k_tenant_id=k_tenant_id,
             extra_headers=extra_headers,
             extra_query=extra_query,
             extra_body=extra_body,
             timeout=timeout,
-            x_region = x_region
+            x_region=x_region if is_given(x_region) else None,
         )
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
-            **(extra_headers or {})
+            **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return self._delete(
             f"/kbs/v1/volumes/{id}",
             options=make_request_options(
@@ -186,9 +186,9 @@ class KbsResource(SyncAPIResource):
         size: int,
         volumetype: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         description: Optional[str] | None | NotGiven = NOT_GIVEN,
-        metadata: dict| None | NotGiven = NOT_GIVEN,
+        metadata: dict | None | NotGiven = NOT_GIVEN,
         qos: QosParam | None | NotGiven = NOT_GIVEN,
         source: SourceParam | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -229,18 +229,19 @@ class KbsResource(SyncAPIResource):
           timeout: Override the client-level default timeout for this request, in seconds
         """
         self.validate_create_volume_parameters(
-            availability_zone = availability_zone,
-            multiattach = multiattach,
-            name = name,
-            size = size,
-            volumetype = volumetype,
-            k_tenant_id = k_tenant_id,
+            availability_zone=availability_zone,
+            multiattach=multiattach,
+            name=name,
+            size=size,
+            volumetype=volumetype,
+            k_tenant_id=k_tenant_id,
             timeout=timeout,
-            x_region = x_region
+            x_region=x_region if is_given(x_region) else None,
         )
 
         extra_headers = {"K-Tenant-ID": k_tenant_id, **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return self._post(
             "/kbs/v1/volumes",
             body=maybe_transform(
@@ -268,7 +269,7 @@ class KbsResource(SyncAPIResource):
         volume_id: str,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -291,7 +292,10 @@ class KbsResource(SyncAPIResource):
         if not volume_id:
             raise ValueError(f"Expected a non-empty value for `volume_id` but received {volume_id!r}")
         extra_headers = {"K-Tenant-ID": k_tenant_id, **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers["x-region"] = x_region
         return self._get(
             f"/kbs/v1/volumes/{volume_id}",
             options=make_request_options(
@@ -304,7 +308,7 @@ class KbsResource(SyncAPIResource):
         self,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -318,14 +322,15 @@ class KbsResource(SyncAPIResource):
         """
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
-
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return self._get(
             "/kbs/v1/volumes",
             options=make_request_options(
@@ -343,7 +348,7 @@ class KbsResource(SyncAPIResource):
         *,
         instance_id: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         mount_partition: str = "/dev/vdz",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -362,14 +367,16 @@ class KbsResource(SyncAPIResource):
             raise ValueError("'instance_id' must be a non-empty string.")
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return self._post(
             f"/kbs/v1/volumes/{volume_id}/action",
             body=maybe_transform(
@@ -398,7 +405,7 @@ class KbsResource(SyncAPIResource):
         instance_id: str,
         attachment_id: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -418,14 +425,16 @@ class KbsResource(SyncAPIResource):
             raise ValueError("'attachment_id' must be a non-empty string.")
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return self._post(
             f"/kbs/v1/volumes/{volume_id}/action",
             body=maybe_transform(
@@ -469,14 +478,14 @@ class AsyncKbsResource(AsyncAPIResource):
 
 
     async def validate_delete_volume_parameters(
-    self,
-    id: str,
-    k_tenant_id: str,
-    x_region,
-    extra_headers=None,
-    extra_query=None,
-    extra_body=None,
-    timeout=None
+        self,
+        id: str,
+        k_tenant_id: str,
+        x_region: str | None = None,
+        extra_headers=None,
+        extra_query=None,
+        extra_body=None,
+        timeout=None,
     ):
         # Validate 'id'
         if not isinstance(id, str) or not id.strip():
@@ -499,21 +508,20 @@ class AsyncKbsResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
-
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
     async def validate_create_volume_parameters(
-    self,
-    availability_zone,
-    multiattach,
-    name,
-    size,
-    x_region,
-    volumetype,
-    k_tenant_id,
-    timeout=None
-    
+        self,
+        availability_zone,
+        multiattach,
+        name,
+        size,
+        volumetype,
+        k_tenant_id,
+        x_region=None,
+        timeout=None,
     ):
         # Required string parameters
         for param_name, param_value in {
@@ -533,20 +541,20 @@ class AsyncKbsResource(AsyncAPIResource):
         if not isinstance(size, int) or size <= 0:
             raise ValueError("'size' must be a positive integer.")
 
-
         # Optional: timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
     async def delete_volume(
         self,
         id: str,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -567,19 +575,20 @@ class AsyncKbsResource(AsyncAPIResource):
           timeout: Override the client-level default timeout for this request, in seconds
         """
         await self.validate_delete_volume_parameters(
-            id = id,
-            k_tenant_id = k_tenant_id,
+            id=id,
+            k_tenant_id=k_tenant_id,
             extra_headers=extra_headers,
             extra_query=extra_query,
             extra_body=extra_body,
             timeout=timeout,
-            x_region = x_region
+            x_region=x_region if is_given(x_region) else None,
         )
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
-            **(extra_headers or {})
+            **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
 
         return await self._delete(
             f"/kbs/v1/volumes/{id}",
@@ -598,9 +607,9 @@ class AsyncKbsResource(AsyncAPIResource):
         size: int,
         volumetype: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         description: Optional[str] | None | NotGiven = NOT_GIVEN,
-        metadata: dict| None | NotGiven = NOT_GIVEN,
+        metadata: dict | None | NotGiven = NOT_GIVEN,
         qos: QosParam | None | NotGiven = NOT_GIVEN,
         source: SourceParam | None | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -641,19 +650,19 @@ class AsyncKbsResource(AsyncAPIResource):
           timeout: Override the client-level default timeout for this request, in seconds
         """
         await self.validate_create_volume_parameters(
-            availability_zone = availability_zone,
-            multiattach = multiattach,
-            name = name,
-            size = size,
-            volumetype = volumetype,
-            k_tenant_id = k_tenant_id,
+            availability_zone=availability_zone,
+            multiattach=multiattach,
+            name=name,
+            size=size,
+            volumetype=volumetype,
+            k_tenant_id=k_tenant_id,
             timeout=timeout,
-            x_region = x_region
+            x_region=x_region if is_given(x_region) else None,
         )
 
-
         extra_headers = {"K-Tenant-ID": k_tenant_id, **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return await self._post(
             "/kbs/v1/volumes",
             body=await async_maybe_transform(
@@ -682,7 +691,7 @@ class AsyncKbsResource(AsyncAPIResource):
         volume_id: str,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -705,7 +714,10 @@ class AsyncKbsResource(AsyncAPIResource):
         if not volume_id:
             raise ValueError(f"Expected a non-empty value for `volume_id` but received {volume_id!r}")
         extra_headers = {"K-Tenant-ID": k_tenant_id, **(extra_headers or {})}
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers["x-region"] = x_region
         return await self._get(
             f"/kbs/v1/volumes/{volume_id}",
             options=make_request_options(
@@ -718,7 +730,7 @@ class AsyncKbsResource(AsyncAPIResource):
         self,
         *,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -732,14 +744,16 @@ class AsyncKbsResource(AsyncAPIResource):
         """
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return await self._get(
             "/kbs/v1/volumes",
             options=make_request_options(
@@ -757,7 +771,7 @@ class AsyncKbsResource(AsyncAPIResource):
         *,
         instance_id: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         mount_partition: str = "/dev/vdz",
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
@@ -775,14 +789,16 @@ class AsyncKbsResource(AsyncAPIResource):
             raise ValueError("'instance_id' must be a non-empty string.")
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return await self._post(
             f"/kbs/v1/volumes/{volume_id}/action",
             body=await async_maybe_transform(
@@ -811,7 +827,7 @@ class AsyncKbsResource(AsyncAPIResource):
         instance_id: str,
         attachment_id: str,
         k_tenant_id: str,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -830,14 +846,16 @@ class AsyncKbsResource(AsyncAPIResource):
             raise ValueError("'attachment_id' must be a non-empty string.")
         if not isinstance(k_tenant_id, str) or not k_tenant_id.strip():
             raise ValueError("'k_tenant_id' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         extra_headers = {
             "K-Tenant-ID": k_tenant_id,
-            "x-region": x_region,
             **(extra_headers or {}),
         }
+        if is_given(x_region) and x_region is not None:
+            extra_headers["x-region"] = x_region
         return await self._post(
             f"/kbs/v1/volumes/{volume_id}/action",
             body=await async_maybe_transform(

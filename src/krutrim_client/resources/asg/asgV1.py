@@ -9,7 +9,7 @@ import httpx
 from ..._types import Body, Omit, Query, Headers, NoneType, NotGiven, SequenceNotStr, omit, NOT_GIVEN
 from ..._utils import maybe_transform, strip_not_given, async_maybe_transform
 from ..._compat import cached_property
-from ..._constants import SUPPORTED_REGIONS
+from ..._regions import SUPPORTED_REGIONS, unsupported_region_error
 from ..._resource import SyncAPIResource, AsyncAPIResource
 from ..._response import (
     to_raw_response_wrapper,
@@ -164,7 +164,7 @@ class V1Resource(SyncAPIResource):
             raise ValueError("'x_region' is required.")
         
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            raise unsupported_region_error()
 
             
 
@@ -315,7 +315,7 @@ class V1Resource(SyncAPIResource):
 
         # 7. Literal Constraints
         if x_region is not omit and x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            raise unsupported_region_error()
         
 
 
@@ -404,10 +404,8 @@ class V1Resource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout.")
 
         # 8. Literal Constraints
-        if x_region is not omit and x_region not in _ASG_SUPPORTED_REGIONS:
-            raise ValueError(
-                "'x_region' must be 'In-Bangalore-1', 'In-Hyderabad-1', or 'colo-1'."
-            )
+        if x_region is not omit and x_region not in (*SUPPORTED_REGIONS, "colo-1"):
+            raise unsupported_region_error("x_region", "colo-1")
         
 
     def _fetch_network_id_from_vpc(
@@ -1217,7 +1215,7 @@ class AsyncV1Resource(AsyncAPIResource):
 
         # 7. Literal Constraints
         if x_region is not omit and x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            raise unsupported_region_error()
         
 
     def _fetch_network_id_from_vpc(
@@ -1357,7 +1355,7 @@ class AsyncV1Resource(AsyncAPIResource):
             raise ValueError("'x_region' is required.")
         
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            raise unsupported_region_error()
         
 
 

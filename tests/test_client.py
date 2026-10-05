@@ -241,6 +241,7 @@ class TestKrutrimClient:
                         "krutrim_client/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
+                        "/re/__init__.py",
                     ]
                 ):
                     return
@@ -1025,6 +1026,7 @@ class TestKrutrimClient:
                         "krutrim_client/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
+                        "/re/__init__.py",
                     ]
                 ):
                     return
