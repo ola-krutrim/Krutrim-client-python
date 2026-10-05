@@ -60,7 +60,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 ## Discovery
 
 These three calls live on `client.sandbox.api` because they have no managed wrapper, but they
-are part of the normal user workflow: use them to find valid `flavor_name`, `template_name`,
+are part of the normal user workflow: use them to find valid `flavor_name`
 and existing sandbox IDs before calling `create`/`connect`.
 
 ### `client.sandbox.api.list_flavors(*, region=None) -> FlavorListResponse`
@@ -72,7 +72,7 @@ details: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `curr
 
 ### `client.sandbox.api.list_templates() -> List[PodTemplate]`
 
-Lists runtime templates. Use a template's `template_name` (or `id`) with `create`.
+Lists runtime templates. Use a template's `id` with `create`.
 
 ### `client.sandbox.api.list(*, region=None, status=None, name=None, labels=None, page=None, limit=None) -> SandboxListResponse`
 
@@ -96,8 +96,6 @@ def create(
     region: str,                                        # required, e.g. "In-Bangalore-1"
     sandbox_name: str | None = None,                    # auto-generated "sandbox-<12 hex>" if omitted
     image_uri: str | None = None,                       # public BYOC image; omitted/None = platform image
-    template_id: int | None = None,                     # mutually exclusive with template_name
-    template_name: str | None = None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,  # max 10
     environment_variables: Mapping[str, str] | None = None,
     labels: Mapping[str, str] | None = None,            # caller metadata, filterable on list
@@ -118,12 +116,11 @@ Behavior:
 - Raises `SandboxException` if deployment fails (`failed_deploy`), the sandbox starts
   deleting, or it disappears after being seen.
 - Raises `SandboxTimeoutError` when `wait_timeout` elapses before the sandbox is `active`.
-- Raises `ValueError` for invalid names, lifetimes, or `template_id`+`template_name` together.
+- Raises `ValueError` for invalid names or lifetimes.
 - `image_uri` is sent as `imageUri` only when non-`None`. The backend validates that
   the image is publicly pullable, has a `linux/amd64` manifest, is at most 4 GiB
   compressed, and uses a registry resolving only to public IPs, then pins it to a
-  digest. The image must bundle the sandbox agent runtime. The template controls
-  startup and health checks; template environment variables override user values.
+  digest. The image must bundle the sandbox agent runtime.
 - BYOC uses the same HTTP and readiness exceptions as platform images; no image
   validation or registry access is performed by the SDK. See the
   [BYOC guide](sandbox.md#bring-your-own-container-byoc) for sync/async examples.
@@ -334,6 +331,5 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | Ports | 1024–65535; max 20 open per sandbox |
 | File / proxy body size | ≤ 100 MB |
 | Directory listing `depth` | 1–10 |
-| `template_id` / `template_name` | mutually exclusive |
 | `network_storages` | at most 10 attachments |
 | `labels` | at most 16; key ≤ 63 chars, no `=`/`,`; value ≤ 255 chars, no `,` |

@@ -77,15 +77,11 @@ __all__ = ["SandboxAPIResource", "AsyncSandboxAPIResource"]
 def _validate_create(
     *,
     sandbox_name: str,
-    template_id: int | None,
-    template_name: str | None,
     network_storages: Sequence[NetworkStorageAttachmentInput] | None,
     ttl_seconds: int | None,
     labels: Mapping[str, str] | None,
 ) -> None:
     validate_sandbox_name(sandbox_name)
-    if template_id is not None and template_name is not None:
-        raise ValueError("template_id and template_name are mutually exclusive")
     if network_storages is not None and len(network_storages) > 10:
         raise ValueError("at most 10 network storage attachments are supported")
     if ttl_seconds is not None:
@@ -206,8 +202,6 @@ class SandboxAPIResource(SyncAPIResource):
         region: str,
         flavor_name: str,
         image_uri: str | None = None,
-        template_id: int | None = None,
-        template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
@@ -219,8 +213,6 @@ class SandboxAPIResource(SyncAPIResource):
     ) -> AsyncSandboxResponse:
         _validate_create(
             sandbox_name=sandbox_name,
-            template_id=template_id,
-            template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
             labels=labels,
@@ -234,8 +226,6 @@ class SandboxAPIResource(SyncAPIResource):
             body["network_storages"] = list(network_storages)
         for key, value in {
             "image_uri": image_uri,
-            "template_id": template_id,
-            "template_name": template_name,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
             "labels": labels,
@@ -423,8 +413,6 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         region: str,
         flavor_name: str,
         image_uri: str | None = None,
-        template_id: int | None = None,
-        template_name: str | None = None,
         network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,
         environment_variables: Mapping[str, str] | None = None,
         ttl_seconds: int | None = None,
@@ -436,8 +424,6 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
     ) -> AsyncSandboxResponse:
         _validate_create(
             sandbox_name=sandbox_name,
-            template_id=template_id,
-            template_name=template_name,
             network_storages=network_storages,
             ttl_seconds=ttl_seconds,
             labels=labels,
@@ -451,8 +437,6 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             body["network_storages"] = list(network_storages)
         for key, value in {
             "image_uri": image_uri,
-            "template_id": template_id,
-            "template_name": template_name,
             "environment_variables": environment_variables,
             "ttl_seconds": ttl_seconds,
             "labels": labels,
