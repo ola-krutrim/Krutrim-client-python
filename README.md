@@ -1,4 +1,20 @@
-# KrutrimClient Python API library
+# Krutrim Core Infrastructure & Sandbox Python SDK (`krutrim-client`)
+
+The Python SDK for Krutrim Cloud **Core Infrastructure** — VPCs, VMs, volumes, SSH keys, security groups, floating IPs, AI Pods — and **Sandbox**.
+
+> **Note:** Looking for model inference, image generation, speech, or fine-tuning? Those are AI Studio APIs and live in a different SDK, [`krutrim-cloud`](https://github.com/ola-krutrim/krutrim-cloud-python). See [Which Python SDK should I use?](#which-python-sdk-should-i-use) below.
+
+## Which Python SDK should I use?
+
+| If you want to… | Use | Install | Import |
+|---|---|---|---|
+| Call AI Studio / model APIs — LLM inference, image generation, Bhashik speech & text, fine-tuning, Bring Your Own Model | **krutrim-cloud** | `pip install krutrim-cloud` | `from krutrim_cloud import KrutrimCloud` |
+| Manage Core Infrastructure — VPCs, VMs, volumes, SSH keys, security groups, floating IPs, AI Pods, **Sandbox** | **krutrim-client** | `pip install krutrim-client` | `from krutrim_client import KrutrimClient` |
+
+The two packages are separate, actively maintained SDKs for different Krutrim Cloud products, and they can be installed side by side. Neither replaces the other.
+
+This package (`krutrim-client`) is the **only** Python SDK with Sandbox support.
+
 ## Terms of Use
 
 By downloading or using this SDK, you agree to the terms as mentioned in [Krutrim SDK License](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/KRUTRIM%20%20SDK%20LICENSE.md).
@@ -18,7 +34,6 @@ All regional services support both `In-Bangalore-1` and `In-Hyderabad-1`.
 ## Installation
 
 ```sh
-# install from this staging repo
 pip install krutrim-client
 ```
 
