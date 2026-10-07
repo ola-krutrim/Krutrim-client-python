@@ -1,7 +1,7 @@
 [project]
 name = "krutrim_client"
-version = "0.8.3"
-description = "The official Python library for the krutrim_client API"
+version = "0.8.4"
+description = "Official Krutrim Cloud Core Infrastructure & Sandbox SDK (VPC, VMs, storage, AI Pods, Sandbox). For AI Studio model APIs use krutrim-cloud."
 dynamic = ["readme"]
 license = {"file" = "LICENSE"}
 authors = [
