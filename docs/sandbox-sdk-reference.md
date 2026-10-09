@@ -38,6 +38,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `client.sandbox.connect(sandbox_id)` | `Sandbox` | Attach to an existing sandbox |
 | `sandbox.run_command(command, ...)` | `SandboxCommandResult` | Execute a shell command |
 | `sandbox.set_timeout(seconds)` | `None` | Reset the sandbox lifetime |
+| `sandbox.update_network_policy(...)` | `SandboxNetworkPolicyData` | Replace the sandbox network policy |
 | `sandbox.is_running()` | `bool` | Check whether the sandbox is active |
 | `sandbox.kill()` | `None` | Delete the sandbox |
 | `sandbox.files.write(path, data)` | `SandboxFileData` | Upload a file |
@@ -54,6 +55,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `client.sandbox.api.list_flavors(region=...)` | `FlavorListResponse` | Discover compute flavors |
 | `client.sandbox.api.list_templates()` | `List[PodTemplate]` | Discover runtime templates |
 | `client.sandbox.api.list(...)` | `SandboxListResponse` | List your sandboxes |
+| `client.sandbox.api.update_network_policy(...)` | `SandboxNetworkPolicyResponse` | Replace a sandbox's network policy (low level) |
 
 ---
 
@@ -98,6 +100,10 @@ def create(
     image_uri: str | None = None,                       # public BYOC image; omitted/None = platform image
     network_storages: Sequence[NetworkStorageAttachmentInput] | None = None,  # max 10
     environment_variables: Mapping[str, str] | None = None,
+    allow_internet_access: bool | None = None,          # False blocks all outbound traffic
+    outbound_cidr_allowlist: str | Sequence[str] | None = None,   # public IPv4 CIDRs
+    outbound_domain_allowlist: str | Sequence[str] | None = None, # domains over TCP/443
+    inbound_cidr_allowlist: str | Sequence[str] | None = None,    # restrict data-path callers
     labels: Mapping[str, str] | None = None,            # caller metadata, filterable on list
     timeout: int | None = None,                         # sandbox lifetime in seconds (60–604800)
     wait_timeout: float = 300.0,                        # total readiness deadline (> 0)
@@ -183,6 +189,24 @@ Also refreshes `sandbox.metadata`.
 
 Requests sandbox deletion. Idempotent — repeated calls and already-deleted sandboxes are
 no-ops. Deletion is asynchronous server-side: acceptance is guaranteed, cluster cleanup is not.
+
+### `update_network_policy(*, allow_internet_access=None, outbound_cidr_allowlist=None, outbound_domain_allowlist=None, inbound_cidr_allowlist=None, request_timeout=NOT_GIVEN) -> SandboxNetworkPolicyData`
+
+Replaces the sandbox's network policy. This is a **full replacement**: omitted allowlists
+are cleared and an omitted `allow_internet_access` resets to `True`. Allowlists accept a
+sequence of entries or a pre-joined comma-separated string.
+
+- `allow_internet_access=False` cannot be combined with any allowlist (`ValueError`).
+- The sandbox must be `active`; otherwise the server responds with `ConflictError` (409).
+- CIDR/domain validity is enforced server-side (`BadRequestError`).
+- Low-level twin: `client.sandbox.api.update_network_policy(sandbox_id, ...)` returning the
+  `SandboxNetworkPolicyResponse` envelope, with raw/streaming views.
+
+```python
+policy = sandbox.update_network_policy(outbound_domain_allowlist=["api.openai.com", "*.github.com"])
+print(policy.outbound_domain_allowlist)  # "api.openai.com,*.github.com"
+sandbox.update_network_policy()  # reset to unrestricted
+```
 
 ### Context manager
 
@@ -306,6 +330,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | `SandboxEntryInfo` | `name`, `path`, `type` (`file`/`dir`), `size`, `mode`, `modified_time` |
 | `SandboxFileData` | `path`, `name`, `type` |
 | `SandboxPortInfo` | `port`, `status` (`provisioning`/`active`/`closing`/`failed`), `error_message`, `url` |
+| `SandboxNetworkPolicyData` | `id` (alias `sandbox_id`), `allow_internet_access`, `outbound_cidr_allowlist`, `outbound_domain_allowlist`, `inbound_cidr_allowlist` |
 | `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `labels`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
 | `PodTemplate` | `id`, `template_name`, `description`, image/disk/port settings |
 | `FlavorItem` | `subject` (region), `group_by` (`FlavorGroupBy`: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`, `vcpus`, `storage`, `local_disk`, GPU fields, …), `time` |
@@ -332,4 +357,6 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | File / proxy body size | ≤ 100 MB |
 | Directory listing `depth` | 1–10 |
 | `network_storages` | at most 10 attachments |
+| `allow_internet_access=False` | cannot be combined with any allowlist |
+| Allowlist entries | non-empty, no commas within an entry |
 | `labels` | at most 16; key ≤ 63 chars, no `=`/`,`; value ≤ 255 chars, no `,` |

@@ -157,6 +157,42 @@ with client.with_streaming_response.sandbox.api.files.download(
     response.stream_to_file("large.bin")
 ```
 
+## Networking and security
+
+Sandboxes can restrict network traffic, mirroring the service's network policy:
+
+| Setting | Effect |
+| --- | --- |
+| `allow_internet_access=False` | Blocks all outbound traffic. Cannot be combined with any allowlist. |
+| `outbound_cidr_allowlist` | Only listed public IPv4 CIDRs are reachable. |
+| `outbound_domain_allowlist` | Only listed domains are reachable over TCP/443 (`example.com` exact, `*.example.com` includes subdomains, `*` any). Matching is DNS-based. |
+| `inbound_cidr_allowlist` | Only callers from listed CIDRs may reach the sandbox data path (403 otherwise). Control-plane APIs are unaffected. |
+
+Each allowlist accepts a sequence of entries or a pre-joined comma-separated string.
+
+```python
+restricted = client.sandbox.create(
+    flavor_name="sandbox-nano",
+    region="In-Bangalore-1",
+    outbound_domain_allowlist=["pypi.org", "*.pypi.org"],
+)
+
+offline = client.sandbox.create(
+    flavor_name="sandbox-nano",
+    region="In-Bangalore-1",
+    allow_internet_access=False,
+)
+```
+
+Update the policy of a running sandbox with `update_network_policy`. This is a **full replacement**: any allowlist you omit is cleared and an omitted `allow_internet_access` resets to `True`.
+
+```python
+sandbox.update_network_policy(outbound_domain_allowlist=["api.openai.com", "*.github.com"])
+sandbox.update_network_policy()  # reset to unrestricted internet access
+```
+
+CIDR and domain semantics (public IPv4 only, wildcard rules, active-sandbox requirement) are enforced server-side: invalid values raise `BadRequestError`, and updating a non-active sandbox raises `ConflictError`.
+
 ## Timeout meanings
 
 Sandbox operations use distinct timeout concepts:

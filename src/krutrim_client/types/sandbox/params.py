@@ -11,6 +11,7 @@ __all__ = [
     "SandboxCreateParams",
     "SandboxListParams",
     "SandboxSetTTLParams",
+    "SandboxNetworkPolicyParams",
     "SandboxFileListParams",
     "SandboxFileMoveParams",
     "SandboxCommandRunParams",
@@ -36,6 +37,10 @@ class SandboxCreateParams(TypedDict, total=False):
     network_storages: Annotated[List[NetworkStorageAttachmentInput], PropertyInfo(alias="networkStorages")]
     environment_variables: Annotated[Mapping[str, str], PropertyInfo(alias="environmentVariables")]
     ttl_seconds: Annotated[int, PropertyInfo(alias="ttlSeconds")]
+    allow_internet_access: Annotated[bool, PropertyInfo(alias="allowInternetAccess")]
+    outbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="outboundCidrAllowlist")]
+    outbound_domain_allowlist: Annotated[str, PropertyInfo(alias="outboundDomainAllowlist")]
+    inbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="inboundCidrAllowlist")]
     labels: Mapping[str, str]
 
 
@@ -50,6 +55,13 @@ class SandboxListParams(TypedDict, total=False):
 
 class SandboxSetTTLParams(TypedDict, total=False):
     ttl_seconds: Required[Annotated[int, PropertyInfo(alias="ttlSeconds")]]
+
+
+class SandboxNetworkPolicyParams(TypedDict, total=False):
+    allow_internet_access: Annotated[bool, PropertyInfo(alias="allowInternetAccess")]
+    outbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="outboundCidrAllowlist")]
+    outbound_domain_allowlist: Annotated[str, PropertyInfo(alias="outboundDomainAllowlist")]
+    inbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="inboundCidrAllowlist")]
 
 
 class SandboxFileListParams(TypedDict, total=False):
