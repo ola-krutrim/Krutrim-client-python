@@ -119,6 +119,17 @@ with KrutrimClient() as client:
 
 See the [Sandbox guide](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/docs/sandbox.md) for sync/async examples, timeout semantics, low-level API access, filesystem, port, proxy, retry, and cleanup behavior, and the [Sandbox SDK reference](https://github.com/ola-krutrim/Krutrim-client-python/blob/main/docs/sandbox-sdk-reference.md) for a description of all user-facing sandbox functions.
 
+### Custom Sandbox Runtime Images
+
+Build a runtime image with your own dependencies and the sandbox agent. See the [Custom Image Cookbook](examples/sandbox/cookbook/custom_image/README.md) for an end-to-end walkthrough including:
+
+- Building a `linux/amd64` image with the Go agent (`sandbox-agent`) and custom Python dependencies
+- Testing command execution and file operations locally
+- Publishing to a public registry and verifying anonymous pull access
+- Using `image_uri` with `client.sandbox.create()` in sync and async workflows
+
+The image must include the agent's health, command, and file endpoints; an arbitrary application image is not sufficient. Managed creation waits for readiness, and context-manager exit requests sandbox deletion.
+
 ## Using types
 
 Nested request parameters are [TypedDicts](https://docs.python.org/3/library/typing.html#typing.TypedDict). Responses are [Pydantic models](https://docs.pydantic.dev) which also provide helper methods for things like:
