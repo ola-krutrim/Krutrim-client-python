@@ -10,3 +10,4 @@ New to the sandbox? Start with [`basic/`](basic/).
 | [`web_service_ports_proxy/`](web_service_ports_proxy/) | Run an HTTP service in a sandbox; open a port, call it via the authenticated `sandbox.proxy`, and share its public URL |
 | [`data_pipeline_csv/`](data_pipeline_csv/) | Upload a CSV, transform it in-sandbox, inspect with `files.list`/`stat`, download results as text and exact bytes |
 | [`parallel_sandboxes_async/`](parallel_sandboxes_async/) | Fan chunks out to concurrent sandboxes with `AsyncKrutrimClient` + `asyncio.gather` and aggregate the results |
+| [`custom_image/`](custom_image/) | Build and use a custom Go-based sandbox runtime image with the SDK |
