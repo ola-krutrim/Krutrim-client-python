@@ -202,9 +202,37 @@ In-Bangalore-1, create → usable, with stock-image controls in the same run:
 budget from a cold create — that number is a one-time warming cost, not the price of
 using a template.
 
-Cache scope is not documented and was not determined here: four consecutive fast
-creates are consistent with a warm cache, but whether it is per node, per zone or per
-region is unverified, and all four may have landed on one node.
+### The warm penalty does not scale with image size
+
+Measured by alternating the smallest and largest templates, 8 s apart, with stock
+controls in the same run:
+
+| image | MiB compressed | n | median |
+|---|---|---|---|
+| `terminal-bench` | 93 | 6 | 2.59 s |
+| `browser-playwright` | 950 | 6 | 2.45 s |
+| stock control | — | 3 | 1.64 s |
+
+A 10x difference in image size costs nothing measurable once the image is resident:
++0.95 s for the small one, +0.81 s for the large one. Budget about a second for any
+template here, including the browser ones.
+
+This also settles the cache-scope doubt the earlier measurement left open. Both images
+had been pulled into the region earlier; every spaced create was fast, so residency is
+not per-create chance.
+
+### Creates in a burst are throttled, and the error does not say so
+
+Twenty-one creates issued back to back, with no spacing, produced seven in the 12–42 s
+range and two failures — one a raw `403 Forbidden` **HTML** page that the SDK surfaces as
+`PermissionDeniedError`, one a timeout. The same images 8 s apart produced fifteen clean
+creates with nothing above 6.5 s. Stock controls were unaffected in both runs, and the
+slow creates were uncorrelated with image size, so this is request rate, not image pull.
+
+If you start sandboxes in a loop, space them. A `PermissionDeniedError` from a burst is
+almost certainly a rate limit, not a credentials problem — and because it is a 403 rather
+than a 429, a normal retry policy will not retry it. Tracked as
+ola-silicon/Krutrim-Cloud-Service-Omni#171.
 
 ## Contract each template must satisfy
 
