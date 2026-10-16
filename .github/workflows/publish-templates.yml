@@ -1,0 +1,111 @@
+# .github/workflows/publish-templates.yml
+#
+# Builds and publishes Krutrim Sandbox templates to ghcr.io/ola-krutrim/.
+# Uses the Actions-provided GITHUB_TOKEN — no human PAT, nothing to rotate.
+#
+# Belongs in ola-krutrim/Krutrim-client-python, alongside the cookbook the
+# templates are built from.
+
+name: Publish sandbox templates
+
+on:
+  push:
+    tags: ['template-v*']          # e.g. template-v1.0.0
+  workflow_dispatch:
+    inputs:
+      template:
+        description: Build a single template (blank = all)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write                   # the only elevated permission needed
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ola-krutrim
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [computer-use]          # add code-interpreter when its Dockerfile lands
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if a single template was requested
+        id: gate
+        run: |
+          want='${{ inputs.template }}'
+          if [ -n "$want" ] && [ "$want" != '${{ matrix.template }}' ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.skip != 'true'
+
+      - name: Log in to GHCR
+        if: steps.gate.outputs.skip != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.gate.outputs.skip != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: templates/${{ matrix.template }}/Dockerfile
+          platforms: linux/amd64          # required by the BYOC contract
+          push: true
+          provenance: false               # keep the manifest a plain amd64 image
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-${{ matrix.template }}:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-${{ matrix.template }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The contract requires <=4 GiB compressed. Fail loudly rather than at create time.
+      - name: Check compressed size against the 4 GiB limit
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          img="${REGISTRY}/${OWNER}/sandbox-${{ matrix.template }}:${{ github.ref_name }}"
+          bytes=$(docker manifest inspect "$img" \
+            | jq '[.layers[].size] | add // 0')
+          mib=$(( bytes / 1024 / 1024 ))
+          echo "compressed layers: ${mib} MiB"
+          if [ "$mib" -gt 4096 ]; then
+            echo "::error::image exceeds the 4 GiB BYOC limit (${mib} MiB)"; exit 1
+          fi
+
+      - name: Make the package public
+        if: steps.gate.outputs.skip != 'true'
+        continue-on-error: true          # first run may need it set by hand once
+        run: |
+          # BYOC pulls anonymously — a private package cannot be used at all.
+          gh api -X PATCH \
+            "orgs/${OWNER}/packages/container/sandbox-${{ matrix.template }}" \
+            -f visibility=public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm anonymous pull works
+        run: |
+          # The platform pulls with no credentials. Prove that path, not an authenticated one.
+          docker logout ghcr.io || true
+          for t in computer-use; do
+            img="ghcr.io/ola-krutrim/sandbox-${t}:${{ github.ref_name }}"
+            echo "anonymous pull: $img"
+            docker pull --platform linux/amd64 "$img" >/dev/null \
+              && echo "  ok" \
+              || { echo "::error::anonymous pull failed for $img"; exit 1; }
+          done
