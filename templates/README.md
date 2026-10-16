@@ -148,12 +148,19 @@ on a missing `libX11.so.6`. None of that belongs in an ephemeral sandbox image.
 The cost is version lag: PyPI carries 0.19.0 while the repo is at v0.22.2. `hermes
 update` moves a running sandbox forward.
 
-One measured caveat, relevant to the UID 1000 question in #168: run the CLI as a UID
-with no `/etc/passwd` entry and it exits 120 at import, in
+One measured caveat, relevant to the UID 1000 question in #168. On a UID with no
+`/etc/passwd` entry **and `HOME` unset**, the CLI raises
+`RuntimeError: Could not determine home directory.` at import and exits 1, in
 `hermes_constants._get_platform_default_hermes_home`. `HERMES_HOME` does not rescue it,
-because the crash happens before the override is read. This template is fine today —
-`ubuntu:24.04` carries `ubuntu:x:1000:1000` and the platform currently runs as root
-anyway — but a runtime that assigns containers an unmapped UID would break it.
+because the lookup precedes the override — but **setting `HOME` does**, with no
+`HERMES_HOME` needed. `sandbox-base` therefore sets `HOME=/app`, which protects every
+template, not just this one.
+
+Two corrections to an earlier version of this note. It gave the exit code as 120; that
+was an artefact of piping the output through `head`, which closes the pipe and makes
+CPython fail to flush stdout at exit. And it implied `HERMES_HOME` was the mitigation,
+which sent the fix to the wrong layer. The mechanism was found by @buzz_agent_runtime,
+whose own image survives this because it sets `ENV HOME` explicitly.
 
 ## The base image
 

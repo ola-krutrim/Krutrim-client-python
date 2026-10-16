@@ -32,11 +32,12 @@ RUN pip install --no-cache-dir hermes-agent==0.19.0
 # root (it currently does, despite USER 1000) and in /home/ubuntu/.hermes when it
 # honours the contract. Naming the directory makes that one path either way.
 #
-# This is not optional hygiene for an arbitrary UID. Measured: run the CLI as a UID
-# with no passwd entry and it dies at import with exit 120, inside
-# hermes_constants._get_platform_default_hermes_home, and HERMES_HOME does not rescue
-# it — the crash happens before the override is read. Any future runtime that assigns
-# containers an unmapped UID breaks this template.
+# HERMES_HOME is for determinism only. It does NOT protect an arbitrary UID, and an
+# earlier version of this comment claimed it did. Measured, four arms, one sandbox:
+# on a UID with no passwd entry and HOME unset the CLI raises
+# "RuntimeError: Could not determine home directory." at import (exit 1) whether or not
+# HERMES_HOME is set; with HOME set it works with no HERMES_HOME at all. HOME is the
+# variable, and sandbox-base now sets it.
 ENV HERMES_HOME=/opt/hermes-home
 RUN mkdir -p /opt/hermes-home && chown -R 1000:1000 /opt/hermes-home
 
