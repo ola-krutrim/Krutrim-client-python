@@ -33,10 +33,101 @@ Published by `.github/workflows/publish-templates.yml` on a `template-v*` tag, t
 | `rust` | Rust toolchain via rustup |
 | `terminal-bench` | tmux, asciinema and terminal tooling |
 
-Pin by digest in production. The current computer-use digest, for example:
+## Using a template
+
+Templates are consumed through the BYOC path: `create` takes an `image_uri`. There is no
+`template_name` parameter — the `/omni/sandbox/v1/template` catalog is read-only in SDK
+0.8.4 — so a published image reference is the whole interface.
+
+```python
+from krutrim_client import KrutrimClient
+
+c = KrutrimClient(api_key="...")
+
+r = c.sandbox.api.create(
+    sandbox_name="my-agent",          # DNS-1035, and 28 characters or fewer
+    region="In-Bangalore-1",
+    flavor_name="sandbox-large",
+    ttl_seconds=900,
+    image_uri="ghcr.io/ola-krutrim/sandbox-hermes:template-v1.1.0",
+)
+
+sb = c.sandbox.connect(r.data.id)
+print(sb.run_command("hermes --version").stdout)
+
+c.sandbox.api.delete(r.data.id)
+```
+
+`sandbox_name` must be **28 characters or fewer**. The SDK validates the DNS-1035 shape
+but not the length, so an over-long name comes back as a server-side 400 rather than a
+local `ValueError` — easy to hit when a name is built from a template name and a run id.
+
+Nothing needs credentials to pull. The platform fetches these anonymously, which is why
+each one is published public and the release workflow proves that path with GHCR logged
+out.
+
+## What each template proves, measured
+
+Every row below was created from the published `template-v1.1.0` image in
+In-Bangalore-1 on `sandbox-large`, and the listed tool was run inside the sandbox.
+21 of 21 passed.
+
+| template | MiB compressed | create → usable (s) | verified in a live sandbox |
+|---|---|---|---|
+| `aider` | 233 | 28.0 | `aider 0.86.2` |
+| `browser-playwright` | 950 | 65.4 | Chromium, Firefox and WebKit all launched a page |
+| `bun` | 124 | 11.8 | `bun 1.4.3` |
+| `claude-code` | 371 | 37.5 | `2.1.301 (Claude Code)` |
+| `code-interpreter` | 173 | 18.3 | `pandas 3.0.6`, kernel registered |
+| `codex` | 453 | 44.4 | `codex-cli 0.163.0` |
+| `computer-use` | 522 | 43.7 | `with-display` shim, `chromium-1248` |
+| `data-science` | 386 | 39.7 | `sklearn 1.9.1`, polars, duckdb, pyarrow |
+| `database` | 182 | 17.9 | PostgreSQL 16.15, SQLite 3.45.1, Redis 7.0.15 |
+| `deno` | 124 | 9.5 | `deno 2.9.7` |
+| `documents` | 312 | 30.9 | `pandoc 3.1.3`, pypdf/docx/openpyxl |
+| `ffmpeg` | 302 | 26.8 | `ffmpeg 6.1.1`, Pillow, imageio |
+| `golang` | 158 | 15.9 | `go1.24.8 linux/amd64` |
+| `hermes` | 140 | 13.9 | `Hermes Agent v0.19.0` |
+| `java` | 327 | 30.9 | `openjdk 21.0.12.1`, Maven 3.8.7 |
+| `nodejs` | 192 | 18.4 | `node v22.23.3`, pnpm 12.11.2, yarn 1.22.22 |
+| `opencode` | 408 | 41.4 | `1.19.2` |
+| `php` | 105 | 10.1 | `PHP 8.3.6`, Composer |
+| `ruby` | 181 | 20.1 | `ruby 3.2.3`, bundler 4.0.23 |
+| `rust` | 294 | 28.8 | `rustc 1.99.1`, cargo 1.99.1 |
+| `terminal-bench` | 93 | 5.4 | tmux 3.4, asciinema 2.4.0, ripgrep 14.1.0 |
+
+Those create times are each a **first-ever pull of that image into the region**; the
+median is 26.8 s. Once an image is cached in a region the steady-state cost is
++0.68 s over a stock sandbox, measured separately. Only the first create of a new image
+pays the pull.
+
+## Pinning
+
+A tag moves when the next `template-v*` is cut; a digest does not. For anything
+reproducible, pin:
 
 ```
-ghcr.io/ola-krutrim/sandbox-computer-use@sha256:535d7441746008113b3427a76f6ec24a6152d2746272edc9475957a9eafe9211
+ghcr.io/ola-krutrim/sandbox-aider@sha256:012c54d00ecac34402f1f657c224861aece38bc38502f0a9e91580048f6ae61f
+ghcr.io/ola-krutrim/sandbox-browser-playwright@sha256:f6ab09812c925cc72b9744cb4ff138776d3a33f709c2fc5ea2b1abe6c85ed3c6
+ghcr.io/ola-krutrim/sandbox-bun@sha256:c330a31f24518696dbb7e4e8794a45dfa270253b2777117e2b44bb1f60104baf
+ghcr.io/ola-krutrim/sandbox-claude-code@sha256:064615279f6e983e8f20af323b0df65e7371f74a798168af2be1588ce602a8c6
+ghcr.io/ola-krutrim/sandbox-code-interpreter@sha256:7d3fd5ba041773ce3e4fe18262cff72713b37bf1ffeddd9c3fd2d3856d0fa0dd
+ghcr.io/ola-krutrim/sandbox-codex@sha256:0e149b8ae7b5042c7ac0d62d0343399e15869d6fcc46c473fc421061f535ee1b
+ghcr.io/ola-krutrim/sandbox-computer-use@sha256:1fa50fd3c1a7fad6d5b0179e30bda42d1d4baccfcad396d9055132a45e653ad8
+ghcr.io/ola-krutrim/sandbox-data-science@sha256:ca3b85a7fa2932228416380c80c8d6a1caee86a87108613cbcdf9ed1c4b3b8a6
+ghcr.io/ola-krutrim/sandbox-database@sha256:25e6aeb99b3d797c986db70098e22b66cc8178a30f6607e83eb242bbd9e07e22
+ghcr.io/ola-krutrim/sandbox-deno@sha256:c7a5117bf20af06acff235adc183d884422ec26abd969b0e32769c076e396ca8
+ghcr.io/ola-krutrim/sandbox-documents@sha256:237cf1573ee7242c65938247720606c6b7c27ea80dddd1e489621056040e5802
+ghcr.io/ola-krutrim/sandbox-ffmpeg@sha256:569ef84e18dce8c421887bcb711fca8ec90aafa7b5bf7f8cf6289be8d8a60593
+ghcr.io/ola-krutrim/sandbox-golang@sha256:c7a4ebe70991776df62118e12743030e5398e73c2896f7b35f7d9bef75627130
+ghcr.io/ola-krutrim/sandbox-hermes@sha256:2222138690252211a82acc3ba973b5febb3d88c530ea57b52dc4d6842ceeaa75
+ghcr.io/ola-krutrim/sandbox-java@sha256:4cec119d57cc84325f8f4f66aec117f4af2e820a64500f2ddccb79a4de726d2f
+ghcr.io/ola-krutrim/sandbox-nodejs@sha256:ac79ad21c431079142cefc863678e392d1cb4fd41113e9a05e593f65639ef2c2
+ghcr.io/ola-krutrim/sandbox-opencode@sha256:6c4daef579b299a131123b3cb954789803197ddba6f543dcd8b7682f6c249b6c
+ghcr.io/ola-krutrim/sandbox-php@sha256:614393ca58a774442ecafd36db374d85dbec00696b79689a7c9fa11e4c6ede8f
+ghcr.io/ola-krutrim/sandbox-ruby@sha256:a24c89dfee176361c04100f4749b8064274c2debf640992876ce7c1e6d3b639b
+ghcr.io/ola-krutrim/sandbox-rust@sha256:63d470ee2d1f0c001c251eddb69a37c24b3fe732903f8f8120ec0d5e016ea4c3
+ghcr.io/ola-krutrim/sandbox-terminal-bench@sha256:4d7bd7d5a0c240ee5f5c7cf62ec717fbbeb5700d16192dec8369e52e003d6df4
 ```
 
 ## Hermes Agent: PyPI, not the official installer
@@ -94,8 +185,9 @@ that is not anonymously pullable.
 
 ## What a template costs at create time
 
-Measured on `sandbox-large` in In-Bangalore-1, create → usable, with stock-image
-controls taken in the same run:
+The table above gives one cold create per template. This section is the controlled
+measurement that explains those numbers, taken for `computer-use` on `sandbox-large` in
+In-Bangalore-1, create → usable, with stock-image controls in the same run:
 
 | | time |
 |---|---|
