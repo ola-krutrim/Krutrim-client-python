@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import os
 import re
-from typing import Mapping
+from typing import Mapping, Sequence
 from pathlib import Path
 
 import anyio
@@ -80,6 +80,37 @@ def validate_port(port: int) -> int:
     if not 1024 <= port <= 65535:
         raise ValueError("port must be between 1024 and 65535")
     return port
+
+
+def normalize_allowlist(value: str | Sequence[str], *, field: str) -> str:
+    if isinstance(value, str):
+        if not value.strip():
+            raise ValueError(f"{field} must be a non-empty string")
+        return value
+    entries = [str(entry).strip() for entry in value]
+    if not entries:
+        raise ValueError(f"{field} must contain at least one entry")
+    for entry in entries:
+        if not entry:
+            raise ValueError(f"{field} entries must be non-empty strings")
+        if "," in entry:
+            raise ValueError(f"{field} entries must not contain commas; pass separate entries instead")
+    return ",".join(entries)
+
+
+def validate_network_policy(
+    *,
+    allow_internet_access: bool | None,
+    outbound_cidr_allowlist: str | Sequence[str] | None,
+    outbound_domain_allowlist: str | Sequence[str] | None,
+    inbound_cidr_allowlist: str | Sequence[str] | None,
+) -> None:
+    if allow_internet_access is False and any(
+        value is not None for value in (outbound_cidr_allowlist, outbound_domain_allowlist, inbound_cidr_allowlist)
+    ):
+        raise ValueError(
+            "allow_internet_access=False blocks all sandbox traffic and cannot be combined with allowlists"
+        )
 
 
 def _validate_content_size(content: bytes) -> bytes:

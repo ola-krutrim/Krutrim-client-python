@@ -76,3 +76,19 @@ def test_live_sandbox_workflow_and_proxy() -> None:
 
             assert sandbox.proxy.request("GET", f"/port/{PORT}/health") == b"ok"
             assert sandbox.proxy.request("POST", f"/port/{PORT}/echo", content=b"payload") == b"payload"
+
+
+def test_live_sandbox_network_policy() -> None:
+    with KrutrimClient() as client:
+        with client.sandbox.create(
+            flavor_name=required_environment("KRUTRIM_SANDBOX_FLAVOR"),
+            region=required_environment("KRUTRIM_SANDBOX_REGION"),
+            timeout=900,
+            wait_timeout=300,
+            outbound_domain_allowlist=["pypi.org", "*.pypi.org"],
+        ) as sandbox:
+            policy = sandbox.update_network_policy(
+                outbound_domain_allowlist=["api.openai.com", "*.github.com"],
+            )
+            assert policy.sandbox_id == sandbox.sandbox_id
+            assert policy.outbound_domain_allowlist == "api.openai.com,*.github.com"
