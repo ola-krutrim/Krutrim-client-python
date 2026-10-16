@@ -57,9 +57,9 @@ jobs:
     needs: base
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false        # one bad template must not stop the other nineteen
+      fail-fast: false        # one bad template must not stop the other twenty
       matrix:
-        template: [aider, browser-playwright, bun, claude-code, code-interpreter, codex, computer-use, data-science, database, deno, documents, ffmpeg, golang, java, nodejs, opencode, php, ruby, rust, terminal-bench]
+        template: [aider, browser-playwright, bun, claude-code, code-interpreter, codex, computer-use, data-science, database, deno, documents, ffmpeg, golang, hermes, java, nodejs, opencode, php, ruby, rust, terminal-bench]
     steps:
       - uses: actions/checkout@v4
 
@@ -129,7 +129,7 @@ jobs:
           # The platform pulls with no credentials. Prove that path, not an authenticated one.
           docker logout ghcr.io || true
           fail=0
-          for t in aider browser-playwright bun claude-code code-interpreter codex computer-use data-science database deno documents ffmpeg golang java nodejs opencode php ruby rust terminal-bench; do
+          for t in aider browser-playwright bun claude-code code-interpreter codex computer-use data-science database deno documents ffmpeg golang hermes java nodejs opencode php ruby rust terminal-bench; do
             img="ghcr.io/${OWNER}/sandbox-${t}:${{ github.ref_name }}"
             if docker pull --platform linux/amd64 "$img" >/dev/null 2>&1; then
               echo "  ok        $img"
