@@ -513,6 +513,13 @@ async def test_async_sandbox_labels_parity() -> None:
     ("call", "message"),
     [
         (lambda api: api.create(sandbox_name="Bad_Name", region="r", flavor_name="f"), "DNS-1035"),
+        # 29 chars, DNS-1035 clean: the shape passes and only the length is wrong.
+        (
+            lambda api: api.create(
+                sandbox_name="a" + "b" * 28, region="r", flavor_name="f"
+            ),
+            "at most 28 characters",
+        ),
         (
             lambda api: api.create(
                 sandbox_name="valid",
