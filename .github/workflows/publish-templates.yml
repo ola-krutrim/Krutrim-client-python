@@ -99,6 +99,60 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.template }}
           cache-to: type=gha,mode=max,scope=${{ matrix.template }}
 
+      # Nothing used to assert the contract on a rebuild. `verify` proves the image is
+      # anonymously pullable and nothing else — not /app, not the UID, not the port, not
+      # $HOME. ENV HOME was missing from the base for the whole of template-v1.1.0 and
+      # every job stayed green, so this step exists to make that class of regression loud.
+      - name: Assert the BYOC contract on the built image
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          img="${REGISTRY}/${OWNER}/sandbox-${{ matrix.template }}:${{ github.ref_name }}"
+          docker pull --platform linux/amd64 -q "$img"
+          fail=0
+          check() {  # name, expected, actual
+            if [ "$2" = "$3" ]; then printf '  ok    %-12s %s\n' "$1" "$3"
+            else printf '  FAIL  %-12s expected %s, got %s\n' "$1" "$2" "$3"; fail=1; fi
+          }
+
+          cfg=$(docker image inspect "$img")
+          check workdir   "/app"           "$(echo "$cfg" | jq -r '.[0].Config.WorkingDir')"
+          check user      "1000"           "$(echo "$cfg" | jq -r '.[0].Config.User')"
+          check cmd       "sandbox-agent"  "$(echo "$cfg" | jq -r '.[0].Config.Cmd | join(" ")')"
+          check port      "8871/tcp"       "$(echo "$cfg" | jq -r '.[0].Config.ExposedPorts | keys | join(" ")')"
+          check arch      "amd64"          "$(echo "$cfg" | jq -r '.[0].Architecture')"
+
+          home=$(echo "$cfg" | jq -r '.[0].Config.Env[]? | select(startswith("HOME="))' | head -1)
+          if [ -n "$home" ]; then printf '  ok    %-12s %s\n' "home" "$home"
+          else printf '  FAIL  %-12s HOME is not set; anything resolving ~ depends on a passwd entry\n' "home"; fail=1; fi
+
+          # The agent binary has to exist and be executable, whatever else the image adds.
+          if docker run --rm --entrypoint test "$img" -x /usr/local/bin/sandbox-agent; then
+            printf '  ok    %-12s /usr/local/bin/sandbox-agent\n' "agent"
+          else
+            printf '  FAIL  %-12s agent binary missing or not executable\n' "agent"; fail=1
+          fi
+
+          # The one that actually matters: does it serve the health path the platform probes?
+          # An image that fails this is accepted by create and then fails readiness.
+          cid=$(docker run -d -p 18871:8871 "$img")
+          ok=0
+          for _ in $(seq 1 40); do
+            if curl -fsS --max-time 2 http://127.0.0.1:18871/ >/dev/null 2>&1; then ok=1; break; fi
+            sleep 1
+          done
+          if [ "$ok" = 1 ]; then printf '  ok    %-12s GET / on 8871 answered\n' "health"
+          else
+            printf '  FAIL  %-12s no response on 8871 after 40s\n' "health"; fail=1
+            docker logs "$cid" 2>&1 | tail -20
+          fi
+          docker rm -f "$cid" >/dev/null
+
+          if [ "$fail" = 1 ]; then
+            echo "::error::sandbox-${{ matrix.template }} does not satisfy the BYOC contract"
+            exit 1
+          fi
+
       # The contract requires <=4 GiB compressed. Fail loudly rather than at create time.
       - name: Check compressed size against the 4 GiB limit
         if: steps.gate.outputs.skip != 'true'
