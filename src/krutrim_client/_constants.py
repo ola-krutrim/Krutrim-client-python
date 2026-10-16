@@ -2,7 +2,10 @@
 
 import httpx
 
-SUPPORTED_REGIONS = ("In-Bangalore-1", "In-Hyderabad-1")
+from ._regions import SUPPORTED_REGIONS
+
+CLOUD_BASE_URL = "https://cloud.olakrutrim.com"
+CLOUDX_BASE_URL = "https://cloudx.olakrutrim.com"
 
 RAW_RESPONSE_HEADER = "X-Stainless-Raw-Response"
 OVERRIDE_CAST_TO_HEADER = "____stainless_override_cast_to"

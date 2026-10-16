@@ -12,6 +12,7 @@ try:
     resp = client.iam.list_roles(
         limit=999,
         offset=0,
+        krutrimManaged=True,  # Optional: True, False, or "all" (default: "all")
     )
 
     print("Roles:", resp)

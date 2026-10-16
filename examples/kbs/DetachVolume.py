@@ -15,8 +15,6 @@ try:
         instance_id="enter the instance KRN",
         attachment_id="enter the attachment id",
         k_tenant_id="enter the VPC KRN",
-        x_region="enter the region name",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
     )
     print(f"Detach result: {resp}")
 

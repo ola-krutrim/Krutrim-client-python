@@ -29,7 +29,8 @@ Python >=3.9
 
 ## Supported regions
 
-All regional services support both `In-Bangalore-1` and `In-Hyderabad-1`.
+Supported region identifiers are `In-Bangalore-1`, `In-Hyderabad-1`, and
+`In-Hyderabad-2`. Resource availability depends on the selected environment.
 
 ## Installation
 
@@ -56,7 +57,7 @@ import os
 from krutrim_client import KrutrimClient
 
 client = KrutrimClient(
-    api_key=os.environ.get("krutrim_client_API_KEY"),  # This is the default and can be omitted
+    api_key=os.environ.get("KRUTRIMCLIENT_API_KEY"),  # This is the default and can be omitted
 )
 
 success_response = client.highlvlvpc.create_vpc(
@@ -66,9 +67,54 @@ success_response = client.highlvlvpc.create_vpc(
 print(success_response.task_id)
 ```
 
+### Select a Cloud environment
+
+The client uses `https://cloud.olakrutrim.com` by default. Select CloudX with
+`environment="cloudx"`; use `environment="cloud"` to select the default
+environment explicitly. Both synchronous and asynchronous clients support the
+same option.
+
+```python
+from krutrim_client import KrutrimClient
+
+cloud_client = KrutrimClient(api_key="...", environment="cloud")
+cloudx_client = KrutrimClient(api_key="...", environment="cloudx")
+```
+
+You can also set `KRUTRIMCLIENT_ENVIRONMENT=cloudx` or
+`KRUTRIM_ENVIRONMENT=cloudx`. Configuration is resolved in this order:
+
+1. Explicit `environment` or `base_url` argument. Passing both raises `ValueError`.
+2. `KRUTRIMCLIENT_BASE_URL` for a custom endpoint.
+3. `KRUTRIM_ENVIRONMENT` or `KRUTRIMCLIENT_ENVIRONMENT`.
+4. Cloud, the default.
+
+Use credentials belonging to the selected environment. Root-user login does
+not require an API key; the returned access token is applied to subsequent
+requests on the same client:
+
+```python
+import os
+from krutrim_client import KrutrimClient
+
+with KrutrimClient(environment="cloudx", region="In-Hyderabad-1") as client:
+    client.iam.sign_in_as_root_user(
+        email=os.environ["KRUTRIM_EMAIL"],
+        password=os.environ["KRUTRIM_PASSWORD"],
+    )
+    users = client.iam.list_users(limit=10, offset=0)
+```
+
+For async login, use `AsyncKrutrimClient` with `async with` and await
+`client.iam.sign_in_as_root_user(...)` and subsequent API calls. Both clients
+also support `client.copy(environment="cloud")` and
+`client.with_options(region="In-Bangalore-1")`.
+
+See [.env.example](.env.example) for configuration.
+
 While you can provide an `api_key` keyword argument,
 we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-to add `krutrim_client_API_KEY="My API Key"` to your `.env` file
+to add `KRUTRIMCLIENT_API_KEY="My API Key"` to your `.env` file
 so that your API Key is not stored in source control.
 
 ## Async usage
@@ -81,7 +127,7 @@ import asyncio
 from krutrim_client import AsyncKrutrimClient
 
 client = AsyncKrutrimClient(
-    api_key=os.environ.get("krutrim_client_API_KEY"),  # This is the default and can be omitted
+    api_key=os.environ.get("KRUTRIMCLIENT_API_KEY"),  # This is the default and can be omitted
 )
 
 

@@ -10,13 +10,14 @@ client = KrutrimClient(api_key = api_key)
 
 
 try:
-    create_sshkey_response = client.sshkey.create_sshkey(
-        key_name = "Enter the Key Name",
-        public_key = "Enter the Public key",
-        x_region = "Enter the region",
-        customer_id = "Enter the customer id",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
+    response = client.sshkey.with_raw_response.create_sshkey(
+        key_name="enter the key name",
+        public_key="enter the rsa public key",
+        x_region="enter the region",
+        customer_id="enter the customer id",
     )
-    print(f"Successfully Created the SSHKEY {create_sshkey_response}")
+
+    print(f"Successfully Created {response.json()}")
+
 except Exception as e:
-    print(f"Exception occured {e}")
+    print("Error:", repr(e))

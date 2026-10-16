@@ -7,6 +7,7 @@ import httpx
 from .._types import NOT_GIVEN, Body, Query, Headers, NotGiven
 from .._utils import maybe_transform, async_maybe_transform
 from .._compat import cached_property
+from .._regions import SUPPORTED_REGIONS, unsupported_region_error
 from ..types.startStopVM import v1_perform_action_params
 from .._resource import SyncAPIResource, AsyncAPIResource
 from .._response import (
@@ -58,8 +59,8 @@ class StartStopResource(SyncAPIResource):
         if action not in ("start", "stop", "reboot"):
             raise ValueError("'action' must be one of: 'start', 'stop', or 'reboot'.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         if extra_headers is not None and not isinstance(extra_headers, dict):
             raise ValueError("'extra_headers' must be a dictionary if provided.")
@@ -158,8 +159,8 @@ class AsyncStartStopResource(AsyncAPIResource):
         if action not in ("start", "stop", "reboot"):
             raise ValueError("'action' must be one of: 'start', 'stop', or 'reboot'.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         if extra_headers is not None and not isinstance(extra_headers, dict):
             raise ValueError("'extra_headers' must be a dictionary if provided.")

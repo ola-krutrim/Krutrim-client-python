@@ -11,6 +11,7 @@ import httpx
 from .._utils import maybe_transform, async_maybe_transform
 from .._compat import cached_property
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
+from .._regions import SUPPORTED_REGIONS, unsupported_region_error
 
 from ..types.securityGroup import (
     v1_create_security_group_params,
@@ -88,8 +89,8 @@ class SecurityGroupResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     def validate_create_rule_parameters(
@@ -146,8 +147,8 @@ class SecurityGroupResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
     def validate_attach_rule_parameters(
     self,
@@ -181,8 +182,8 @@ class SecurityGroupResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
         
 
 
@@ -222,8 +223,8 @@ class SecurityGroupResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
 
@@ -680,8 +681,8 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     async def validate_create_rule_parameters(
@@ -738,8 +739,8 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
     async def validate_attach_rule_parameters(
     self,
@@ -773,8 +774,8 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
         
 
 
@@ -814,8 +815,8 @@ class AsyncSecurityGroupResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     

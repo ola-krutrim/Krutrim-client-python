@@ -27,7 +27,6 @@ from krutrim_client._constants import RAW_RESPONSE_HEADER
 from krutrim_client._exceptions import (
     APIStatusError,
     APITimeoutError,
-    KrutrimClientError,
     APIResponseValidationError,
 )
 from krutrim_client._base_client import (
@@ -241,6 +240,7 @@ class TestKrutrimClient:
                         "krutrim_client/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
+                        "/re/__init__.py",
                     ]
                 ):
                     return
@@ -344,10 +344,9 @@ class TestKrutrimClient:
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("Authorization") == f"Bearer {api_key}"
 
-        with pytest.raises(KrutrimClientError):
-            with update_env(**{"krutrim_client_API_KEY": Omit()}):
-                client2 = KrutrimClient(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
+        with KrutrimClient(base_url=base_url, api_key="", _strict_response_validation=True) as unauthenticated:
+            request = unauthenticated._build_request(FinalRequestOptions(method="post", url="/iam/v1/signInAsRootUser"))
+            assert "Authorization" not in request.headers
 
     def test_default_query_option(self) -> None:
         client = KrutrimClient(
@@ -844,7 +843,7 @@ class TestKrutrimClient:
         assert response.http_request.headers.get("x-stainless-retry-count") == "42"
 
 
-class TestKrutrimClient:
+class TestAsyncKrutrimClient:
     client = AsyncKrutrimClient(base_url=base_url, api_key=api_key, _strict_response_validation=True)
 
     @pytest.mark.respx(base_url=base_url)
@@ -1025,6 +1024,7 @@ class TestKrutrimClient:
                         "krutrim_client/_compat.py",
                         # Standard library leaks we don't care about.
                         "/logging/__init__.py",
+                        "/re/__init__.py",
                     ]
                 ):
                     return
@@ -1128,10 +1128,9 @@ class TestKrutrimClient:
         request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("Authorization") == f"Bearer {api_key}"
 
-        with pytest.raises(KrutrimClientError):
-            with update_env(**{"KRUTRIMCLIENT_API_KEY": Omit()}):
-                client2 = AsyncKrutrimClient(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
+        unauthenticated = AsyncKrutrimClient(base_url=base_url, api_key="", _strict_response_validation=True)
+        request = unauthenticated._build_request(FinalRequestOptions(method="post", url="/iam/v1/signInAsRootUser"))
+        assert "Authorization" not in request.headers
 
     def test_default_query_option(self) -> None:
         client = AsyncKrutrimClient(

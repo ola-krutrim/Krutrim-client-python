@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 from typing import Any, Union, Mapping
-from typing_extensions import Self, override
+from pathlib import Path
+from typing_extensions import Self, Literal, override
 
 import httpx
 
@@ -20,8 +21,9 @@ from ._types import (
 from ._utils import is_given, get_async_library
 from ._version import __version__
 from .resources import kbs, sshkey, highlvlvpc, startStopVM, securityGroup
+from ._constants import CLOUD_BASE_URL, CLOUDX_BASE_URL
 from ._streaming import Stream as Stream, AsyncStream as AsyncStream
-from ._exceptions import APIStatusError, KrutrimClientError
+from ._exceptions import APIStatusError
 from ._base_client import (
     DEFAULT_MAX_RETRIES,
     SyncAPIClient,
@@ -55,7 +57,109 @@ __all__ = [
     "AsyncKrutrimClient",
     "Client",
     "AsyncClient",
+    "Environment",
+    "ENVIRONMENTS",
 ]
+
+
+_DOTENV_LOADED = False
+
+
+def _load_dotenv_if_present() -> None:
+    global _DOTENV_LOADED
+    if _DOTENV_LOADED:
+        return
+    _DOTENV_LOADED = True
+
+    try:
+        from dotenv import load_dotenv  # type: ignore[import-untyped]
+
+        load_dotenv()
+        return
+    except ImportError:
+        pass
+
+    try:
+        cwd = Path.cwd()
+        for directory in [cwd, *cwd.parents]:
+            env_file = directory / ".env"
+            if env_file.is_file():
+                with open(env_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+                break
+    except Exception:
+        pass
+
+
+Environment = Literal["production", "cloud", "cloudx"]
+
+ENVIRONMENTS: dict[str, str] = {
+    "cloud": CLOUD_BASE_URL,
+    "cloudx": CLOUDX_BASE_URL,
+    "production": CLOUD_BASE_URL,
+    "prod": CLOUD_BASE_URL,
+    "stage": CLOUDX_BASE_URL,
+    "staging": CLOUDX_BASE_URL,
+    "cloud.olakrutrim.com": CLOUD_BASE_URL,
+    "https://cloud.olakrutrim.com": CLOUD_BASE_URL,
+    "cloudx.olakrutrim.com": CLOUDX_BASE_URL,
+    "https://cloudx.olakrutrim.com": CLOUDX_BASE_URL,
+}
+
+_DEFAULT_ENVIRONMENT: Environment = "cloud"
+_DEFAULT_BASE_URL: str = CLOUD_BASE_URL
+
+
+def _resolve_base_url(
+    *,
+    base_url: str | httpx.URL | None = None,
+    environment: Environment | str | None = None,
+) -> str | httpx.URL:
+    if base_url is not None and environment is not None:
+        raise ValueError("Both base_url and environment were given; only one should be sent")
+
+    if base_url is not None:
+        return base_url
+
+    if environment is not None:
+        norm_env = environment.strip().lower().rstrip("/") if isinstance(environment, str) else environment
+        if norm_env in ENVIRONMENTS:
+            return ENVIRONMENTS[norm_env]
+        raise ValueError(f"Unknown environment: {environment!r}. Must be one of: {list(ENVIRONMENTS.keys())}")
+
+    for env_var in (
+        "KRUTRIMCLIENT_BASE_URL",
+        "krutrim_client_BASE_URL",
+        "KRUTRIM_CLIENT_BASE_URL",
+        "KRUTRIM_BASE_URL",
+        "BASE_URL",
+    ):
+        url = os.environ.get(env_var)
+        if url:
+            return url
+
+    env_name = (
+        os.environ.get("KRUTRIM_ENVIRONMENT")
+        or os.environ.get("KRUTRIMCLIENT_ENVIRONMENT")
+        or os.environ.get("KRUTRIM_CLIENT_ENVIRONMENT")
+        or os.environ.get("ENVIRONMENT")
+        or os.environ.get("ENV")
+    )
+    if env_name:
+        norm_env = env_name.strip().lower().rstrip("/")
+        if norm_env in ENVIRONMENTS:
+            return ENVIRONMENTS[norm_env]
+        raise ValueError(f"Unknown environment from env var: {env_name!r}. Must be one of: {list(ENVIRONMENTS.keys())}")
+
+    return _DEFAULT_BASE_URL
 
 
 class KrutrimClient(SyncAPIClient):
@@ -88,12 +192,15 @@ class KrutrimClient(SyncAPIClient):
 
     # client options
     api_key: str
+    region: str | None = None
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
+        region: str | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: Mapping[str, str] | None = None,
@@ -115,17 +222,29 @@ class KrutrimClient(SyncAPIClient):
         """Construct a new synchronous KrutrimClient client instance.
 
         This automatically infers the `api_key` argument from the `KRUTRIMCLIENT_API_KEY` environment variable if it is not provided.
+        Set `environment` to `"cloud"` or `"cloudx"` to select the matching
+        Krutrim endpoint. Pass either `environment` or `base_url`, not both.
         """
+        _load_dotenv_if_present()
         if api_key is None:
-            api_key = os.environ.get("KRUTRIMCLIENT_API_KEY")
+            api_key = (
+                os.environ.get("KRUTRIMCLIENT_API_KEY")
+                or os.environ.get("KRUTRIM_API_KEY")
+                or os.environ.get("API_KEY")
+            )
         if api_key is None:
             api_key = ""
         self.api_key = api_key
 
-        if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
-        if base_url is None:
-            base_url = f"https://cloud.olakrutrim.com"
+        if region is None:
+            region = os.environ.get("KRUTRIM_REGION") or os.environ.get("REGION")
+        self.region = region
+
+        base_url = _resolve_base_url(base_url=base_url, environment=environment)
+
+        resolved_headers = dict(default_headers) if default_headers else {}
+        if self.region and "x-region" not in httpx.Headers(resolved_headers):
+            resolved_headers["x-region"] = self.region
 
         super().__init__(
             version=__version__,
@@ -133,7 +252,7 @@ class KrutrimClient(SyncAPIClient):
             max_retries=max_retries,
             timeout=timeout,
             http_client=http_client,
-            custom_headers=default_headers,
+            custom_headers=resolved_headers,
             custom_query=default_query,
             _strict_response_validation=_strict_response_validation,
         )
@@ -175,8 +294,9 @@ class KrutrimClient(SyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
-        if self.api_key:
-            return {"Authorization": f"Bearer {self.api_key}"}
+        token = getattr(self, "token", None) or self.api_key
+        if token:
+            return {"Authorization": f"Bearer {token}"}
         return {}
 
     @property
@@ -193,6 +313,8 @@ class KrutrimClient(SyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
+        region: str | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.Client | None = None,
         max_retries: int | NotGiven = NOT_GIVEN,
@@ -211,7 +333,13 @@ class KrutrimClient(SyncAPIClient):
         if default_query is not None and set_default_query is not None:
             raise ValueError("The `default_query` and `set_default_query` arguments are mutually exclusive")
 
-        headers = self._custom_headers
+        headers = dict(self._custom_headers)
+        if region is not None and self.region is not None:
+            headers = {
+                key: value
+                for key, value in headers.items()
+                if key.lower() != "x-region" or value != self.region
+            }
         if default_headers is not None:
             headers = {**headers, **default_headers}
         elif set_default_headers is not None:
@@ -223,10 +351,16 @@ class KrutrimClient(SyncAPIClient):
         elif set_default_query is not None:
             params = set_default_query
 
+        if base_url is not None or environment is not None:
+            resolved_base_url = _resolve_base_url(base_url=base_url, environment=environment)
+        else:
+            resolved_base_url = self.base_url
+
         http_client = http_client or self._client
         return self.__class__(
-            api_key=api_key or self.api_key,
-            base_url=base_url or self.base_url,
+            api_key=self.api_key if api_key is None else api_key,
+            base_url=resolved_base_url,
+            region=self.region if region is None else region,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
             max_retries=max_retries if is_given(max_retries) else self.max_retries,
@@ -302,12 +436,15 @@ class AsyncKrutrimClient(AsyncAPIClient):
 
     # client options
     api_key: str
+    region: str | None = None
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
+        region: str | None = None,
         timeout: Union[float, Timeout, None, NotGiven] = NOT_GIVEN,
         max_retries: int = DEFAULT_MAX_RETRIES,
         default_headers: Mapping[str, str] | None = None,
@@ -328,20 +465,30 @@ class AsyncKrutrimClient(AsyncAPIClient):
     ) -> None:
         """Construct a new async AsyncKrutrimClient client instance.
 
-        This automatically infers the `api_key` argument from the `KRUTRIMCLOUD_Client_API_KEY` environment variable if it is not provided.
+        This automatically infers the `api_key` argument from the `KRUTRIMCLIENT_API_KEY` environment variable if it is not provided.
+        Set `environment` to `"cloud"` or `"cloudx"` to select the matching
+        Krutrim endpoint. Pass either `environment` or `base_url`, not both.
         """
+        _load_dotenv_if_present()
         if api_key is None:
-            api_key = os.environ.get("KRUTRIMCLIENT_API_KEY")
-        if api_key is None:
-            raise KrutrimClientError(
-                "The api_key client option must be set either by passing api_key to the client or by setting the KRUTRIMCLIENT_API_KEY environment variable"
+            api_key = (
+                os.environ.get("KRUTRIMCLIENT_API_KEY")
+                or os.environ.get("KRUTRIM_API_KEY")
+                or os.environ.get("API_KEY")
             )
+        if api_key is None:
+            api_key = ""
         self.api_key = api_key
 
-        if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
-        if base_url is None:
-            base_url = f"https://cloud.olakrutrim.com"
+        if region is None:
+            region = os.environ.get("KRUTRIM_REGION") or os.environ.get("REGION")
+        self.region = region
+
+        base_url = _resolve_base_url(base_url=base_url, environment=environment)
+
+        resolved_headers = dict(default_headers) if default_headers else {}
+        if self.region and "x-region" not in httpx.Headers(resolved_headers):
+            resolved_headers["x-region"] = self.region
 
         super().__init__(
             version=__version__,
@@ -349,7 +496,7 @@ class AsyncKrutrimClient(AsyncAPIClient):
             max_retries=max_retries,
             timeout=timeout,
             http_client=http_client,
-            custom_headers=default_headers,
+            custom_headers=resolved_headers,
             custom_query=default_query,
             _strict_response_validation=_strict_response_validation,
         )
@@ -387,8 +534,10 @@ class AsyncKrutrimClient(AsyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
-        api_key = self.api_key
-        return {"Authorization": f"Bearer {api_key}"}
+        token = getattr(self, "token", None) or self.api_key
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        return {}
 
     @property
     @override
@@ -404,6 +553,8 @@ class AsyncKrutrimClient(AsyncAPIClient):
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        environment: Environment | None = None,
+        region: str | None = None,
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN,
         http_client: httpx.AsyncClient | None = None,
         max_retries: int | NotGiven = NOT_GIVEN,
@@ -422,7 +573,13 @@ class AsyncKrutrimClient(AsyncAPIClient):
         if default_query is not None and set_default_query is not None:
             raise ValueError("The `default_query` and `set_default_query` arguments are mutually exclusive")
 
-        headers = self._custom_headers
+        headers = dict(self._custom_headers)
+        if region is not None and self.region is not None:
+            headers = {
+                key: value
+                for key, value in headers.items()
+                if key.lower() != "x-region" or value != self.region
+            }
         if default_headers is not None:
             headers = {**headers, **default_headers}
         elif set_default_headers is not None:
@@ -434,10 +591,16 @@ class AsyncKrutrimClient(AsyncAPIClient):
         elif set_default_query is not None:
             params = set_default_query
 
+        if base_url is not None or environment is not None:
+            resolved_base_url = _resolve_base_url(base_url=base_url, environment=environment)
+        else:
+            resolved_base_url = self.base_url
+
         http_client = http_client or self._client
         return self.__class__(
-            api_key=api_key or self.api_key,
-            base_url=base_url or self.base_url,
+            api_key=self.api_key if api_key is None else api_key,
+            base_url=resolved_base_url,
+            region=self.region if region is None else region,
             timeout=self.timeout if isinstance(timeout, NotGiven) else timeout,
             http_client=http_client,
             max_retries=max_retries if is_given(max_retries) else self.max_retries,
@@ -587,6 +750,5 @@ class AsyncKrutrimClientWithStreamedResponse:
 Client = KrutrimClient
 
 AsyncClient = AsyncKrutrimClient
-
 
 

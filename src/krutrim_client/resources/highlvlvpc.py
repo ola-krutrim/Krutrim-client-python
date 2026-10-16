@@ -42,9 +42,9 @@ from ..types.highlvlvpc import (
     QosParam,
 )
 from .._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven, Base64FileInput
-from .._utils import maybe_transform, async_maybe_transform
+from .._utils import maybe_transform, async_maybe_transform, is_given
 from .._compat import cached_property
-from .._constants import SUPPORTED_REGIONS
+from .._regions import SUPPORTED_REGIONS, unsupported_region_error, extract_region_from_krn
 from .._resource import SyncAPIResource, AsyncAPIResource
 from .._response import (
     to_raw_response_wrapper,
@@ -150,8 +150,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     
@@ -228,10 +228,8 @@ class HighlvlvpcResource(SyncAPIResource):
                 raise ValueError("'volumetype' must be a non-empty string if provided.")
 
         # region validation
-        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
         # If an existing volume is NOT provided, validate new volume fields.
         if not volumes:
             if volume_name in (None, NOT_GIVEN) or not isinstance(volume_name, str) or not volume_name.strip():
@@ -279,7 +277,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
 
 
@@ -364,13 +362,13 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
     def validate_delete_instance_parameters(
         self,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str,
+        x_region=None,
         timeout=None,
     ):
         # instanceKrn (required)
@@ -381,14 +379,9 @@ class HighlvlvpcResource(SyncAPIResource):
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
 
-        # region header (required)
-        if not isinstance(x_region, str) or not x_region.strip():
-            raise ValueError("'x_region' must be a non-empty string.")
-
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         # timeout (optional)
         if timeout not in (None, NOT_GIVEN) and not isinstance(
@@ -427,7 +420,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
 
     def validate_list_instance_info_parameters(
@@ -469,7 +462,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
 
     def validate_retrieve_instance_parameters(
@@ -496,7 +489,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
 
     def validate_get_vpc_task_status_params(
@@ -522,7 +515,7 @@ class HighlvlvpcResource(SyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
 
     def validate_get_instance_task_status_params(
@@ -563,10 +556,8 @@ class HighlvlvpcResource(SyncAPIResource):
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         # limit (optional)
         if limit is not NOT_GIVEN and limit is not None:
@@ -611,7 +602,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
     
     def validate_create_port_parameters(
     self,
@@ -658,7 +649,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
     def validate_create_image_parameters(
         self,
@@ -675,9 +666,9 @@ class HighlvlvpcResource(SyncAPIResource):
         if not isinstance(instance_krn, str) or not instance_krn.strip():
             raise ValueError("'instance_krn' must be a non-empty string.")
         
-        # Validate 'x_region' is either In-Bangalore-1 or In-Hyderabad-1
+        # Validate that x_region is supported.
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
         # Validate timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
@@ -780,7 +771,7 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'x_region' must be a non-empty string.")
 
         if x_region not in SUPPORTED_REGIONS:
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+            raise unsupported_region_error()
 
         if not isinstance(disk_format, str) or not disk_format.strip():
             raise ValueError("'disk_format' must be a non-empty string.")
@@ -1030,15 +1021,14 @@ class HighlvlvpcResource(SyncAPIResource):
     def create_vpc(
         self,
         *,
-        network: dict,
-        security_group: dict,
-        security_group_rule: dict,
-        subnet: dict,
-        vpc: dict,
-        x_region: str,
-        # highlvlvpc_create_vpc_params.Vpc | NotGiven = NOT_GIVEN,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        network: dict | NotGiven = NOT_GIVEN,
+        security_group: dict | NotGiven = NOT_GIVEN,
+        security_group_rule: dict | NotGiven = NOT_GIVEN,
+        subnet: dict | NotGiven = NOT_GIVEN,
+        vpc: dict | NotGiven = NOT_GIVEN,
+        x_region: str | NotGiven = NOT_GIVEN,
+        k_customer_id: str | NotGiven = NOT_GIVEN,
+        x_account_id: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -1056,20 +1046,28 @@ class HighlvlvpcResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        
-        self.validate_create_vpc_parameters(
-            network = network,
-            security_group = security_group,
-            security_group_rule = security_group_rule,
-            subnet = subnet,
-            vpc = vpc,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
-            timeout=timeout,
-            x_region = x_region
-        )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(network) and is_given(subnet) and is_given(vpc):
+            self.validate_create_vpc_parameters(
+                network=network,
+                security_group=security_group if is_given(security_group) else {},
+                security_group_rule=security_group_rule if is_given(security_group_rule) else {},
+                subnet=subnet,
+                vpc=vpc,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                x_region=x_region if is_given(x_region) else None,
+            )
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(k_customer_id) and k_customer_id is not None:
+            extra_headers = {"k-customer-id": k_customer_id, **(extra_headers or {})}
+        if is_given(x_account_id) and x_account_id is not None:
+            extra_headers = {"x-account-id": x_account_id, **(extra_headers or {})}
+
         return self._post(
             "/v1/highlvlvpc/create_vpc_async",
             body=maybe_transform(
@@ -1079,6 +1077,8 @@ class HighlvlvpcResource(SyncAPIResource):
                     "security_group_rule": security_group_rule,
                     "subnet": subnet,
                     "vpc": vpc,
+                    "k_customer_id": k_customer_id,
+                    "x_account_id": x_account_id,
                 },
                 highlvlvpc_create_vpc_params.HighlvlvpcCreateVpcParams,
             ),
@@ -1093,7 +1093,7 @@ class HighlvlvpcResource(SyncAPIResource):
         *,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
@@ -1102,14 +1102,20 @@ class HighlvlvpcResource(SyncAPIResource):
 
         DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
         Returns {message, task_id}.
+
+        The target region is derived from `instanceKrn` if not explicitly provided,
+        which prevents requests from ever targeting a region that mismatches the instance.
         """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
             deleteVolume=deleteVolume,
-            x_region=x_region,
+            x_region=x_region if is_given(x_region) else None,
             timeout=timeout,
         )
+
+        if not is_given(x_region) or x_region is None:
+            x_region = extract_region_from_krn(instanceKrn)
 
         extra_headers = {
             "x-region": x_region,
@@ -1429,7 +1435,7 @@ class HighlvlvpcResource(SyncAPIResource):
         self,
         *,
         vpc_id: Optional[str] | NotGiven = NOT_GIVEN,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -1453,7 +1459,10 @@ class HighlvlvpcResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._post(
             "/v1/highlvlvpc/get_vpc",
             body=maybe_transform(
@@ -1642,9 +1651,13 @@ class HighlvlvpcResource(SyncAPIResource):
     def search_vpcs(
         self,
         *,
+        x_region: str | NotGiven = NOT_GIVEN,
+        count: bool | NotGiven = NOT_GIVEN,
         name: str | NotGiven = NOT_GIVEN,
+        order: str | NotGiven = NOT_GIVEN,
         page: int | NotGiven = NOT_GIVEN,
         size: int | NotGiven = NOT_GIVEN,
+        sort_by: str | NotGiven = NOT_GIVEN,
         status: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
@@ -1657,11 +1670,19 @@ class HighlvlvpcResource(SyncAPIResource):
         Search for VPCs based on various criteria
 
         Args:
+          x_region: CloudX region sent in the ``x-region`` request header.
+
+          count: Whether the API should include the total result count.
+
           name: Filter VPCs by name.
+
+          order: Sort direction, such as ``asc`` or ``desc``.
 
           page: Page number for pagination.
 
           size: Number of items to return per page.
+
+          sort_by: Field used to sort the results.
 
           status: Filter VPCs by status.
 
@@ -1673,8 +1694,13 @@ class HighlvlvpcResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
         return self._get(
-            "/v1/highlvlvpc/search_vpc",
+            "/v2/highlvlvpc/search_vpc",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -1682,9 +1708,12 @@ class HighlvlvpcResource(SyncAPIResource):
                 timeout=timeout,
                 query=maybe_transform(
                     {
+                        "count": count,
                         "name": name,
+                        "order": order,
                         "page": page,
                         "size": size,
+                        "sort_by": sort_by,
                         "status": status,
                     },
                     highlvlvpc_search_vpcs_params.HighlvlvpcSearchVpcsParams,
@@ -1961,8 +1990,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'volume_size' must be a positive integer.")
         if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
             raise ValueError("'security_groups' must be a list of strings.")
-        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
 
         extra_headers = {"x-region": region, **(extra_headers or {})}
         return self._post(
@@ -2012,8 +2041,8 @@ class HighlvlvpcResource(SyncAPIResource):
         """
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._get(
@@ -2050,8 +2079,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'template_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._get(
@@ -2086,8 +2115,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'template_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._delete(
@@ -2129,8 +2158,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'count' must be a positive integer.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._post(
@@ -2174,8 +2203,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'vpc_id' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._get(
@@ -2210,8 +2239,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'port_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._delete(
@@ -2246,8 +2275,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'detach_port' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._post(
@@ -2292,8 +2321,8 @@ class HighlvlvpcResource(SyncAPIResource):
             raise ValueError("'security_groups' must be a non-empty list of security group KRNs.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return self._put(
@@ -2372,8 +2401,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     
@@ -2450,10 +2479,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                 raise ValueError("'volumetype' must be a non-empty string if provided.")
 
         # region validation
-        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
         # If an existing volume is NOT provided, validate new volume fields.
         if not volumes:
             if volume_name in (None, NOT_GIVEN) or not isinstance(volume_name, str) or not volume_name.strip():
@@ -2501,8 +2528,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
 
@@ -2586,14 +2613,14 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
     def validate_delete_instance_parameters(
         self,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str,
+        x_region=None,
         timeout=None,
     ):
         # instanceKrn (required)
@@ -2604,14 +2631,9 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
 
-        # region header (required)
-        if not isinstance(x_region, str) or not x_region.strip():
-            raise ValueError("'x_region' must be a non-empty string.")
-
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if x_region is not None and x_region not in (None, NOT_GIVEN):
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
         # timeout (optional)
         if timeout not in (None, NOT_GIVEN) and not isinstance(
@@ -2650,8 +2672,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     async def validate_list_instance_info_parameters(
@@ -2692,8 +2714,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     async def validate_retrieve_instance_parameters(
@@ -2719,8 +2741,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     async def validate_get_vpc_task_status_params(
@@ -2745,8 +2767,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
 
     async def validate_get_instance_task_status_params(
@@ -2787,10 +2809,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError(
-                "'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'"
-            )
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         # limit (optional)
         if limit is not NOT_GIVEN and limit is not None:
@@ -2833,8 +2853,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
             raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
         
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
     
     async def validate_create_port_parameters(
         self,
@@ -2880,8 +2900,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (float, int, httpx.Timeout)):
                 raise ValueError("'timeout' must be a float, int, or httpx.Timeout if provided.")
 
-            if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-                raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
 
     async def validate_create_image_parameters(
         self,
@@ -2898,9 +2918,9 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if not isinstance(instance_krn, str) or not instance_krn.strip():
             raise ValueError("'instance_krn' must be a non-empty string.")
         
-        # Validate 'x_region' is either In-Bangalore-1 or In-Hyderabad-1
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        # Validate that x_region is supported.
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         # Validate timeout
         if timeout not in (None, NOT_GIVEN) and not isinstance(timeout, (int, float, httpx.Timeout)):
@@ -2999,8 +3019,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
 
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'.")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         if not isinstance(disk_format, str) or not disk_format.strip():
             raise ValueError("'disk_format' must be a non-empty string.")
@@ -3263,14 +3283,14 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     async def create_vpc(
        self,
         *,
-        network: dict,
-        security_group: dict,
-        security_group_rule: dict,
-        subnet: dict,
-        vpc: dict,
-        x_region: str,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        network: dict | NotGiven = NOT_GIVEN,
+        security_group: dict | NotGiven = NOT_GIVEN,
+        security_group_rule: dict | NotGiven = NOT_GIVEN,
+        subnet: dict | NotGiven = NOT_GIVEN,
+        vpc: dict | NotGiven = NOT_GIVEN,
+        x_region: str | NotGiven = NOT_GIVEN,
+        k_customer_id: str | NotGiven = NOT_GIVEN,
+        x_account_id: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -3288,18 +3308,28 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        await self.validate_create_vpc_parameters(
-            network = network,
-            security_group = security_group,
-            security_group_rule = security_group_rule,
-            subnet = subnet,
-            vpc = vpc,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=extra_body,
-            timeout=timeout,
-        )
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(network) and is_given(subnet) and is_given(vpc):
+            await self.validate_create_vpc_parameters(
+                network=network,
+                security_group=security_group if is_given(security_group) else {},
+                security_group_rule=security_group_rule if is_given(security_group_rule) else {},
+                subnet=subnet,
+                vpc=vpc,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+                x_region=x_region if is_given(x_region) else None,
+            )
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(k_customer_id) and k_customer_id is not None:
+            extra_headers = {"k-customer-id": k_customer_id, **(extra_headers or {})}
+        if is_given(x_account_id) and x_account_id is not None:
+            extra_headers = {"x-account-id": x_account_id, **(extra_headers or {})}
+
         return await self._post(
             "/v1/highlvlvpc/create_vpc_async",
             body=await async_maybe_transform(
@@ -3309,6 +3339,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                     "security_group_rule": security_group_rule,
                     "subnet": subnet,
                     "vpc": vpc,
+                    "k_customer_id": k_customer_id,
+                    "x_account_id": x_account_id,
                 },
                 highlvlvpc_create_vpc_params.HighlvlvpcCreateVpcParams,
             ),
@@ -3323,7 +3355,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         *,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str,
+        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
@@ -3332,14 +3364,20 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
         DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
         Returns {message, task_id}.
+
+        The target region is derived from `instanceKrn` if not explicitly provided,
+        which prevents requests from ever targeting a region that mismatches the instance.
         """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
             deleteVolume=deleteVolume,
-            x_region=x_region,
+            x_region=x_region if is_given(x_region) else None,
             timeout=timeout,
         )
+
+        if not is_given(x_region) or x_region is None:
+            x_region = extract_region_from_krn(instanceKrn)
 
         extra_headers = {
             "x-region": x_region,
@@ -3653,8 +3691,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     async def retrieve_vpc(
         self,
         *,
-        vpc_id: str,
-        x_region: str,
+        vpc_id: Optional[str] | NotGiven = NOT_GIVEN,
+        x_region: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
@@ -3678,7 +3716,10 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
-        extra_headers = {"x-region": x_region, **(extra_headers or {})}
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._post(
             "/v1/highlvlvpc/get_vpc",
             body=await async_maybe_transform(
@@ -3872,9 +3913,13 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
     async def search_vpcs(
         self,
         *,
+        x_region: str | NotGiven = NOT_GIVEN,
+        count: bool | NotGiven = NOT_GIVEN,
         name: str | NotGiven = NOT_GIVEN,
+        order: str | NotGiven = NOT_GIVEN,
         page: int | NotGiven = NOT_GIVEN,
         size: int | NotGiven = NOT_GIVEN,
+        sort_by: str | NotGiven = NOT_GIVEN,
         status: str | NotGiven = NOT_GIVEN,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
@@ -3887,11 +3932,19 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         Search for VPCs based on various criteria
 
         Args:
+          x_region: CloudX region sent in the ``x-region`` request header.
+
+          count: Whether the API should include the total result count.
+
           name: Filter VPCs by name.
+
+          order: Sort direction, such as ``asc`` or ``desc``.
 
           page: Page number for pagination.
 
           size: Number of items to return per page.
+
+          sort_by: Field used to sort the results.
 
           status: Filter VPCs by status.
 
@@ -3903,8 +3956,13 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if is_given(x_region) and x_region is not None:
+            if x_region not in SUPPORTED_REGIONS:
+                raise unsupported_region_error()
+            extra_headers = {"x-region": x_region, **(extra_headers or {})}
+
         return await self._get(
-            "/v1/highlvlvpc/search_vpc",
+            "/v2/highlvlvpc/search_vpc",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -3912,9 +3970,12 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
                 timeout=timeout,
                 query=await async_maybe_transform(
                     {
+                        "count": count,
                         "name": name,
+                        "order": order,
                         "page": page,
                         "size": size,
+                        "sort_by": sort_by,
                         "status": status,
                     },
                     highlvlvpc_search_vpcs_params.HighlvlvpcSearchVpcsParams,
@@ -4196,8 +4257,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'volume_size' must be a positive integer.")
         if not isinstance(security_groups, list) or not all(isinstance(sg, str) for sg in security_groups):
             raise ValueError("'security_groups' must be a list of strings.")
-        if region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
 
         extra_headers = {"x-region": region, **(extra_headers or {})}
         return await self._post(
@@ -4247,8 +4308,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         """
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._get(
@@ -4285,8 +4346,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'template_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._get(
@@ -4321,8 +4382,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'template_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._delete(
@@ -4364,8 +4425,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'count' must be a positive integer.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._post(
@@ -4409,8 +4470,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'vpc_id' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._get(
@@ -4445,8 +4506,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'port_krn' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._delete(
@@ -4481,8 +4542,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'detach_port' must be a non-empty string.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._post(
@@ -4527,8 +4588,8 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             raise ValueError("'security_groups' must be a non-empty list of security group KRNs.")
         if not isinstance(x_region, str) or not x_region.strip():
             raise ValueError("'x_region' must be a non-empty string.")
-        if x_region not in ("In-Bangalore-1", "In-Hyderabad-1"):
-            raise ValueError("'x_region' must be either 'In-Bangalore-1' or 'In-Hyderabad-1'")
+        if x_region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error()
 
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._put(

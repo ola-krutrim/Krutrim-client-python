@@ -14,8 +14,7 @@ try:
     delete_instance_resp = client.highlvlvpc.delete_instance(
         instanceKrn="Enter the Instance KRN",
         deleteVolume=True,
-        x_region="Enter the region",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
+        # The region is derived automatically from instanceKrn.
     )
     print(f"Deletion started: {delete_instance_resp}")
     print(f"task_id={delete_instance_resp.task_id}")

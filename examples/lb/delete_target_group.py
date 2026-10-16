@@ -1,20 +1,24 @@
 import os
+
 from dotenv import load_dotenv
+
 from krutrim_client import KrutrimClient
 
-# Load env
 load_dotenv()
-api_key = os.getenv("API_KEY")
 
-# Init client
+api_key = os.getenv("api_key")
 client = KrutrimClient(api_key=api_key)
+
 try:
-    resp = client.lb.with_raw_response.delete_target_group(
-        target_group_name="enter target group name",
-        x_region="enter the x_region",
-        # x_region possible values "In-Bangalore-1","In-Hyderabad-1"
-        vpc_id="enter vpc id here"
+    # DELETE /api/v3/loadBalancer/targetgroup/{target_group_krn}
+    resp = client.lb.delete_target_group(
+        "enter the target group krn",
+        k_customer_id="enter the customer id",
+        x_account_id="enter the account id",
+        x_region="enter the region name",
+        # x_region possible values: "In-Bangalore-1", "In-Hyderabad-1"
     )
-    print("Response:", resp.json())
+    print(f"Delete target group result: {resp}")
+
 except Exception as e:
-    print(f"Error has occurred: {e}")
+    print(f"Exception occurred: {e}")
