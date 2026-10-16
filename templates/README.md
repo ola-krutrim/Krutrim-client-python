@@ -5,17 +5,52 @@ Container images for the Sandbox BYOC path (`create_sandbox(image_uri=...)`).
 Published by `.github/workflows/publish-templates.yml` on a `template-v*` tag, to
 `ghcr.io/ola-krutrim/sandbox-<template>`.
 
-## Published images
+## Templates
 
-| template | reference |
+20 templates, all published as `ghcr.io/ola-krutrim/sandbox-<name>`.
+
+| template | contents |
 |---|---|
-| computer-use | `ghcr.io/ola-krutrim/sandbox-computer-use:template-v1.0.0` |
+| `aider` | Aider pair-programming agent |
+| `browser-playwright` | Playwright with Chromium, Firefox and WebKit |
+| `bun` | Bun runtime and package manager |
+| `claude-code` | Anthropic Claude Code CLI |
+| `code-interpreter` | Python data stack and Jupyter kernel |
+| `codex` | OpenAI Codex CLI |
+| `computer-use` | Xvfb and a real Chromium for browser-driving agents |
+| `data-science` | scikit-learn, scipy, polars, duckdb |
+| `database` | PostgreSQL, SQLite and Redis |
+| `deno` | Deno runtime |
+| `documents` | Pandoc and LaTeX for PDF and document conversion |
+| `ffmpeg` | ffmpeg and image tooling |
+| `golang` | Go toolchain |
+| `java` | Temurin JDK 21, Maven, Gradle |
+| `nodejs` | Node 22 LTS with pnpm and yarn |
+| `opencode` | OpenCode agent CLI |
+| `php` | PHP CLI with Composer |
+| `ruby` | Ruby with bundler |
+| `rust` | Rust toolchain via rustup |
+| `terminal-bench` | tmux, asciinema and terminal tooling |
 
-Pin by digest in production:
+Pin by digest in production. The current computer-use digest, for example:
 
 ```
 ghcr.io/ola-krutrim/sandbox-computer-use@sha256:535d7441746008113b3427a76f6ec24a6152d2746272edc9475957a9eafe9211
 ```
+
+## The base image
+
+Every template builds `FROM ghcr.io/ola-krutrim/sandbox-base`. The base carries the
+BYOC contract — the `sandbox-agent` binary, port 8871, `/app` owned by UID 1000 — and a
+template adds only its own tools.
+
+This is worth keeping. Shared base layers dedupe in the registry rather than being
+stored twenty times, the base is cached on the node after the first pull so each
+additional template costs little beyond its own layer, and a CVE in the base is patched
+in one Dockerfile instead of twenty.
+
+The build is two-phase: `sandbox-base` first, then every template against it, pinned
+with `BASE_TAG` so a tagged release is reproducible.
 
 ## These images must be public
 

@@ -3,14 +3,15 @@
 # Builds and publishes Krutrim Sandbox templates to ghcr.io/ola-krutrim/.
 # Uses the Actions-provided GITHUB_TOKEN — no human PAT, nothing to rotate.
 #
-# Belongs in ola-krutrim/Krutrim-client-python, alongside the cookbook the
-# templates are built from.
+# Two phases: sandbox-base carries the BYOC contract, every template builds on it.
+# Shared base layers dedupe in the registry and are cached on the node after the
+# first pull, so a template costs little beyond its own layer.
 
 name: Publish sandbox templates
 
 on:
   push:
-    tags: ['template-v*']          # e.g. template-v1.0.0
+    tags: ['template-v*']
   workflow_dispatch:
     inputs:
       template:
@@ -20,19 +21,45 @@ on:
 
 permissions:
   contents: read
-  packages: write                   # the only elevated permission needed
+  packages: write
 
 env:
   REGISTRY: ghcr.io
   OWNER: ola-krutrim
 
 jobs:
+  base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push sandbox-base
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: templates/_base/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-base:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-base:${{ github.ref_name }}
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
+
   build:
+    needs: base
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: false        # one bad template must not stop the other nineteen
       matrix:
-        template: [computer-use]          # add code-interpreter when its Dockerfile lands
+        template: [aider, browser-playwright, bun, claude-code, code-interpreter, codex, computer-use, data-science, database, deno, documents, ffmpeg, golang, java, nodejs, opencode, php, ruby, rust, terminal-bench]
     steps:
       - uses: actions/checkout@v4
 
@@ -61,51 +88,55 @@ jobs:
         with:
           context: .
           file: templates/${{ matrix.template }}/Dockerfile
-          platforms: linux/amd64          # required by the BYOC contract
+          platforms: linux/amd64
           push: true
-          provenance: false               # keep the manifest a plain amd64 image
+          provenance: false
+          build-args: |
+            BASE_TAG=${{ github.ref_name }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-${{ matrix.template }}:latest
             ${{ env.REGISTRY }}/${{ env.OWNER }}/sandbox-${{ matrix.template }}:${{ github.ref_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.template }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.template }}
 
       # The contract requires <=4 GiB compressed. Fail loudly rather than at create time.
       - name: Check compressed size against the 4 GiB limit
         if: steps.gate.outputs.skip != 'true'
         run: |
           img="${REGISTRY}/${OWNER}/sandbox-${{ matrix.template }}:${{ github.ref_name }}"
-          bytes=$(docker manifest inspect "$img" \
-            | jq '[.layers[].size] | add // 0')
+          bytes=$(docker manifest inspect "$img" | jq '[.layers[].size] | add // 0')
           mib=$(( bytes / 1024 / 1024 ))
           echo "compressed layers: ${mib} MiB"
           if [ "$mib" -gt 4096 ]; then
             echo "::error::image exceeds the 4 GiB BYOC limit (${mib} MiB)"; exit 1
           fi
 
-      - name: Make the package public
+      # GitHub exposes no REST endpoint for package visibility, so this is best-effort.
+      # A new package must be set public by hand, once, or the platform cannot pull it.
+      - name: Remind that a new package must be made public
         if: steps.gate.outputs.skip != 'true'
-        continue-on-error: true          # first run may need it set by hand once
         run: |
-          # BYOC pulls anonymously — a private package cannot be used at all.
-          gh api -X PATCH \
-            "orgs/${OWNER}/packages/container/sandbox-${{ matrix.template }}" \
-            -f visibility=public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "::notice::If sandbox-${{ matrix.template }} is new, set it public at" \
+               "https://github.com/orgs/${OWNER}/packages/container/sandbox-${{ matrix.template }}/settings"
 
   verify:
     needs: build
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Confirm anonymous pull works
         run: |
           # The platform pulls with no credentials. Prove that path, not an authenticated one.
           docker logout ghcr.io || true
-          for t in computer-use; do
-            img="ghcr.io/ola-krutrim/sandbox-${t}:${{ github.ref_name }}"
-            echo "anonymous pull: $img"
-            docker pull --platform linux/amd64 "$img" >/dev/null \
-              && echo "  ok" \
-              || { echo "::error::anonymous pull failed for $img"; exit 1; }
+          fail=0
+          for t in aider browser-playwright bun claude-code code-interpreter codex computer-use data-science database deno documents ffmpeg golang java nodejs opencode php ruby rust terminal-bench; do
+            img="ghcr.io/${OWNER}/sandbox-${t}:${{ github.ref_name }}"
+            if docker pull --platform linux/amd64 "$img" >/dev/null 2>&1; then
+              echo "  ok        $img"
+            else
+              echo "  NOT PUBLIC $img"; fail=1
+            fi
           done
+          if [ "$fail" = 1 ]; then
+            echo "::error::one or more templates are not anonymously pullable"; exit 1
+          fi

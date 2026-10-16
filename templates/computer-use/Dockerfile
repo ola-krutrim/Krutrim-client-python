@@ -1,39 +1,30 @@
 # Krutrim Sandbox template — computer use
 #
-# Verified working on sandbox-large (2 vCPU / 4 GB), In-Bangalore-1, 2026-10-16:
-#   real Chromium launched under gVisor, navigated, screenshotted.
-#   Doing this at runtime costs ~100s and ~310 MB on every create; baking removes it.
+# Xvfb plus a real Chromium, so an agent can drive a browser inside a sandbox.
+# Builds on sandbox-base, which carries the BYOC contract (agent, 8871, /app, UID 1000).
 #
 # NOTE: Ubuntu's apt `chromium-browser` is a snap shim and CANNOT work in a
-# container — it only prints "requires the chromium snap to be installed".
-# We install Playwright's bundled Chromium, which is a real binary.
+# container — it only prints "requires the chromium snap to be installed", and
+# snap needs systemd. Xvfb itself is fine. We install Playwright's bundled
+# Chromium, which is a real binary.
 #
-# Build:  docker build --platform linux/amd64 -t ghcr.io/<org>/sandbox-computer-use:v1 .
-# Limits: linux/amd64 manifest, <= 4 GiB compressed, public registry.
+# Verified on sandbox-large, In-Bangalore-1: real Chromium under gVisor,
+# <title>Example Domain</title> in 2.9s with no runtime install.
 
-FROM golang:1.24 AS agent-build
-WORKDIR /src
-COPY examples/sandbox/cookbook/custom_image/agent/ .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/sandbox-agent .
+ARG BASE_TAG=latest
+FROM ghcr.io/ola-krutrim/sandbox-base:${BASE_TAG}
 
-FROM ubuntu:24.04
+USER root
 
-WORKDIR /app
-
-# Base runtime (mirrors the cookbook) plus the X stack and Chromium's shared libs.
-# xvfb + x11-utils give a working display; the rest are Chromium's runtime deps.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       python3 python3-pip python3-venv libgomp1 git curl iproute2 net-tools lsof \
        xvfb x11-utils xauth fonts-liberation fonts-noto-color-emoji \
        libnss3 libnspr4 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 \
        libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
        libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir requests==2.32.5 playwright==1.64.0
-ENV PATH=/opt/venv/bin:${PATH}
+RUN pip install --no-cache-dir requests==2.32.5 playwright==1.64.0
 
 # Chromium must land somewhere UID 1000 can read. Install it as that user.
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
@@ -42,10 +33,8 @@ USER 1000
 RUN python3 -m playwright install chromium
 USER root
 
-COPY --from=agent-build /out/sandbox-agent /usr/local/bin/sandbox-agent
-
 # Helper: bring up a display, then run anything that needs one.
-#   with-display chromium-headless-shell --dump-dom https://example.com
+#   with-display chromium --headless=new --dump-dom https://example.com
 RUN printf '%s\n' \
     '#!/bin/sh' \
     '# Start Xvfb on :99 if nothing is there yet, then exec the given command.' \
@@ -59,8 +48,3 @@ RUN printf '%s\n' \
 
 RUN chown -R 1000:1000 /app
 USER 1000
-
-# The agent is the entrypoint. Xvfb and the browser start on demand, per the
-# cookbook's guidance that application services run separately from the agent.
-EXPOSE 8871
-CMD ["sandbox-agent"]
