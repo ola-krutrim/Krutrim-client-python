@@ -113,7 +113,9 @@ def create(
 
 Behavior:
 
-- `sandbox_name` must be DNS-1035 (lowercase letters, digits, hyphens; starts with a letter).
+- `sandbox_name` must be DNS-1035 (lowercase letters, digits, hyphens; starts with a letter)
+  and at most 28 characters. The service enforces the length with an HTTP 400; the client
+  raises `ValueError` first. Note DNS-1035 itself allows 63, so the 28 is a service bound.
 - `labels` are caller-supplied metadata stored by the service, returned on get/list, and
   filterable via `client.sandbox.api.list(labels=...)`. At most 16; keys ≤ 63 chars with no
   `=` or `,`; values ≤ 255 chars with no `,`.
@@ -349,7 +351,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | Constraint | Range / rule |
 | --- | --- |
 | Sandbox lifetime (`timeout` / `set_timeout`) | 60–604,800 seconds |
-| `sandbox_name` | DNS-1035 lowercase name |
+| `sandbox_name` | DNS-1035 lowercase name, ≤ 28 characters |
 | `wait_timeout` | > 0 seconds (default 300) |
 | Command length | 1–100,000 characters |
 | Command timeout | 1–270 seconds (default 60) |

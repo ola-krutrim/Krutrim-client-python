@@ -12,6 +12,7 @@ from ...types.sandbox import SandboxFileContent
 
 MAX_BODY_BYTES = 100 * 1024 * 1024
 DNS_1035_NAME = re.compile(r"^[a-z]([-a-z0-9]*[a-z0-9])?$")
+MAX_SANDBOX_NAME_LEN = 28
 MAX_LABELS = 16
 MAX_LABEL_KEY_LEN = 63
 MAX_LABEL_VALUE_LEN = 255
@@ -36,8 +37,19 @@ def validate_ttl(ttl_seconds: int) -> int:
 
 
 def validate_sandbox_name(name: str) -> str:
+    """Mirror the service's sandbox name rules so a bad name fails fast.
+
+    The service caps the name at 28 characters and rejects a longer one with an
+    HTTP 400. DNS-1035 itself permits 63, so the bound is ours to carry: without
+    it a well-formed but long name costs a round trip to discover, and generated
+    names (a prefix, a run id and a workload name) cross 28 easily.
+    """
     if not DNS_1035_NAME.fullmatch(name):
         raise ValueError("sandbox_name must be a DNS-1035 lowercase name")
+    if len(name) > MAX_SANDBOX_NAME_LEN:
+        raise ValueError(
+            f"sandbox_name must be at most {MAX_SANDBOX_NAME_LEN} characters, got {len(name)}"
+        )
     return name
 
 
