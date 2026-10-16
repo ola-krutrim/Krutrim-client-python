@@ -25,6 +25,15 @@ RUN apt-get update \
 RUN python3 -m venv /opt/venv
 ENV PATH=/opt/venv/bin:${PATH}
 
+# Name HOME so nothing has to resolve it through getpwuid(). Measured: a UID with
+# no /etc/passwd entry and HOME unset makes tools that expand ~ fail at import —
+# Hermes raises RuntimeError: Could not determine home directory. Setting HOME
+# alone fixes it; a tool-specific override such as HERMES_HOME does not, because
+# the lookup happens before the override is read. ubuntu:24.04 does carry
+# ubuntu:x:1000:1000 with /home/ubuntu, so UID 1000 works without this, but the
+# platform starts containers as root today and may assign an unmapped UID later.
+ENV HOME=/app
+
 COPY --from=agent-build /out/sandbox-agent /usr/local/bin/sandbox-agent
 
 RUN chown -R 1000:1000 /app
