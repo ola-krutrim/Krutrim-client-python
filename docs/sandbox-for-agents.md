@@ -18,8 +18,15 @@ Measured against production in In-Bangalore-1 on 2026-10-17 at `template-v1.2.1`
   coding-agent CLIs.
 - **Work that should not touch the host filesystem or network identity.**
 
-Do not reach for one for a long-lived service. The TTL caps at seven days and the design
-point is disposability.
+The design point is disposability, but the seven-day TTL is a per-call ceiling rather
+than a lifetime cap: `set_ttl` grants a fresh window measured from the moment you call
+it, so a process that renews on a timer can hold a sandbox indefinitely. Measured 17 Oct
+on a 50-second-old sandbox: `set_ttl(604800)` moved expiry to 49 s past creation + 7 days.
+
+Two things to know before relying on that. Renewal is caller-driven - there is no
+server-side keepalive, so if whatever renews it stops, the sandbox is reaped. And a
+renewed sandbox stays running and billing, because there is still no pause, resume or
+snapshot. For a long-lived *idle* service that is the binding constraint, not the TTL.
 
 ## The loop
 
