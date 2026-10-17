@@ -13,30 +13,27 @@ Create a key in the Krutrim Cloud console at https://cloud.olakrutrim.com under
 **Administration -> API keys -> Create API Key**. One key covers Sandbox, MCP, Models,
 CLI and the SDK.
 
-Four environment variable names are in circulation. Only one works for this SDK, and the
-MCP server accepts all four:
+Three environment variable names are in circulation. Only one works for this SDK:
 
-| Variable | `krutrim-client` (the Python SDK) | `krutrim-mcp-server` |
-|---|---|---|
-| `KRUTRIMCLIENT_API_KEY` | yes — **use this one** | yes |
-| `KRUTRIM_API_KEY` | no | yes |
-| `KRUTRIM_CLIENT_API_KEY` | no | yes |
-| `krutrim_client_API_KEY` | no — appeared in older README text | yes |
+| Variable | Read by |
+|---|---|
+| `KRUTRIMCLIENT_API_KEY` | `krutrim-client` (the Python SDK) — **use this one** |
+| `KRUTRIM_API_KEY` | `krutrim-mcp-server` only |
+| `krutrim_client_API_KEY` | nothing — appeared in older README text |
 
-Setting a name the SDK does not read leaves `api_key` as `None` and fails on the first
-request with an error that looks like a bad key rather than a bad variable name.
-
-One trap when correcting an old export: the MCP server reads every one of the four names
-that is set, and if two hold **different** values it refuses to start with `Conflicting
-API key values are configured in: ...`. Unset the stale name rather than adding the new
-one beside it.
+Setting the wrong one leaves `api_key` as `None` and fails on the first request with an
+error that looks like a bad key rather than a bad variable name.
 
 ## Minimal working example
 
 ```python
 pip install krutrim-client
-export KRUTRIMCLIENT_API_KEY="$(cat ~/.config/krutrim/sandbox.key)"
+export KRUTRIMCLIENT_API_KEY="<your API key>"
 ```
+
+Create your own key in the console (above) and keep it wherever your environment keeps
+secrets. Nothing in the SDK expects a particular file or location — it reads the
+environment variable and nothing else.
 
 ```python
 from krutrim_client import KrutrimClient
@@ -141,7 +138,7 @@ ghcr.io/ola-krutrim/sandbox-terminal-bench@sha256:4be329000f36925af43108d2fe90a5
 
 `krutrim-mcp-server` exposes 160 tools, 19 of them sandbox operations
 (`create_sandbox`, `delete_sandbox`, `list_sandbox_templates`, `set_sandbox_ttl` and
-others). It accepts any of the four key variable names above, the SDK's included.
+others). It reads `KRUTRIM_API_KEY`, not the SDK variable.
 
 ## Where to look next
 
