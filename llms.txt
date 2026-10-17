@@ -64,7 +64,7 @@ Use the context-manager form. A sandbox bills until it is destroyed or its TTL r
 | `run_command(timeout=)` | **1-270 seconds**, enforced client-side. Longer work must run detached inside the sandbox with a marker file polled by short commands. |
 | Create rate | Unspaced bursts degrade, then fail as a gateway `403` surfaced as `PermissionDeniedError` — not a 429, no `Retry-After`, so ordinary retry logic will not retry it. **Space creates by ~8 s.** |
 | Files API | Every path is rooted at `SANDBOX_BASE_DIR` (`/app`). `files.write("/tmp/x")` lands at `/app/tmp/x` while the response reports `/tmp/x`. Write under `/app`. |
-| TTL | 60 s to 7 days. No pause, no resume, no snapshot. |
+| TTL | 60 s to 7 days **per call**, and `set_ttl` recomputes expiry from the moment of the call — so renewing on a timer keeps a sandbox past seven days. What is missing is pause/resume/snapshot: a renewed sandbox keeps running and billing, so renewal does not help idle cost. |
 | Runtime user | Containers currently start as **uid 0** regardless of the image's `USER`. |
 | Egress policy | `allow_internet_access` and the allowlist parameters are accepted, echoed with HTTP 200, and **not enforced** — they fail **open**. Not a security boundary. |
 | Outbound IP | All sandboxes in a region share **one** NAT address. Volume crawling is capped and a block affects every tenant. |
