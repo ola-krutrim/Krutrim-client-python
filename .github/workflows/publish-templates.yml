@@ -153,6 +153,28 @@ jobs:
             exit 1
           fi
 
+      # The contract gate above proves the image boots and answers. It says nothing about
+      # whether the toolchain works. template-v1.2.0 shipped a rust image where
+      # `rustc --version` was correct and `cargo build` failed with "linker `cc` not found" —
+      # every job green. If a template declares a smoke test, run it in the built image.
+      - name: Run the template smoke test
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          smoke="templates/${{ matrix.template }}/smoke.sh"
+          if [ ! -f "$smoke" ]; then
+            echo "::notice::no smoke.sh for ${{ matrix.template }} — capability is unasserted"
+            exit 0
+          fi
+          img="${REGISTRY}/${OWNER}/sandbox-${{ matrix.template }}:${{ github.ref_name }}"
+          # Mount read-only and run as the image's own user; the test writes under /tmp.
+          if docker run --rm -v "$PWD/$smoke:/smoke.sh:ro" "$img" sh /smoke.sh; then
+            echo "  smoke passed"
+          else
+            echo "::error::sandbox-${{ matrix.template }} built and booted but its toolchain does not work"
+            exit 1
+          fi
+
       # The contract requires <=4 GiB compressed. Fail loudly rather than at create time.
       - name: Check compressed size against the 4 GiB limit
         if: steps.gate.outputs.skip != 'true'
