@@ -56,7 +56,7 @@ import os
 from krutrim_client import KrutrimClient
 
 client = KrutrimClient(
-    api_key=os.environ.get("krutrim_client_API_KEY"),  # This is the default and can be omitted
+    api_key=os.environ.get("KRUTRIMCLIENT_API_KEY"),  # This is the default and can be omitted
 )
 
 success_response = client.highlvlvpc.create_vpc(
@@ -68,7 +68,9 @@ print(success_response.task_id)
 
 While you can provide an `api_key` keyword argument,
 we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-to add `krutrim_client_API_KEY="My API Key"` to your `.env` file
+to add `KRUTRIMCLIENT_API_KEY="My API Key"` to your `.env` file.
+Create a key at the [Krutrim Cloud console](https://cloud.olakrutrim.com) under
+**Administration → API keys → Create API Key**; one key covers Sandbox, MCP, Models, CLI and the SDK
 so that your API Key is not stored in source control.
 
 ## Async usage
@@ -81,7 +83,7 @@ import asyncio
 from krutrim_client import AsyncKrutrimClient
 
 client = AsyncKrutrimClient(
-    api_key=os.environ.get("krutrim_client_API_KEY"),  # This is the default and can be omitted
+    api_key=os.environ.get("KRUTRIMCLIENT_API_KEY"),  # This is the default and can be omitted
 )
 
 
