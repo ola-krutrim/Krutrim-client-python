@@ -1,0 +1,79 @@
+name: Tests
+
+# The library test suite had no CI until this workflow. Its absence is why
+# krutrim-client 0.8.4 shipped to PyPI with AsyncHighlvlvpcResource.create_vpc
+# raising TypeError on every call, and with 28 failing tests in tests/.
+# Keep this required on pull requests.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: pytest (py${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9 is the floor declared by requires-python; 3.12 is what the
+        # lockfile is resolved against. Classifiers also list 3.10 and 3.11.
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install the package and its test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-asyncio respx dirty-equals time-machine \
+                      "nest_asyncio==1.6.0" importlib-metadata
+
+      - name: Run the offline test suite
+        # tests/live is excluded: it creates real billable sandboxes and needs a
+        # service API key, so it cannot run on a public PR. Run it by hand
+        # before a release.
+        #
+        # test_copy_build_request is deselected: it is a tracemalloc
+        # leak-detector whose result depends on the allocation history of
+        # whatever ran before it, so it passes or fails according to test order
+        # rather than according to the code. It is left in the file so local
+        # runs still exercise it. Stabilising or removing it is tracked
+        # separately -- please do not take this deselect as permanent.
+        run: |
+          pytest tests/ -q \
+            --ignore=tests/live \
+            --deselect "tests/test_client.py::TestKrutrimClient::test_copy_build_request"
+
+  version-consistency:
+    name: version is identical in both files
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: pyproject.toml and _version.py must agree
+        # The version is declared twice. They have drifted before; this is the
+        # cheapest possible guard against publishing a wheel whose metadata and
+        # __version__ disagree.
+        run: |
+          pyproject="$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)"
+          dunder="$(grep -m1 '^__version__ = ' src/krutrim_client/_version.py | cut -d'"' -f2)"
+          echo "pyproject.toml : $pyproject"
+          echo "_version.py    : $dunder"
+          if [ "$pyproject" != "$dunder" ]; then
+            echo "::error::version mismatch: pyproject.toml=$pyproject _version.py=$dunder"
+            exit 1
+          fi

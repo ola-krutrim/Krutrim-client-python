@@ -1,6 +1,6 @@
 [project]
 name = "krutrim_client"
-version = "0.8.4"
+version = "0.8.5"
 description = "Official Krutrim Cloud Core Infrastructure & Sandbox SDK (VPC, VMs, storage, AI Pods, Sandbox). For AI Studio model APIs use krutrim-cloud."
 dynamic = ["readme"]
 license = {"file" = "LICENSE"}
