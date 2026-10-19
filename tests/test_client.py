@@ -1701,3 +1701,74 @@ class TestKrutrimClient:
                     raise AssertionError("calling get_platform using asyncify resulted in a hung process")
 
                 time.sleep(0.1)
+
+
+# --- environment variable resolution (Omni #180) -----------------------------
+#
+# The key was read under one name while krutrim_mcp_server accepts four, and the
+# base URL was read under one name with the others ignored in silence. Both the
+# "every name works" and the "disagreement is an error" halves are asserted,
+# because preferring one silently is the behaviour being fixed.
+
+_ALL_KEY_NAMES = (
+    "KRUTRIMCLIENT_API_KEY",
+    "KRUTRIM_API_KEY",
+    "KRUTRIM_CLIENT_API_KEY",
+    "krutrim_client_API_KEY",
+)
+_ALL_BASE_URL_NAMES = (
+    "KRUTRIMCLIENT_BASE_URL",
+    "KRUTRIM_BASE_URL",
+    "KRUTRIM_CLIENT_BASE_URL",
+    "krutrim_client_BASE_URL",
+)
+_CLEAR_ALL = {name: Omit() for name in _ALL_KEY_NAMES + _ALL_BASE_URL_NAMES}
+
+
+@pytest.mark.parametrize("name", _ALL_KEY_NAMES)
+def test_api_key_read_from_every_supported_env_name(name: str) -> None:
+    with update_env(**{**_CLEAR_ALL, name: "k-from-env"}):
+        assert KrutrimClient(_strict_response_validation=True).api_key == "k-from-env"
+        assert AsyncKrutrimClient(_strict_response_validation=True).api_key == "k-from-env"
+
+
+@pytest.mark.parametrize("name", _ALL_BASE_URL_NAMES)
+def test_base_url_read_from_every_supported_env_name(name: str) -> None:
+    with update_env(**{**_CLEAR_ALL, name: "http://localhost:5000/from/env"}):
+        client = KrutrimClient(api_key=api_key, _strict_response_validation=True)
+        assert client.base_url == "http://localhost:5000/from/env/"
+
+
+def test_conflicting_api_key_env_names_raise() -> None:
+    with update_env(**{**_CLEAR_ALL, "KRUTRIM_API_KEY": "one", "KRUTRIMCLIENT_API_KEY": "two"}):
+        with pytest.raises(KrutrimClientError, match="Conflicting API key values"):
+            KrutrimClient(_strict_response_validation=True)
+
+
+def test_conflicting_base_url_env_names_raise() -> None:
+    with update_env(
+        **{**_CLEAR_ALL, "KRUTRIM_BASE_URL": "http://a/", "KRUTRIMCLIENT_BASE_URL": "http://b/"}
+    ):
+        with pytest.raises(KrutrimClientError, match="Conflicting base URL values"):
+            KrutrimClient(api_key=api_key, _strict_response_validation=True)
+
+
+def test_same_value_under_two_names_is_accepted() -> None:
+    """Only disagreement is an error; belt-and-braces configuration is fine."""
+    with update_env(**{**_CLEAR_ALL, "KRUTRIM_API_KEY": "same", "KRUTRIMCLIENT_API_KEY": "same"}):
+        assert KrutrimClient(_strict_response_validation=True).api_key == "same"
+
+
+@pytest.mark.parametrize("client_cls", [KrutrimClient, AsyncKrutrimClient])
+def test_missing_api_key_fails_locally_on_both_clients(client_cls: type) -> None:
+    """The sync client used to default to "" and send no Authorization header,
+    so the first request failed at the gateway with "Authorization header is
+    missing" -- a service-shaped error for a local misconfiguration. Both
+    clients now refuse to construct, and the message names every variable that
+    would have worked."""
+    with update_env(**_CLEAR_ALL):
+        with pytest.raises(KrutrimClientError) as excinfo:
+            client_cls(_strict_response_validation=True)
+    message = str(excinfo.value)
+    for name in _ALL_KEY_NAMES:
+        assert name in message

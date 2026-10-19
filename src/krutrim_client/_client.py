@@ -58,6 +58,48 @@ __all__ = [
 ]
 
 
+# Both the API key and the base URL have been read under a single environment
+# variable name, while krutrim_mcp_server accepts four names for the key. A user
+# who configured the key the way the MCP server documents got an unauthenticated
+# client, and a user who set a lowercase base-URL name had it ignored in silence
+# and their traffic sent to production. Both names below are now recognised, and
+# two names holding different values is an error rather than a coin flip.
+#
+# The canonical name is first in each tuple. Tracked as Omni #180.
+_API_KEY_ENV_NAMES = (
+    "KRUTRIMCLIENT_API_KEY",
+    "KRUTRIM_API_KEY",
+    "KRUTRIM_CLIENT_API_KEY",
+    "krutrim_client_API_KEY",
+)
+
+_BASE_URL_ENV_NAMES = (
+    "KRUTRIMCLIENT_BASE_URL",
+    "KRUTRIM_BASE_URL",
+    "KRUTRIM_CLIENT_BASE_URL",
+    "krutrim_client_BASE_URL",
+)
+
+
+def _resolve_from_env(names: tuple[str, ...], *, what: str) -> str | None:
+    """Return the value shared by every one of ``names`` that is set.
+
+    Raises if two of them are set to different values, because silently
+    preferring one would hide a misconfiguration that is hard to see from the
+    outside -- the request simply goes somewhere unintended.
+    """
+    configured = [(name, value) for name in names if (value := os.environ.get(name))]
+    if not configured:
+        return None
+    if len({value for _, value in configured}) > 1:
+        raise KrutrimClientError(
+            f"Conflicting {what} values are configured in: "
+            + ", ".join(name for name, _ in configured)
+            + ". Unset the ones you do not want rather than setting a new name beside them."
+        )
+    return configured[0][1]
+
+
 class KrutrimClient(SyncAPIClient):
     sandbox: SandboxResource
     highlvlvpc: highlvlvpc.HighlvlvpcResource
@@ -114,16 +156,21 @@ class KrutrimClient(SyncAPIClient):
     ) -> None:
         """Construct a new synchronous KrutrimClient client instance.
 
-        This automatically infers the `api_key` argument from the `KRUTRIMCLIENT_API_KEY` environment variable if it is not provided.
+        This automatically infers the `api_key` argument from the first of
+        `KRUTRIMCLIENT_API_KEY`, `KRUTRIM_API_KEY`, `KRUTRIM_CLIENT_API_KEY` or
+        `krutrim_client_API_KEY` that is set, if it is not provided.
         """
         if api_key is None:
-            api_key = os.environ.get("KRUTRIMCLIENT_API_KEY")
+            api_key = _resolve_from_env(_API_KEY_ENV_NAMES, what="API key")
         if api_key is None:
-            api_key = ""
+            raise KrutrimClientError(
+                "The api_key client option must be set either by passing api_key to the client "
+                "or by setting one of these environment variables: " + ", ".join(_API_KEY_ENV_NAMES)
+            )
         self.api_key = api_key
 
         if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
+            base_url = _resolve_from_env(_BASE_URL_ENV_NAMES, what="base URL")
         if base_url is None:
             base_url = f"https://cloud.olakrutrim.com"
 
@@ -328,18 +375,21 @@ class AsyncKrutrimClient(AsyncAPIClient):
     ) -> None:
         """Construct a new async AsyncKrutrimClient client instance.
 
-        This automatically infers the `api_key` argument from the `KRUTRIMCLOUD_Client_API_KEY` environment variable if it is not provided.
+        This automatically infers the `api_key` argument from the first of
+        `KRUTRIMCLIENT_API_KEY`, `KRUTRIM_API_KEY`, `KRUTRIM_CLIENT_API_KEY` or
+        `krutrim_client_API_KEY` that is set, if it is not provided.
         """
         if api_key is None:
-            api_key = os.environ.get("KRUTRIMCLIENT_API_KEY")
+            api_key = _resolve_from_env(_API_KEY_ENV_NAMES, what="API key")
         if api_key is None:
             raise KrutrimClientError(
-                "The api_key client option must be set either by passing api_key to the client or by setting the KRUTRIMCLIENT_API_KEY environment variable"
+                "The api_key client option must be set either by passing api_key to the client "
+                "or by setting one of these environment variables: " + ", ".join(_API_KEY_ENV_NAMES)
             )
         self.api_key = api_key
 
         if base_url is None:
-            base_url = os.environ.get("KRUTRIMCLIENT_BASE_URL")
+            base_url = _resolve_from_env(_BASE_URL_ENV_NAMES, what="base URL")
         if base_url is None:
             base_url = f"https://cloud.olakrutrim.com"
 

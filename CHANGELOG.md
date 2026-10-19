@@ -32,6 +32,30 @@ Set `KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY=1` to send them anyway for
 service-side testing. Remove the guard in `resources/sandbox/_helpers.py` once
 enforcement ships — not before.
 
+### Changed — environment variable resolution (Omni #180)
+
+Both the API key and the base URL are now read from any of four names, and two
+names holding **different** values is an error rather than a silent preference:
+
+| Setting | Names honoured (canonical first) |
+|---|---|
+| API key | `KRUTRIMCLIENT_API_KEY`, `KRUTRIM_API_KEY`, `KRUTRIM_CLIENT_API_KEY`, `krutrim_client_API_KEY` |
+| Base URL | `KRUTRIMCLIENT_BASE_URL`, `KRUTRIM_BASE_URL`, `KRUTRIM_CLIENT_BASE_URL`, `krutrim_client_BASE_URL` |
+
+This aligns the SDK with `krutrim_mcp_server`, which already accepted the four
+key names and already failed closed on a conflict. Previously the SDK read only
+`KRUTRIMCLIENT_API_KEY`, so a key configured the way the MCP server documents
+produced an **unauthenticated client**, and only `KRUTRIMCLIENT_BASE_URL`, so a
+base URL set under any other name was ignored in silence and the request went to
+production.
+
+**Behaviour change:** `KrutrimClient` now raises `KrutrimClientError` when no API
+key is available, which `AsyncKrutrimClient` already did. It previously defaulted
+to `api_key = ""` and sent no `Authorization` header, so the first request failed
+at the gateway with `400 {"message":"Authorization header is missing"}` — a
+service-shaped error for a local misconfiguration. Code that constructs a sync
+client without a key and never uses it will now raise at construction.
+
 ### Fixed
 
 - **`AsyncHighlvlvpcResource.create_vpc()` raised `TypeError` on every call.** It
@@ -62,11 +86,8 @@ These were failing on `main`, independently of any change above:
   `highlvlvpc` refactor that shipped in 0.8.4. Updated to the current signature,
   with one shared payload that satisfies `validate_create_vpc_parameters`.
 - `test_base_url_env` set `krutrim_client_BASE_URL` and asserted it took effect,
-  but the client reads `KRUTRIMCLIENT_BASE_URL` and ignores the other name
-  silently. The test now asserts the name the code actually reads. **The
-  underlying naming problem is not fixed here** — setting the lowercase name
-  still sends traffic to the production default with no warning. Tracked as Omni
-  #180 along with three related environment-variable defects.
+  but the client read only `KRUTRIMCLIENT_BASE_URL`. Both names now work, per the
+  environment-variable change above.
 
 ### Known issues, unchanged by this release
 
@@ -74,9 +95,6 @@ These were failing on `main`, independently of any change above:
   on the allocation history of whatever ran before it. It is deselected in CI,
   with the reason recorded in the workflow, and still runs locally. It needs to
   be stabilised or removed rather than left deselected.
-- The SDK reads only `KRUTRIMCLIENT_API_KEY`, while `krutrim_mcp_server` accepts
-  four different names. A key configured the way the MCP server documents yields
-  an unauthenticated SDK client. Omni #180.
 - `sandbox.api.proxy.request()` takes no port and reaches only the sandbox
   runtime's health endpoint, so it cannot proxy to a caller's own service. Omni
   #179.
