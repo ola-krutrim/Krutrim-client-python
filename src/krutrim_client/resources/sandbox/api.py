@@ -340,6 +340,16 @@ class SandboxAPIResource(SyncAPIResource):
     ) -> SandboxNetworkPolicyResponse:
         """Replace the network policy of an active sandbox.
 
+        .. warning::
+           **Refused by default.** The service accepts these parameters and
+           echoes them back in this call's response, but does not enforce them:
+           a sandbox remains reachable and able to reach the public internet
+           whatever you pass. Measured 2026-10-19; tracked as Omni #169. Calling
+           this raises :class:`NotImplementedError` so that a caller cannot be
+           told a sandbox is restricted when it is not. Set
+           ``KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY=1`` to send it anyway for
+           service-side testing. Do not use it to isolate untrusted code.
+
         This is a full replacement: any allowlist omitted here is cleared, and an
         omitted ``allow_internet_access`` resets to ``True`` (the server default).
         The sandbox must be active; otherwise the server returns 409
@@ -601,6 +611,16 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxNetworkPolicyResponse:
         """Replace the network policy of an active sandbox.
+
+        .. warning::
+           **Refused by default.** The service accepts these parameters and
+           echoes them back in this call's response, but does not enforce them:
+           a sandbox remains reachable and able to reach the public internet
+           whatever you pass. Measured 2026-10-19; tracked as Omni #169. Calling
+           this raises :class:`NotImplementedError` so that a caller cannot be
+           told a sandbox is restricted when it is not. Set
+           ``KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY=1`` to send it anyway for
+           service-side testing. Do not use it to isolate untrusted code.
 
         This is a full replacement: any allowlist omitted here is cleared, and an
         omitted ``allow_internet_access`` resets to ``True`` (the server default).

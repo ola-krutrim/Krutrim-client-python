@@ -28,6 +28,20 @@ def json_response(request: httpx.Request, payload: object, status_code: int = 20
     return httpx.Response(status_code, json=payload, request=request)
 
 
+@pytest.fixture(autouse=True)
+def _allow_unenforced_network_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Opt these tests into the network-policy parameters.
+
+    The client refuses those parameters by default because the service accepts
+    but does not enforce them (Omni #169). The plumbing underneath -- wire field
+    names, allowlist normalisation, the mutual-exclusion rule, response parsing
+    -- is still worth covering, so these tests opt in through the documented
+    escape hatch. The refusal itself is covered by the tests at the end of this
+    file, which clear the variable again.
+    """
+    monkeypatch.setenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", "1")
+
+
 def active_response(*, status: str = "active") -> dict[str, object]:
     return {
         "status": 200,
@@ -1434,3 +1448,79 @@ def test_update_network_policy_missing_data_raises() -> None:
         sandbox = client.sandbox.connect(SANDBOX_ID)
         with pytest.raises(krutrim_client.SandboxException, match="network policy update"):
             sandbox.update_network_policy(allow_internet_access=True)
+
+
+# --- the network-policy refusal (Omni #169) ---------------------------------
+#
+# These deliberately clear the escape hatch set by the autouse fixture above, so
+# they assert what a caller who has not opted in actually experiences.
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"allow_internet_access": False},
+        {"allow_internet_access": True},
+        {"outbound_cidr_allowlist": ["10.0.0.0/8"]},
+        {"outbound_domain_allowlist": ["pypi.org"]},
+        {"inbound_cidr_allowlist": ["10.0.0.0/8"]},
+    ],
+)
+def test_create_refuses_unenforced_network_policy(
+    monkeypatch: pytest.MonkeyPatch, kwargs: dict[str, Any]
+) -> None:
+    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
+    client = KrutrimClient(api_key="k", base_url=BASE_URL)
+    with pytest.raises(NotImplementedError, match="not enforced"):
+        client.sandbox.api.create(
+            sandbox_name="probe", region="In-Bangalore-1", flavor_name="sandbox-nano", **kwargs
+        )
+
+
+def test_update_network_policy_refuses_unenforced_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
+    client = KrutrimClient(api_key="k", base_url=BASE_URL)
+    with pytest.raises(NotImplementedError, match="not enforced"):
+        client.sandbox.api.update_network_policy(SANDBOX_ID, allow_internet_access=False)
+
+
+def test_refusal_message_names_the_escape_hatch(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
+    client = KrutrimClient(api_key="k", base_url=BASE_URL)
+    with pytest.raises(NotImplementedError) as excinfo:
+        client.sandbox.api.update_network_policy(SANDBOX_ID, outbound_domain_allowlist=["pypi.org"])
+    message = str(excinfo.value)
+    assert "KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY" in message
+    assert "#169" in message
+
+
+def test_create_without_policy_is_not_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The negative control: the guard must only fire when a policy is passed."""
+    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return json_response(request, {"status": 202, "data": {"id": SANDBOX_ID}})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as http_client:
+        client = KrutrimClient(api_key="k", base_url=BASE_URL, http_client=http_client)
+        client.sandbox.api.create(
+            sandbox_name="probe", region="In-Bangalore-1", flavor_name="sandbox-nano"
+        )
+
+    body = cast(dict, captured["body"])
+    assert body == {
+        "sandboxName": "probe",
+        "region": "In-Bangalore-1",
+        "flavorName": "sandbox-nano",
+    }
+    # asserted by exact equality above, and again by name here so a future wire
+    # rename cannot make this check pass vacuously
+    for field in (
+        "allowInternetAccess",
+        "outboundCidrAllowlist",
+        "outboundDomainAllowlist",
+        "inboundCidrAllowlist",
+    ):
+        assert field not in body

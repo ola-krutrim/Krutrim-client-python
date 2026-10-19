@@ -43,6 +43,33 @@ from .utils import update_env
 base_url = os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:4010")
 api_key = "My API Key"
 
+# create_vpc runs every field of these through validate_create_vpc_parameters,
+# so a partial payload fails before any request is made. Defined once here so
+# the retry tests exercise the retry machinery rather than the validator.
+_VPC_ARGS: dict[str, object] = {
+    "network": {"name": "net-1", "admin_state_up": True},
+    "security_group": {"name": "sg-1", "description": "a security group"},
+    "security_group_rule": {
+        "direction": "ingress",
+        "ethertypes": "IPv4",
+        "protocol": "tcp",
+        "portMinRange": 80,
+        "portMaxRange": 80,
+        "remoteIPPrefix": "0.0.0.0/0",
+    },
+    "subnet": {
+        "cidr": "10.0.0.0/24",
+        "gateway_ip": "10.0.0.1",
+        "name": "subnet-1",
+        "description": "a subnet",
+        "ip_version": 4,
+        "ingress": True,
+        "egress": True,
+    },
+    "vpc": {"name": "vpc-1", "description": "a vpc", "enabled": True},
+    "x_region": "In-Bangalore-1",
+}
+
 
 def _get_params(client: BaseClient[Any, Any]) -> dict[str, str]:
     request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
@@ -561,7 +588,7 @@ class TestKrutrimClient:
         assert client.base_url == "https://example.com/from_setter/"
 
     def test_base_url_env(self) -> None:
-        with update_env(krutrim_client_BASE_URL="http://localhost:5000/from/env"):
+        with update_env(KRUTRIMCLIENT_BASE_URL="http://localhost:5000/from/env"):
             client = KrutrimClient(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
@@ -783,7 +810,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id", x_account_id="acc-1234567890"
+            **_VPC_ARGS,
         )
 
         assert response.retries_taken == failures_before_success
@@ -809,8 +836,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id",
-            x_account_id="acc-1234567890",
+            **_VPC_ARGS,
             extra_headers={"x-stainless-retry-count": Omit()},
         )
 
@@ -836,8 +862,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id",
-            x_account_id="acc-1234567890",
+            **_VPC_ARGS,
             extra_headers={"x-stainless-retry-count": "42"},
         )
 
@@ -1345,7 +1370,7 @@ class TestKrutrimClient:
         assert client.base_url == "https://example.com/from_setter/"
 
     def test_base_url_env(self) -> None:
-        with update_env(krutrim_client_BASE_URL="http://localhost:5000/from/env"):
+        with update_env(KRUTRIMCLIENT_BASE_URL="http://localhost:5000/from/env"):
             client = AsyncKrutrimClient(api_key=api_key, _strict_response_validation=True)
             assert client.base_url == "http://localhost:5000/from/env/"
 
@@ -1572,7 +1597,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = await client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id", x_account_id="acc-1234567890"
+            **_VPC_ARGS,
         )
 
         assert response.retries_taken == failures_before_success
@@ -1599,8 +1624,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = await client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id",
-            x_account_id="acc-1234567890",
+            **_VPC_ARGS,
             extra_headers={"x-stainless-retry-count": Omit()},
         )
 
@@ -1627,8 +1651,7 @@ class TestKrutrimClient:
         respx_mock.post("/v1/highlvlvpc/create_vpc_async").mock(side_effect=retry_handler)
 
         response = await client.highlvlvpc.with_raw_response.create_vpc(
-            k_customer_id="k-customer-id",
-            x_account_id="acc-1234567890",
+            **_VPC_ARGS,
             extra_headers={"x-stainless-retry-count": "42"},
         )
 

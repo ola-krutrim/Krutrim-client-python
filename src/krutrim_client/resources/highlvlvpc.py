@@ -3298,6 +3298,7 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
             extra_query=extra_query,
             extra_body=extra_body,
             timeout=timeout,
+            x_region = x_region
         )
         extra_headers = {"x-region": x_region, **(extra_headers or {})}
         return await self._post(
