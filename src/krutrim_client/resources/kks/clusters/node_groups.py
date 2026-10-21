@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import httpx
 
-from ...._types import Body, Omit, Query, Headers, NoneType, NotGiven, omit, NOT_GIVEN
+from ...._types import NOT_GIVEN, Body, Omit, Query, Headers, NoneType, NotGiven, omit
 from ...._utils import maybe_transform, async_maybe_transform
 from ...._compat import cached_property
 from ...._resource import SyncAPIResource, AsyncAPIResource
@@ -15,8 +17,7 @@ from ...._response import (
     async_to_streamed_response_wrapper,
 )
 from ...._base_client import make_request_options
-from ....types.kks.clusters import node_group_create_params, node_group_upgrade_params
-from typing import Optional
+from ....types.kks.clusters import node_group_create_params, node_group_upgrade_params, node_group_update_config_params
 
 __all__ = ["NodeGroupsResource", "AsyncNodeGroupsResource"]
 
@@ -87,8 +88,8 @@ class NodeGroupsResource(SyncAPIResource):
                     "remote_access": remote_access,
                     "scaling_config": scaling_config,
                     "subnets_krn": subnets_krn,
-                    "labels": labels,   
-                    "taints": taints,   
+                    "labels": labels,
+                    "taints": taints,
                 },
                 node_group_create_params.NodeGroupCreateParams,
             ),
@@ -243,6 +244,48 @@ class NodeGroupsResource(SyncAPIResource):
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
             cast_to=NoneType,
+        )
+
+    def update_config(
+        self,
+        nodegroup_krn: str,
+        *,
+        cluster_krn: str,
+        scaling_config: node_group_update_config_params.ScalingConfig,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """Update nodegroup scaling configuration.
+
+        Args:
+          scaling_config: Scaling limits using min_size, max_size and desired_size.
+
+          extra_headers: Send extra headers.
+
+          extra_query: Add additional query parameters to the request.
+
+          extra_body: Add additional JSON properties to the request.
+
+          timeout: Override the client-level timeout for this request, in seconds.
+        """
+        if not cluster_krn:
+            raise ValueError(f"Expected a non-empty value for `cluster_krn` but received {cluster_krn!r}")
+        if not nodegroup_krn:
+            raise ValueError(f"Expected a non-empty value for `nodegroup_krn` but received {nodegroup_krn!r}")
+        if not scaling_config:
+            raise ValueError(f"Expected a non-empty value for `scaling_config` but received {scaling_config!r}")
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        return self._post(
+            f"/v1/kks/clusters/{cluster_krn}/node-groups/{nodegroup_krn}/update-config",
+            body=maybe_transform(
+                {"scaling_config": scaling_config}, node_group_update_config_params.NodeGroupUpdateConfigParams
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=object,
         )
 
 
@@ -468,6 +511,48 @@ class AsyncNodeGroupsResource(AsyncAPIResource):
             cast_to=NoneType,
         )
 
+    async def update_config(
+        self,
+        nodegroup_krn: str,
+        *,
+        cluster_krn: str,
+        scaling_config: node_group_update_config_params.ScalingConfig,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """Update nodegroup scaling configuration.
+
+        Args:
+          scaling_config: Scaling limits using min_size, max_size and desired_size.
+
+          extra_headers: Send extra headers.
+
+          extra_query: Add additional query parameters to the request.
+
+          extra_body: Add additional JSON properties to the request.
+
+          timeout: Override the client-level timeout for this request, in seconds.
+        """
+        if not cluster_krn:
+            raise ValueError(f"Expected a non-empty value for `cluster_krn` but received {cluster_krn!r}")
+        if not nodegroup_krn:
+            raise ValueError(f"Expected a non-empty value for `nodegroup_krn` but received {nodegroup_krn!r}")
+        if not scaling_config:
+            raise ValueError(f"Expected a non-empty value for `scaling_config` but received {scaling_config!r}")
+        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+        return await self._post(
+            f"/v1/kks/clusters/{cluster_krn}/node-groups/{nodegroup_krn}/update-config",
+            body=await async_maybe_transform(
+                {"scaling_config": scaling_config}, node_group_update_config_params.NodeGroupUpdateConfigParams
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=object,
+        )
+
 
 class NodeGroupsResourceWithRawResponse:
     def __init__(self, node_groups: NodeGroupsResource) -> None:
@@ -487,6 +572,9 @@ class NodeGroupsResourceWithRawResponse:
         )
         self.upgrade = to_raw_response_wrapper(
             node_groups.upgrade,
+        )
+        self.update_config = to_raw_response_wrapper(
+            node_groups.update_config,
         )
 
 
@@ -509,6 +597,9 @@ class AsyncNodeGroupsResourceWithRawResponse:
         self.upgrade = async_to_raw_response_wrapper(
             node_groups.upgrade,
         )
+        self.update_config = async_to_raw_response_wrapper(
+            node_groups.update_config,
+        )
 
 
 class NodeGroupsResourceWithStreamingResponse:
@@ -530,6 +621,9 @@ class NodeGroupsResourceWithStreamingResponse:
         self.upgrade = to_streamed_response_wrapper(
             node_groups.upgrade,
         )
+        self.update_config = to_streamed_response_wrapper(
+            node_groups.update_config,
+        )
 
 
 class AsyncNodeGroupsResourceWithStreamingResponse:
@@ -550,4 +644,7 @@ class AsyncNodeGroupsResourceWithStreamingResponse:
         )
         self.upgrade = async_to_streamed_response_wrapper(
             node_groups.upgrade,
+        )
+        self.update_config = async_to_streamed_response_wrapper(
+            node_groups.update_config,
         )

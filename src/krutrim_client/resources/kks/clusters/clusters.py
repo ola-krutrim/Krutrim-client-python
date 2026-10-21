@@ -12,9 +12,10 @@ from .addons import (
     AddonsResourceWithStreamingResponse,
     AsyncAddonsResourceWithStreamingResponse,
 )
-from ...._types import Body, Omit, Query, Headers, NoneType, NotGiven, omit, NOT_GIVEN
+from ...._types import NOT_GIVEN, Body, Omit, Query, Headers, NoneType, NotGiven, omit
 from ...._utils import maybe_transform, async_maybe_transform
 from ...._compat import cached_property
+from ...._regions import SUPPORTED_REGIONS, unsupported_region_error
 from .node_groups import (
     NodeGroupsResource,
     AsyncNodeGroupsResource,
@@ -70,7 +71,7 @@ class ClustersResource(SyncAPIResource):
         vpcKrn: str,
         subnetKrns: str,
         podIpv4Cidr: str,
-        serviceIpv4Cidr:str,
+        serviceIpv4Cidr: str,
         name: str | Omit = omit,
         version: str | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -97,15 +98,9 @@ class ClustersResource(SyncAPIResource):
             "/v1/kks/clusters",
             body=maybe_transform(
                 {
-                    "resourcesVpcConfig": {
-                        "vpcKrn":vpcKrn,
-                        "subnetKrns":subnetKrns
-                    },
+                    "resourcesVpcConfig": {"vpcKrn": vpcKrn, "subnetKrns": subnetKrns},
                     "name": name,
-                    "kubernetesNetworkConfig": {
-                        "podIpv4Cidr":podIpv4Cidr,
-                        "serviceIpv4Cidr":serviceIpv4Cidr
-                    },
+                    "kubernetesNetworkConfig": {"podIpv4Cidr": podIpv4Cidr, "serviceIpv4Cidr": serviceIpv4Cidr},
                     "version": version,
                 },
                 cluster_create_params.ClusterCreateParams,
@@ -153,21 +148,35 @@ class ClustersResource(SyncAPIResource):
     def list(
         self,
         *,
+        region: str | None = None,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """Get ALL clusters"""
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+    ) -> object:
+        """List clusters, optionally filtered by region.
+
+        Uses the client's region when omitted. With no region configured, lists
+        all clusters. The selected region is sent in both the query and x-region
+        header. Extra request options take precedence over these defaults.
+        """
+        region = region if region is not None else self._client.region
+        if region is not None and region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
+        region_headers = {"x-region": region} if region is not None else {}
+        extra_headers = {"Accept": "*/*", **region_headers, **(extra_headers or {})}
         return self._get(
             "/v1/kks/clusters",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                query={"region": region} if region is not None else None,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=NoneType,
+            cast_to=object,
         )
 
     def delete(
@@ -214,9 +223,12 @@ class ClustersResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> str:
         """
-        Retrieve kubeconfig
+        Retrieve kubeconfig as YAML text.
+
+        Raw and streaming responses expose the YAML through .text() or .parse().
+        The response is not JSON and should not be read with .json().
 
         Args:
           extra_headers: Send extra headers
@@ -235,7 +247,7 @@ class ClustersResource(SyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=NoneType,
+            cast_to=str,
         )
 
     def upgrade(
@@ -309,7 +321,7 @@ class AsyncClustersResource(AsyncAPIResource):
         vpcKrn: str,
         subnetKrns: str,
         podIpv4Cidr: str,
-        serviceIpv4Cidr:str,
+        serviceIpv4Cidr: str,
         name: str | Omit = omit,
         version: str | Omit = omit,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
@@ -336,15 +348,9 @@ class AsyncClustersResource(AsyncAPIResource):
             "/v1/kks/clusters",
             body=await async_maybe_transform(
                 {
-                    "resourcesVpcConfig": {
-                        "vpcKrn":vpcKrn,
-                        "subnetKrns":subnetKrns
-                    },
+                    "resourcesVpcConfig": {"vpcKrn": vpcKrn, "subnetKrns": subnetKrns},
                     "name": name,
-                    "kubernetesNetworkConfig": {
-                        "podIpv4Cidr":podIpv4Cidr,
-                        "serviceIpv4Cidr":serviceIpv4Cidr
-                    },
+                    "kubernetesNetworkConfig": {"podIpv4Cidr": podIpv4Cidr, "serviceIpv4Cidr": serviceIpv4Cidr},
                     "version": version,
                 },
                 cluster_create_params.ClusterCreateParams,
@@ -392,21 +398,35 @@ class AsyncClustersResource(AsyncAPIResource):
     async def list(
         self,
         *,
+        region: str | None = None,
         # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
         # The extra values given here take precedence over values defined on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
-        """Get ALL clusters"""
-        extra_headers = {"Accept": "*/*", **(extra_headers or {})}
+    ) -> object:
+        """List clusters, optionally filtered by region.
+
+        Uses the client's region when omitted. With no region configured, lists
+        all clusters. The selected region is sent in both the query and x-region
+        header. Extra request options take precedence over these defaults.
+        """
+        region = region if region is not None else self._client.region
+        if region is not None and region not in SUPPORTED_REGIONS:
+            raise unsupported_region_error("region")
+        region_headers = {"x-region": region} if region is not None else {}
+        extra_headers = {"Accept": "*/*", **region_headers, **(extra_headers or {})}
         return await self._get(
             "/v1/kks/clusters",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                query={"region": region} if region is not None else None,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
-            cast_to=NoneType,
+            cast_to=object,
         )
 
     async def delete(
@@ -453,9 +473,12 @@ class AsyncClustersResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> None:
+    ) -> str:
         """
-        Retrieve kubeconfig
+        Retrieve kubeconfig as YAML text.
+
+        Raw and streaming responses expose the YAML through .text() or .parse().
+        The response is not JSON and should not be read with .json().
 
         Args:
           extra_headers: Send extra headers
@@ -474,7 +497,7 @@ class AsyncClustersResource(AsyncAPIResource):
             options=make_request_options(
                 extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
             ),
-            cast_to=NoneType,
+            cast_to=str,
         )
 
     async def upgrade(

@@ -144,6 +144,44 @@ asyncio.run(main())
 
 Functionality between the synchronous and asynchronous clients is otherwise identical.
 
+## Kubernetes (KKS)
+
+List clusters in a specific region:
+
+```python
+clusters = client.kks.clusters.list(region="In-Bangalore-1")
+```
+
+The SDK sends the region as both a query parameter and an `x-region` header.
+Calling `list()` uses the client's configured region, or lists all clusters when
+no region is configured.
+
+Kubeconfig is returned as YAML text:
+
+```python
+kubeconfig = client.kks.clusters.retrieve_kubeconfig(cluster_krn="<cluster-krn>")
+
+response = client.kks.clusters.with_raw_response.retrieve_kubeconfig(cluster_krn="<cluster-krn>")
+kubeconfig = response.text()  # response.parse() also returns the YAML text
+```
+
+Use `.text()` or `.parse()` for kubeconfig; `.json()` expects a JSON response.
+
+Update a node group's scaling configuration:
+
+```python
+result = client.kks.clusters.node_groups.update_config(
+    nodegroup_krn="<nodegroup-krn>",
+    cluster_krn="<cluster-krn>",
+    scaling_config={"min_size": 2, "max_size": 5, "desired_size": 4},
+)
+```
+
+`update_config()` posts to the node group's `/update-config` endpoint and maps
+the scaling fields to the API's `scalingConfig`, `minSize`, `maxSize`, and
+`desiredSize` JSON keys. These methods support asynchronous clients and raw
+and streaming response wrappers.
+
 ## Sandbox
 
 The SDK includes an E2B-style, client-owned sandbox API with automatic readiness polling and context-manager cleanup:

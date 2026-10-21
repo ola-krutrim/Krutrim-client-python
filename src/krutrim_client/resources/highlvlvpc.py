@@ -368,7 +368,6 @@ class HighlvlvpcResource(SyncAPIResource):
         self,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region=None,
         timeout=None,
     ):
         # instanceKrn (required)
@@ -378,10 +377,6 @@ class HighlvlvpcResource(SyncAPIResource):
         # deleteVolume (required)
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
-
-        if x_region is not None and x_region not in (None, NOT_GIVEN):
-            if x_region not in SUPPORTED_REGIONS:
-                raise unsupported_region_error()
 
         # timeout (optional)
         if timeout not in (None, NOT_GIVEN) and not isinstance(
@@ -1093,7 +1088,6 @@ class HighlvlvpcResource(SyncAPIResource):
         *,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
@@ -1103,22 +1097,20 @@ class HighlvlvpcResource(SyncAPIResource):
         DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
         Returns {message, task_id}.
 
-        The target region is derived from `instanceKrn` if not explicitly provided,
-        which prevents requests from ever targeting a region that mismatches the instance.
+        The target region is derived automatically from `instanceKrn` and sent
+        in the `x-region` header. Do not pass a separate `x_region` argument.
         """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
             deleteVolume=deleteVolume,
-            x_region=x_region if is_given(x_region) else None,
             timeout=timeout,
         )
 
-        if not is_given(x_region) or x_region is None:
-            x_region = extract_region_from_krn(instanceKrn)
+        region = extract_region_from_krn(instanceKrn)
 
         extra_headers = {
-            "x-region": x_region,
+            "x-region": region,
             **(extra_headers or {}),
         }
 
@@ -2620,7 +2612,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         self,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region=None,
         timeout=None,
     ):
         # instanceKrn (required)
@@ -2630,10 +2621,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         # deleteVolume (required)
         if not isinstance(deleteVolume, bool):
             raise ValueError("'deleteVolume' must be a boolean.")
-
-        if x_region is not None and x_region not in (None, NOT_GIVEN):
-            if x_region not in SUPPORTED_REGIONS:
-                raise unsupported_region_error()
 
         # timeout (optional)
         if timeout not in (None, NOT_GIVEN) and not isinstance(
@@ -3355,7 +3342,6 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         *,
         instanceKrn: str,
         deleteVolume: bool,
-        x_region: str | NotGiven = NOT_GIVEN,
         extra_headers: Headers | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SuccessResponse:
@@ -3365,22 +3351,20 @@ class AsyncHighlvlvpcResource(AsyncAPIResource):
         DELETE /vm/v1/delete_instance_async?instanceKrn=...&deleteVolume=true
         Returns {message, task_id}.
 
-        The target region is derived from `instanceKrn` if not explicitly provided,
-        which prevents requests from ever targeting a region that mismatches the instance.
+        The target region is derived automatically from `instanceKrn` and sent
+        in the `x-region` header. Do not pass a separate `x_region` argument.
         """
 
         self.validate_delete_instance_parameters(
             instanceKrn=instanceKrn,
             deleteVolume=deleteVolume,
-            x_region=x_region if is_given(x_region) else None,
             timeout=timeout,
         )
 
-        if not is_given(x_region) or x_region is None:
-            x_region = extract_region_from_krn(instanceKrn)
+        region = extract_region_from_krn(instanceKrn)
 
         extra_headers = {
-            "x-region": x_region,
+            "x-region": region,
             **(extra_headers or {}),
         }
 
