@@ -11,6 +11,7 @@ __all__ = [
     "SandboxCreateParams",
     "SandboxListParams",
     "SandboxSetTTLParams",
+    "SandboxSetFlavorParams",
     "SandboxNetworkPolicyParams",
     "SandboxFileListParams",
     "SandboxFileMoveParams",
@@ -55,6 +56,10 @@ class SandboxListParams(TypedDict, total=False):
 
 class SandboxSetTTLParams(TypedDict, total=False):
     ttl_seconds: Required[Annotated[int, PropertyInfo(alias="ttlSeconds")]]
+
+
+class SandboxSetFlavorParams(TypedDict, total=False):
+    flavor_name: Required[Annotated[str, PropertyInfo(alias="flavorName")]]
 
 
 class SandboxNetworkPolicyParams(TypedDict, total=False):

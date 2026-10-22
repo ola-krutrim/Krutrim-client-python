@@ -33,11 +33,11 @@ from ..._types import NOT_GIVEN, Body, Query, Headers, NotGiven
 from ..._utils import maybe_transform, async_maybe_transform
 from ._helpers import (
     validate_ttl,
+    validate_labels,
     normalize_allowlist,
     validate_identifier,
     validate_sandbox_name,
     validate_network_policy,
-    validate_labels,
     serialize_label_selector,
 )
 from .commands import (
@@ -70,6 +70,7 @@ from ...types.sandbox import (
     AsyncSandboxResponse,
     TemplateListResponse,
     SandboxDeleteResponse,
+    SandboxSetFlavorParams,
     SandboxNetworkPolicyParams,
     SandboxNetworkPolicyResponse,
     NetworkStorageAttachmentInput,
@@ -301,6 +302,32 @@ class SandboxAPIResource(SyncAPIResource):
             options=make_request_options(extra_headers=extra_headers, extra_query=extra_query, timeout=timeout),
         )
 
+    def set_flavor(
+        self,
+        sandbox_id: str,
+        flavor_name: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """Update the sandbox flavor with PUT /omni/sandbox/v1/sandbox/{sandbox_id}/flavor."""
+        validate_identifier(sandbox_id)
+        if not flavor_name.strip():
+            raise ValueError("flavor_name must be a non-empty string")
+        return self._put(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/flavor",
+            cast_to=object,
+            body=maybe_transform({"flavor_name": flavor_name}, SandboxSetFlavorParams),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+        )
+
     def set_ttl(
         self,
         sandbox_id: str,
@@ -311,9 +338,10 @@ class SandboxAPIResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxTTLResponse:
+        """Update the sandbox lifetime with PUT /omni/sandbox/v1/sandbox/{sandbox_id}/ttl."""
         validate_identifier(sandbox_id)
         validate_ttl(ttl_seconds)
-        return self._post(
+        return self._put(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}/ttl",
             cast_to=SandboxTTLResponse,
             body=maybe_transform({"ttl_seconds": ttl_seconds}, SandboxSetTTLParams),
@@ -573,6 +601,32 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
             options=make_request_options(extra_headers=extra_headers, extra_query=extra_query, timeout=timeout),
         )
 
+    async def set_flavor(
+        self,
+        sandbox_id: str,
+        flavor_name: str,
+        *,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> object:
+        """Update the sandbox flavor with PUT /omni/sandbox/v1/sandbox/{sandbox_id}/flavor."""
+        validate_identifier(sandbox_id)
+        if not flavor_name.strip():
+            raise ValueError("flavor_name must be a non-empty string")
+        return await self._put(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/flavor",
+            cast_to=object,
+            body=await async_maybe_transform({"flavor_name": flavor_name}, SandboxSetFlavorParams),
+            options=make_request_options(
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            ),
+        )
+
     async def set_ttl(
         self,
         sandbox_id: str,
@@ -583,9 +637,10 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> SandboxTTLResponse:
+        """Update the sandbox lifetime with PUT /omni/sandbox/v1/sandbox/{sandbox_id}/ttl."""
         validate_identifier(sandbox_id)
         validate_ttl(ttl_seconds)
-        return await self._post(
+        return await self._put(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}/ttl",
             cast_to=SandboxTTLResponse,
             body=await async_maybe_transform({"ttl_seconds": ttl_seconds}, SandboxSetTTLParams),
@@ -683,6 +738,7 @@ class SandboxAPIResourceWithRawResponse:
         self.list = to_raw_response_wrapper(api.list)
         self.create = to_raw_response_wrapper(api.create)
         self.retrieve = to_raw_response_wrapper(api.retrieve)
+        self.set_flavor = to_raw_response_wrapper(api.set_flavor)
         self.set_ttl = to_raw_response_wrapper(api.set_ttl)
         self.update_network_policy = to_raw_response_wrapper(api.update_network_policy)
         self.delete = to_raw_response_wrapper(api.delete)
@@ -712,6 +768,7 @@ class AsyncSandboxAPIResourceWithRawResponse:
         self.list = async_to_raw_response_wrapper(api.list)
         self.create = async_to_raw_response_wrapper(api.create)
         self.retrieve = async_to_raw_response_wrapper(api.retrieve)
+        self.set_flavor = async_to_raw_response_wrapper(api.set_flavor)
         self.set_ttl = async_to_raw_response_wrapper(api.set_ttl)
         self.update_network_policy = async_to_raw_response_wrapper(api.update_network_policy)
         self.delete = async_to_raw_response_wrapper(api.delete)
@@ -741,6 +798,7 @@ class SandboxAPIResourceWithStreamingResponse:
         self.list = to_streamed_response_wrapper(api.list)
         self.create = to_streamed_response_wrapper(api.create)
         self.retrieve = to_streamed_response_wrapper(api.retrieve)
+        self.set_flavor = to_streamed_response_wrapper(api.set_flavor)
         self.set_ttl = to_streamed_response_wrapper(api.set_ttl)
         self.update_network_policy = to_streamed_response_wrapper(api.update_network_policy)
         self.delete = to_streamed_response_wrapper(api.delete)
@@ -770,6 +828,7 @@ class AsyncSandboxAPIResourceWithStreamingResponse:
         self.list = async_to_streamed_response_wrapper(api.list)
         self.create = async_to_streamed_response_wrapper(api.create)
         self.retrieve = async_to_streamed_response_wrapper(api.retrieve)
+        self.set_flavor = async_to_streamed_response_wrapper(api.set_flavor)
         self.set_ttl = async_to_streamed_response_wrapper(api.set_ttl)
         self.update_network_policy = async_to_streamed_response_wrapper(api.update_network_policy)
         self.delete = async_to_streamed_response_wrapper(api.delete)
