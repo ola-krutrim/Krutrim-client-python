@@ -120,6 +120,13 @@ class IAMResource(SyncAPIResource):
         krutrimManaged: bool | str | None = None,
         extra_headers: Headers | None = None,
     ) -> object:
+        """List roles with an optional Krutrim-managed filter.
+
+        krutrimManaged accepts True, False, or "all" (the default), as well as
+        the strings "true" and "false". krutrim_managed is a Python-style alias.
+        If both are supplied, a non-None krutrimManaged takes precedence.
+        The filter is sent as the krutrimManaged query parameter.
+        """
 
         headers = self._auth_headers(extra_headers)
 
@@ -553,6 +560,13 @@ class AsyncIAMResource(AsyncAPIResource):
         krutrimManaged: bool | str | None = None,
         extra_headers: Headers | None = None,
     ) -> object:
+        """List roles with an optional Krutrim-managed filter.
+
+        krutrimManaged accepts True, False, or "all" (the default), as well as
+        the strings "true" and "false". krutrim_managed is a Python-style alias.
+        If both are supplied, a non-None krutrimManaged takes precedence.
+        The filter is sent as the krutrimManaged query parameter.
+        """
 
         headers = self._auth_headers(extra_headers)
 

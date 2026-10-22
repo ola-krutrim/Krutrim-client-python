@@ -13,6 +13,7 @@ try:
         limit=999,
         offset=0,
         krutrimManaged=True,  # Optional: True, False, or "all" (default: "all")
+        # krutrim_managed=True is also accepted as an alias.
     )
 
     print("Roles:", resp)

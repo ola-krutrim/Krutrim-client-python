@@ -1,63 +1,50 @@
+from krutrim_client import KrutrimClient
 import os
-
 from dotenv import load_dotenv
 
-from krutrim_client import KrutrimClient
-
 load_dotenv()
-
-api_key = os.getenv("api_key")
-client = KrutrimClient(api_key=api_key)
+api_key = os.getenv("API_KEY")
+client = KrutrimClient(api_key=api_key, environment="cloudx")
 
 try:
-    # PUT /api/v3/loadbalancer/{lb_krn}
-    resp = client.lb.update_load_balancer(
-        "enter the load balancer krn",
-        x_region="enter the region name",
-        # x_region possible values: "In-Bangalore-1", "In-Hyderabad-1"
-        listener_krn="enter the listener krn",
-        listener={
-            "operation": "update",
-            "name": "enter the updated listener name",
-            "sni_container_refs": ["enter the certificate reference"],
-        },
-        loadbalancer={
-            "description": "enter the updated load balancer description",
-            "security_group_krn": ["enter the security group krn"],
-        },
-        policy=[
-            {
-                "operation": "create",
-                "name": "enter the policy name",
-                "action": "REDIRECT_TO_URL",
-                "description": "enter the policy description",
-                "redirect_url": "https://example.com/new-path",
-                "redirect_http_code": 302,
-                "position": 2,
-                "admin_state_up": True,
-                "tags": ["enter a tag"],
-            }
-        ],
-        rules=[
-            {
-                "operation": "create",
-                "policy_krn": "enter the policy krn",
-                "rule_type": "HEADER",
-                "compare_type": "EQUAL_TO",
-                "key": "x-custom-header",
-                "value": "true",
-            }
-        ],
-        pool=[
+    # PUT /api/v3/loadbalancer; the load balancer KRN is sent in the JSON body.
+    update_load_balancer = client.lb.with_raw_response.update_load_balancer(
+        lb_krn = "enter the load balancer krn",
+        x_region = "In-Hyderabad-2",
+        k_customer_id = "enter the customer id",
+        x_account_id = "enter the account id",
+        listener_krn = "enter the listener krn",
+        listener = {"operation": "update", "name": "web"},
+        pool = [
             {
                 "krn": "enter the pool krn",
-                "name": "enter the pool name",
-                "algorithm": "SOURCE_IP",
+                "name": "poolx",
+                "algorithm": "ROUND_ROBIN",
                 "target_group_krn": "enter the target group krn",
             }
         ],
+        policy = [
+            {
+                "operation": "update",
+                "krn": "enter the policy krn",
+                "name": "api",
+                "action": "REDIRECT_TO_POOL",
+                "redirect_pool_name": "poolx",
+            }
+        ],
+        rules = [
+            {
+                "operation": "update",
+                "krn": "enter the rule krn",
+                "policy_krn": "enter the policy krn",
+                "rule_type": "PATH",
+                "compare_type": "EQUAL_TO",
+                "value": "api",
+            }
+        ],
     )
-    print(f"Update load balancer result: {resp}")
+
+    print(f"Successfully updated the load balancer {update_load_balancer.json()}")
 
 except Exception as e:
-    print(f"Exception occurred: {e}")
+    print(f"Exception: {e}")

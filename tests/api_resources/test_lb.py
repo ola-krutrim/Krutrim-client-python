@@ -497,7 +497,7 @@ def test_list_load_balancers_by_vpc_with_region_only(client: KrutrimClient, resp
 
 @pytest.mark.respx(base_url=base_url)
 def test_update_load_balancer(client: KrutrimClient, respx_mock: MockRouter) -> None:
-    route = respx_mock.put(f"/api/v3/loadbalancer/{LB_KRN}").mock(
+    route = respx_mock.put("/api/v3/loadbalancer").mock(
         return_value=httpx.Response(
             200,
             json={"code": "update.loadBalancer", "message": "loadbalancer updated successfully", "details": {}},
@@ -554,7 +554,7 @@ async def test_async_load_balancer_endpoints(async_client: AsyncKrutrimClient, r
     list_load_balancers = respx_mock.get("/api/v3/loadbalancer/getallbyvpc").mock(
         return_value=httpx.Response(200, json=LIST_LOAD_BALANCERS_RESPONSE)
     )
-    update_load_balancer = respx_mock.put(f"/api/v3/loadbalancer/{LB_KRN}").mock(
+    update_load_balancer = respx_mock.put("/api/v3/loadbalancer").mock(
         return_value=httpx.Response(200, json={"message": "updated"})
     )
     delete_load_balancer = respx_mock.delete(f"/api/v3/loadbalancer/{LB_KRN}").mock(return_value=httpx.Response(204))

@@ -144,6 +144,25 @@ asyncio.run(main())
 
 Functionality between the synchronous and asynchronous clients is otherwise identical.
 
+## IAM role filtering
+
+```python
+roles = client.iam.list_roles(limit=999, offset=0, krutrimManaged=True)
+```
+
+`krutrimManaged` accepts `True`, `False`, or `"all"` (the default), plus the
+strings `"true"` and `"false"`. The alias `krutrim_managed` is also supported.
+Both names send the API query parameter `krutrimManaged`; when both are given,
+a non-`None` `krutrimManaged` takes precedence. Sync, async, raw, and streaming
+clients accept the same filter.
+
+If this call raises `unexpected keyword argument 'krutrimManaged'`, the running
+interpreter is using an older SDK implementation. To use this checkout, run
+`python -m pip install --no-deps -e .` from the repository root. In Jupyter,
+use `%pip install --no-deps -e .`, then restart the kernel and recreate the client.
+Check `krutrim_client.__file__` and `inspect.signature(client.iam.list_roles)`
+to confirm which implementation is loaded.
+
 ## Kubernetes (KKS)
 
 List clusters in a specific region:

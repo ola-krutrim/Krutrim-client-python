@@ -376,7 +376,11 @@ class LoadBalancerResource(SyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> object:
-        """Update load-balancer components in a single operation."""
+        """Update load-balancer components with PUT /api/v3/loadbalancer.
+
+        The load balancer KRN is sent as loadbalancer_krn in the JSON body.
+        Only the supplied component updates are included in the request.
+        """
         if not lb_krn:
             raise ValueError("'lb_krn' must be a non-empty string.")
         headers = self._headers(
@@ -387,16 +391,20 @@ class LoadBalancerResource(SyncAPIResource):
         )
         try:
             return self._put(
-                f"/api/v3/loadbalancer/{lb_krn}",
+                "/api/v3/loadbalancer",
                 body=maybe_transform(
                     {
-                        "loadbalancer_krn": lb_krn,
-                        "listener_krn": listener_krn,
-                        "listener": listener,
-                        "loadbalancer": loadbalancer,
-                        "policy": policy,
-                        "rules": rules,
-                        "pool": pool,
+                        key: value
+                        for key, value in {
+                            "loadbalancer_krn": lb_krn,
+                            "listener_krn": listener_krn,
+                            "listener": listener,
+                            "loadbalancer": loadbalancer,
+                            "policy": policy,
+                            "rules": rules,
+                            "pool": pool,
+                        }.items()
+                        if not isinstance(value, Omit)
                     },
                     update_load_balancer_params.UpdateLoadBalancerParams,
                 ),
@@ -746,7 +754,11 @@ class AsyncLoadBalancerResource(AsyncAPIResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> object:
-        """Update load-balancer components in a single operation."""
+        """Update load-balancer components with PUT /api/v3/loadbalancer.
+
+        The load balancer KRN is sent as loadbalancer_krn in the JSON body.
+        Only the supplied component updates are included in the request.
+        """
         if not lb_krn:
             raise ValueError("'lb_krn' must be a non-empty string.")
         headers = await self._headers(
@@ -757,16 +769,20 @@ class AsyncLoadBalancerResource(AsyncAPIResource):
         )
         try:
             return await self._put(
-                f"/api/v3/loadbalancer/{lb_krn}",
+                "/api/v3/loadbalancer",
                 body=await async_maybe_transform(
                     {
-                        "loadbalancer_krn": lb_krn,
-                        "listener_krn": listener_krn,
-                        "listener": listener,
-                        "loadbalancer": loadbalancer,
-                        "policy": policy,
-                        "rules": rules,
-                        "pool": pool,
+                        key: value
+                        for key, value in {
+                            "loadbalancer_krn": lb_krn,
+                            "listener_krn": listener_krn,
+                            "listener": listener,
+                            "loadbalancer": loadbalancer,
+                            "policy": policy,
+                            "rules": rules,
+                            "pool": pool,
+                        }.items()
+                        if not isinstance(value, Omit)
                     },
                     update_load_balancer_params.UpdateLoadBalancerParams,
                 ),
