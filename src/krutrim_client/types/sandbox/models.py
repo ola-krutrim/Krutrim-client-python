@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 
+from pydantic import ConfigDict
 from pydantic import Field as FieldInfo
 
 from ..._models import BaseModel
@@ -85,6 +86,8 @@ class TemplateListResponse(List[PodTemplate]):
 
 
 class FlavorGroupBy(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     flavorname: Optional[str] = None
     flavorid: Optional[str] = None
     flavorstatus: Optional[Literal["active", "inactive"]] = None
@@ -103,8 +106,8 @@ class FlavorGroupBy(BaseModel):
     gpu_resource_mapping: Optional[str] = None
     request_gpu_number: Optional[int] = None
     node_label: Optional[str] = None
-    empheralcost: Optional[float] = None
-    peristantcost: Optional[float] = None
+    ephemeral_cost: Optional[float] = FieldInfo(alias="empheralcost", default=None)
+    persistent_cost: Optional[float] = FieldInfo(alias="peristantcost", default=None)
 
     @property
     def flavor_status(self) -> Optional[Literal["active", "inactive"]]:
