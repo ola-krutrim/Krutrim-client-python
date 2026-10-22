@@ -55,6 +55,8 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `client.sandbox.api.list_flavors(region=...)` | `FlavorListResponse` | Discover compute flavors |
 | `client.sandbox.api.list_templates()` | `List[PodTemplate]` | Discover runtime templates |
 | `client.sandbox.api.list(...)` | `SandboxListResponse` | List your sandboxes |
+| `client.sandbox.api.set_flavor(sandbox_id, flavor_name)` | `object` | Update a sandbox's compute flavor with PUT |
+| `client.sandbox.api.set_ttl(sandbox_id, ttl_seconds)` | `SandboxTTLResponse` | Update a sandbox's lifetime with PUT |
 | `client.sandbox.api.update_network_policy(...)` | `SandboxNetworkPolicyResponse` | Replace a sandbox's network policy (low level) |
 
 ---
@@ -139,6 +141,21 @@ Attaches to an existing sandbox and waits until it is `active`. A `404` is an im
 `SandboxException` (no tolerance window, since nothing was just created).
 
 ---
+
+## Low-level sandbox updates
+
+```python
+client.sandbox.api.set_flavor(sandbox_id, flavor_name="sandbox-large-hyd")
+client.sandbox.api.set_ttl(sandbox_id, ttl_seconds=20000)
+```
+
+`set_flavor()` sends `PUT /omni/sandbox/v1/sandbox/{sandbox_id}/flavor` with
+`{"flavorName": "sandbox-large-hyd"}`. `set_ttl()` sends
+`PUT /omni/sandbox/v1/sandbox/{sandbox_id}/ttl` with `{"ttlSeconds": 20000}`.
+The bound `sandbox.set_timeout(seconds)` method also uses the TTL PUT endpoint.
+
+Both API methods accept `extra_headers`, `extra_query`, `extra_body`, and
+`timeout`, and support asynchronous clients plus raw and streaming responses.
 
 ## Sandbox handle — `Sandbox`
 

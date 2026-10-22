@@ -38,6 +38,7 @@ from .params import (
     SandboxFileListParams as SandboxFileListParams,
     SandboxFileMoveParams as SandboxFileMoveParams,
     SandboxPortOpenParams as SandboxPortOpenParams,
+    SandboxSetFlavorParams as SandboxSetFlavorParams,
     SandboxCommandRunParams as SandboxCommandRunParams,
     SandboxProxyRequestParams as SandboxProxyRequestParams,
     SandboxNetworkPolicyParams as SandboxNetworkPolicyParams,
