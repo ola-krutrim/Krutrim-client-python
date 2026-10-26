@@ -72,6 +72,7 @@ from ...types.sandbox import (
     SandboxDeleteResponse,
     SandboxSetFlavorParams,
     SandboxNetworkPolicyParams,
+    SandboxNetworkPatchParams,
     SandboxNetworkPolicyResponse,
     NetworkStorageAttachmentInput,
 )
@@ -368,16 +369,6 @@ class SandboxAPIResource(SyncAPIResource):
     ) -> SandboxNetworkPolicyResponse:
         """Replace the network policy of an active sandbox.
 
-        .. warning::
-           **Refused by default.** The service accepts these parameters and
-           echoes them back in this call's response, but does not enforce them:
-           a sandbox remains reachable and able to reach the public internet
-           whatever you pass. Measured 2026-10-19; tracked as Omni #169. Calling
-           this raises :class:`NotImplementedError` so that a caller cannot be
-           told a sandbox is restricted when it is not. Set
-           ``KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY=1`` to send it anyway for
-           service-side testing. Do not use it to isolate untrusted code.
-
         This is a full replacement: any allowlist omitted here is cleared, and an
         omitted ``allow_internet_access`` resets to ``True`` (the server default).
         The sandbox must be active; otherwise the server returns 409
@@ -390,6 +381,7 @@ class SandboxAPIResource(SyncAPIResource):
             outbound_domain_allowlist=outbound_domain_allowlist,
             inbound_cidr_allowlist=inbound_cidr_allowlist,
         )
+
         return self._post(
             f"/omni/sandbox/v1/sandbox/{sandbox_id}/network",
             cast_to=SandboxNetworkPolicyResponse,
@@ -400,6 +392,46 @@ class SandboxAPIResource(SyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
+        )
+
+    def patch_network_policy(
+        self,
+        sandbox_id: str,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | None = None,
+        outbound_domain_allowlist: str | None = None,
+        inbound_cidr_allowlist: str | None = None,
+        add_outbound_domains: Sequence[str] | None = None,
+        remove_outbound_domains: Sequence[str] | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyResponse:
+        """Partially update a sandbox network policy; omitted fields are preserved."""
+        validate_identifier(sandbox_id)
+        body: dict[str, object] = {}
+        supplied = {
+            "allow_internet_access": allow_internet_access,
+            "outbound_cidr_allowlist": outbound_cidr_allowlist,
+            "outbound_domain_allowlist": outbound_domain_allowlist,
+            "inbound_cidr_allowlist": inbound_cidr_allowlist,
+        }
+        for key, value in supplied.items():
+            if value is not None:
+                if key.endswith("allowlist") and value != "":
+                    body[key] = normalize_allowlist(value, field=key)
+                    continue
+                body[key] = value
+        for key, value in (("add_outbound_domains", add_outbound_domains), ("remove_outbound_domains", remove_outbound_domains)):
+            if value is not None:
+                body[key] = list(value)
+        return self._patch(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/network",
+            cast_to=SandboxNetworkPolicyResponse,
+            body=maybe_transform(body, SandboxNetworkPatchParams),
+            options=make_request_options(extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout),
         )
 
     def delete(
@@ -667,16 +699,6 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
     ) -> SandboxNetworkPolicyResponse:
         """Replace the network policy of an active sandbox.
 
-        .. warning::
-           **Refused by default.** The service accepts these parameters and
-           echoes them back in this call's response, but does not enforce them:
-           a sandbox remains reachable and able to reach the public internet
-           whatever you pass. Measured 2026-10-19; tracked as Omni #169. Calling
-           this raises :class:`NotImplementedError` so that a caller cannot be
-           told a sandbox is restricted when it is not. Set
-           ``KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY=1`` to send it anyway for
-           service-side testing. Do not use it to isolate untrusted code.
-
         This is a full replacement: any allowlist omitted here is cleared, and an
         omitted ``allow_internet_access`` resets to ``True`` (the server default).
         The sandbox must be active; otherwise the server returns 409
@@ -699,6 +721,45 @@ class AsyncSandboxAPIResource(AsyncAPIResource):
                 extra_body=extra_body,
                 timeout=timeout,
             ),
+        )
+
+    async def patch_network_policy(
+        self,
+        sandbox_id: str,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | None = None,
+        outbound_domain_allowlist: str | None = None,
+        inbound_cidr_allowlist: str | None = None,
+        add_outbound_domains: Sequence[str] | None = None,
+        remove_outbound_domains: Sequence[str] | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyResponse:
+        """Partially update a sandbox network policy; omitted fields are preserved."""
+        validate_identifier(sandbox_id)
+        body: dict[str, object] = {}
+        supplied = {
+            "allow_internet_access": allow_internet_access,
+            "outbound_cidr_allowlist": outbound_cidr_allowlist,
+            "outbound_domain_allowlist": outbound_domain_allowlist,
+            "inbound_cidr_allowlist": inbound_cidr_allowlist,
+        }
+        for key, value in supplied.items():
+            if value is not None:
+                if key.endswith("allowlist") and value != "":
+                    normalize_allowlist(value, field=key)
+                body[key] = value
+        for key, value in (("add_outbound_domains", add_outbound_domains), ("remove_outbound_domains", remove_outbound_domains)):
+            if value is not None:
+                body[key] = list(value)
+        return await self._patch(
+            f"/omni/sandbox/v1/sandbox/{sandbox_id}/network",
+            cast_to=SandboxNetworkPolicyResponse,
+            body=await async_maybe_transform(body, SandboxNetworkPatchParams),
+            options=make_request_options(extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout),
         )
 
     async def delete(
@@ -741,6 +802,7 @@ class SandboxAPIResourceWithRawResponse:
         self.set_flavor = to_raw_response_wrapper(api.set_flavor)
         self.set_ttl = to_raw_response_wrapper(api.set_ttl)
         self.update_network_policy = to_raw_response_wrapper(api.update_network_policy)
+        self.patch_network_policy = to_raw_response_wrapper(api.patch_network_policy)
         self.delete = to_raw_response_wrapper(api.delete)
 
     @cached_property
@@ -771,6 +833,7 @@ class AsyncSandboxAPIResourceWithRawResponse:
         self.set_flavor = async_to_raw_response_wrapper(api.set_flavor)
         self.set_ttl = async_to_raw_response_wrapper(api.set_ttl)
         self.update_network_policy = async_to_raw_response_wrapper(api.update_network_policy)
+        self.patch_network_policy = async_to_raw_response_wrapper(api.patch_network_policy)
         self.delete = async_to_raw_response_wrapper(api.delete)
 
     @cached_property
@@ -801,6 +864,7 @@ class SandboxAPIResourceWithStreamingResponse:
         self.set_flavor = to_streamed_response_wrapper(api.set_flavor)
         self.set_ttl = to_streamed_response_wrapper(api.set_ttl)
         self.update_network_policy = to_streamed_response_wrapper(api.update_network_policy)
+        self.patch_network_policy = to_streamed_response_wrapper(api.patch_network_policy)
         self.delete = to_streamed_response_wrapper(api.delete)
 
     @cached_property
@@ -831,6 +895,7 @@ class AsyncSandboxAPIResourceWithStreamingResponse:
         self.set_flavor = async_to_streamed_response_wrapper(api.set_flavor)
         self.set_ttl = async_to_streamed_response_wrapper(api.set_ttl)
         self.update_network_policy = async_to_streamed_response_wrapper(api.update_network_policy)
+        self.patch_network_policy = async_to_streamed_response_wrapper(api.patch_network_policy)
         self.delete = async_to_streamed_response_wrapper(api.delete)
 
     @cached_property

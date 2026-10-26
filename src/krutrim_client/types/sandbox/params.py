@@ -13,6 +13,7 @@ __all__ = [
     "SandboxSetTTLParams",
     "SandboxSetFlavorParams",
     "SandboxNetworkPolicyParams",
+    "SandboxNetworkPatchParams",
     "SandboxFileListParams",
     "SandboxFileMoveParams",
     "SandboxCommandRunParams",
@@ -67,6 +68,15 @@ class SandboxNetworkPolicyParams(TypedDict, total=False):
     outbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="outboundCidrAllowlist")]
     outbound_domain_allowlist: Annotated[str, PropertyInfo(alias="outboundDomainAllowlist")]
     inbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="inboundCidrAllowlist")]
+
+
+class SandboxNetworkPatchParams(TypedDict, total=False):
+    allow_internet_access: Annotated[bool, PropertyInfo(alias="allowInternetAccess")]
+    outbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="outboundCidrAllowlist")]
+    outbound_domain_allowlist: Annotated[str, PropertyInfo(alias="outboundDomainAllowlist")]
+    inbound_cidr_allowlist: Annotated[str, PropertyInfo(alias="inboundCidrAllowlist")]
+    add_outbound_domains: Annotated[List[str], PropertyInfo(alias="addOutboundDomains")]
+    remove_outbound_domains: Annotated[List[str], PropertyInfo(alias="removeOutboundDomains")]
 
 
 class SandboxFileListParams(TypedDict, total=False):

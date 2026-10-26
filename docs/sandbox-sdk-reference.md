@@ -39,6 +39,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `sandbox.run_command(command, ...)` | `SandboxCommandResult` | Execute a shell command |
 | `sandbox.set_timeout(seconds)` | `None` | Reset the sandbox lifetime |
 | `sandbox.update_network_policy(...)` | `SandboxNetworkPolicyData` | Replace the sandbox network policy |
+| `sandbox.patch_network_policy(...)` | `SandboxNetworkPolicyData` | Partially update the sandbox network policy |
 | `sandbox.is_running()` | `bool` | Check whether the sandbox is active |
 | `sandbox.kill()` | `None` | Delete the sandbox |
 | `sandbox.files.write(path, data)` | `SandboxFileData` | Upload a file |
@@ -58,6 +59,7 @@ use `async with await client.sandbox.create(...) as sandbox:`.
 | `client.sandbox.api.set_flavor(sandbox_id, flavor_name)` | `object` | Update a sandbox's compute flavor with PUT |
 | `client.sandbox.api.set_ttl(sandbox_id, ttl_seconds)` | `SandboxTTLResponse` | Update a sandbox's lifetime with PUT |
 | `client.sandbox.api.update_network_policy(...)` | `SandboxNetworkPolicyResponse` | Replace a sandbox's network policy (low level) |
+| `client.sandbox.api.patch_network_policy(...)` | `SandboxNetworkPolicyResponse` | Partially update a sandbox's network policy (low level) |
 
 ---
 
@@ -107,7 +109,7 @@ def create(
     outbound_domain_allowlist: str | Sequence[str] | None = None, # domains over TCP/443
     inbound_cidr_allowlist: str | Sequence[str] | None = None,    # restrict data-path callers
     labels: Mapping[str, str] | None = None,            # caller metadata, filterable on list
-    timeout: int | None = None,                         # sandbox lifetime in seconds (60–604800)
+    timeout: int | None = None,                         # 0 for no expiry; otherwise 60–604800 seconds
     wait_timeout: float = 300.0,                        # total readiness deadline (> 0)
     request_timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,  # per-HTTP-call
 ) -> Sandbox
@@ -153,6 +155,10 @@ client.sandbox.api.set_ttl(sandbox_id, ttl_seconds=20000)
 `{"flavorName": "sandbox-large-hyd"}`. `set_ttl()` sends
 `PUT /omni/sandbox/v1/sandbox/{sandbox_id}/ttl` with `{"ttlSeconds": 20000}`.
 The bound `sandbox.set_timeout(seconds)` method also uses the TTL PUT endpoint.
+Pass `0` to create or update a sandbox without automatic TTL expiry; it must then be
+deleted manually. Omitting TTL on creation retains the service's one-hour default. Positive
+TTL updates set expiry relative to the update call. No-expiry sandboxes continue to consume
+compute while running, and no-expiry does not guarantee uninterrupted execution.
 
 Both API methods accept `extra_headers`, `extra_query`, `extra_body`, and
 `timeout`, and support asynchronous clients plus raw and streaming responses.
@@ -197,7 +203,9 @@ if result.exit_code != 0 or result.timed_out:
 
 ### `set_timeout(timeout, *, request_timeout=NOT_GIVEN) -> None`
 
-Resets the sandbox lifetime to *now + `timeout` seconds* (not additive). Range 60–604,800.
+Resets the sandbox lifetime to *now + `timeout` seconds* (not additive). Use `0` to disable
+automatic expiry; otherwise the range is 60–604,800 seconds. A no-expiry sandbox requires
+manual deletion and continues to consume compute while running.
 
 ### `is_running(*, request_timeout=NOT_GIVEN) -> bool`
 
@@ -226,6 +234,14 @@ policy = sandbox.update_network_policy(outbound_domain_allowlist=["api.openai.co
 print(policy.outbound_domain_allowlist)  # "api.openai.com,*.github.com"
 sandbox.update_network_policy()  # reset to unrestricted
 ```
+
+### `patch_network_policy(*, allow_internet_access=None, outbound_cidr_allowlist=None, outbound_domain_allowlist=None, inbound_cidr_allowlist=None, add_outbound_domains=None, remove_outbound_domains=None, request_timeout=NOT_GIVEN) -> SandboxNetworkPolicyData`
+
+Partially updates the policy. Omitted fields are preserved; an allowlist supplied as `""`
+is cleared. `add_outbound_domains` and `remove_outbound_domains` accept sequences and mutate
+the domain set. The low-level twin is `client.sandbox.api.patch_network_policy(sandbox_id, ...)`;
+it also has raw and streaming response wrappers. Use `update_network_policy` when you want
+POST full-replacement behavior.
 
 ### Context manager
 
@@ -349,8 +365,8 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 | `SandboxEntryInfo` | `name`, `path`, `type` (`file`/`dir`), `size`, `mode`, `modified_time` |
 | `SandboxFileData` | `path`, `name`, `type` |
 | `SandboxPortInfo` | `port`, `status` (`provisioning`/`active`/`closing`/`failed`), `error_message`, `url` |
-| `SandboxNetworkPolicyData` | `id` (alias `sandbox_id`), `allow_internet_access`, `outbound_cidr_allowlist`, `outbound_domain_allowlist`, `inbound_cidr_allowlist` |
-| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, `flavor_name`, `labels`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
+| `SandboxNetworkPolicyData` | `id` (alias `sandbox_id`), `allow_internet_access`, `outbound_cidr_allowlist`, `outbound_domain_allowlist`, `inbound_cidr_allowlist`, `enforcement_status` |
+| `SandboxResponse` (`sandbox.metadata`) | `id`, `name`, `krn`, `status`, `region`, `service_url`, network policy fields, `flavor_name`, `labels`, `ttl_seconds`, `expires_at`, `created_at`, resource sizes, … |
 | `PodTemplate` | `id`, `template_name`, `description`, image/disk/port settings |
 | `FlavorItem` | `subject` (region), `group_by` (`FlavorGroupBy`: `flavorname`, `flavorid`, `flavorstatus`, `availability`, `cost`, `currency`, `unit`, `vcpus`, `storage`, `local_disk`, GPU fields, …), `time` |
 
@@ -367,7 +383,7 @@ Returned by the functions above (importable from `krutrim_client.types.sandbox`)
 
 | Constraint | Range / rule |
 | --- | --- |
-| Sandbox lifetime (`timeout` / `set_timeout`) | 60–604,800 seconds |
+| Sandbox lifetime (`timeout` / `set_timeout`) | `0` for no expiry, or 60–604,800 seconds |
 | `sandbox_name` | DNS-1035 lowercase name, ≤ 28 characters |
 | `wait_timeout` | > 0 seconds (default 300) |
 | Command length | 1–100,000 characters |

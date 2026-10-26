@@ -133,6 +133,12 @@ accepted = client.sandbox.api.create(
 print(accepted.data.id, accepted.data.status)
 ```
 
+Set `ttl_seconds=0` to disable automatic expiry; the sandbox then requires manual deletion.
+Omitting TTL retains the service's one-hour default. Positive TTLs from 60 to 604800 seconds
+set an expiry relative to creation, and `set_timeout(seconds)` re-anchors expiry from the
+time of that call. A no-expiry sandbox continues to consume compute while it is running, so
+disabling TTL does not reduce idle cost or guarantee uninterrupted execution.
+
 Labels are caller-supplied metadata (at most 16; keys ≤ 63 chars without `=` or `,`, values
 ≤ 255 chars without `,`). They come back on get/list responses and drive server-side
 filtering — only sandboxes carrying all requested labels are returned:
@@ -191,6 +197,23 @@ sandbox.update_network_policy(outbound_domain_allowlist=["api.openai.com", "*.gi
 sandbox.update_network_policy()  # reset to unrestricted internet access
 ```
 
+Use `patch_network_policy` to preserve fields you omit. Pass an empty string to clear one
+allowlist, or use domain deltas without reading the current list:
+
+```python
+policy = sandbox.patch_network_policy(
+    allow_internet_access=False,
+    outbound_cidr_allowlist="",
+    inbound_cidr_allowlist="",
+    outbound_domain_allowlist="",
+)
+sandbox.patch_network_policy(add_outbound_domains=["api.anthropic.com"])
+sandbox.patch_network_policy(remove_outbound_domains=["api.openai.com"])
+```
+
+`add_outbound_domains` and `remove_outbound_domains` use case-insensitive set semantics.
+POST `update_network_policy` remains a full replacement.
+
 CIDR and domain semantics (public IPv4 only, wildcard rules, active-sandbox requirement) are enforced server-side: invalid values raise `BadRequestError`, and updating a non-active sandbox raises `ConflictError`.
 
 ## Timeout meanings
@@ -202,7 +225,7 @@ Sandbox operations use distinct timeout concepts:
 - `request_timeout=30` controls individual HTTP calls made by the managed facade.
 - `sandbox.run_command(..., timeout=120)` sends the command execution deadline as `timeoutSeconds=120`.
 - When command `request_timeout` is omitted, the managed helper uses `timeout + 30` seconds so the transport does not normally expire first.
-- `sandbox.set_timeout(900)` resets the expiry deadline to now plus 900 seconds; it is not additive.
+- `sandbox.set_timeout(900)` resets the expiry deadline to now plus 900 seconds; it is not additive. Use `sandbox.set_timeout(0)` to disable automatic expiry and require manual deletion.
 
 The low-level API retains contract-oriented names: `ttl_seconds`, `timeout_seconds`, and the standard SDK request option `timeout`.
 
@@ -220,7 +243,7 @@ Ports 1024–65535 can be opened, listed, and closed through `sandbox.ports`. Op
 
 HTTP failures continue to use the existing SDK hierarchy, such as `NotFoundError`, `ConflictError`, and `APITimeoutError`. Managed readiness failures raise `SandboxException`; a readiness deadline raises `SandboxTimeoutError`. Both include `sandbox_id` and the last known metadata when available.
 
-The service contract currently specifies: TTL 60–604,800 seconds, at most 10 network-storage attachments, at most 16 labels (keys ≤ 63 chars without `=` or `,`, values ≤ 255 chars without `,`), files and proxy bodies up to 100 MB, directory depth 1–10, command timeout 1–270 seconds, ports 1024–65535, and at most 20 open ports per sandbox. Stateful rules such as region/flavor compatibility and active-only operations are enforced by the service.
+The service contract currently specifies: TTL 0 for no automatic expiry or 60–604,800 seconds, at most 10 network-storage attachments, at most 16 labels (keys ≤ 63 chars without `=` or `,`, values ≤ 255 chars without `,`), files and proxy bodies up to 100 MB, directory depth 1–10, command timeout 1–270 seconds, ports 1024–65535, and at most 20 open ports per sandbox. Stateful rules such as region/flavor compatibility and active-only operations are enforced by the service.
 
 ## Public-gateway assumptions
 

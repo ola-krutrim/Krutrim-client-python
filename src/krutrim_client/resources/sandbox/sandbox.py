@@ -384,6 +384,7 @@ class Sandbox:
         return SandboxProxy(self)
 
     def set_timeout(self, timeout: int, *, request_timeout: RequestTimeout = NOT_GIVEN) -> None:
+        """Set expiry to ``timeout`` seconds from now, or use 0 to disable TTL expiry."""
         response = self._api.set_ttl(self.sandbox_id, timeout, timeout=request_timeout)
         if response.data is not None:
             self._metadata.ttl_seconds = response.data.ttl_seconds
@@ -409,6 +410,32 @@ class Sandbox:
         )
         if response.data is None:
             raise _missing_data("network policy update", self.sandbox_id, self._metadata)
+        return response.data
+
+    def patch_network_policy(
+        self,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | None = None,
+        outbound_domain_allowlist: str | None = None,
+        inbound_cidr_allowlist: str | None = None,
+        add_outbound_domains: Sequence[str] | None = None,
+        remove_outbound_domains: Sequence[str] | None = None,
+        request_timeout: RequestTimeout = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyData:
+        """Partially update policy fields, preserving every omitted field."""
+        response = self._api.patch_network_policy(
+            self.sandbox_id,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+            add_outbound_domains=add_outbound_domains,
+            remove_outbound_domains=remove_outbound_domains,
+            timeout=request_timeout,
+        )
+        if response.data is None:
+            raise _missing_data("network policy patch", self.sandbox_id, self._metadata)
         return response.data
 
     def is_running(self, *, request_timeout: RequestTimeout = NOT_GIVEN) -> bool:
@@ -507,6 +534,7 @@ class AsyncSandbox:
         return AsyncSandboxProxy(self)
 
     async def set_timeout(self, timeout: int, *, request_timeout: RequestTimeout = NOT_GIVEN) -> None:
+        """Set expiry to ``timeout`` seconds from now, or use 0 to disable TTL expiry."""
         response = await self._api.set_ttl(self.sandbox_id, timeout, timeout=request_timeout)
         if response.data is not None:
             self._metadata.ttl_seconds = response.data.ttl_seconds
@@ -532,6 +560,32 @@ class AsyncSandbox:
         )
         if response.data is None:
             raise _missing_data("network policy update", self.sandbox_id, self._metadata)
+        return response.data
+
+    async def patch_network_policy(
+        self,
+        *,
+        allow_internet_access: bool | None = None,
+        outbound_cidr_allowlist: str | None = None,
+        outbound_domain_allowlist: str | None = None,
+        inbound_cidr_allowlist: str | None = None,
+        add_outbound_domains: Sequence[str] | None = None,
+        remove_outbound_domains: Sequence[str] | None = None,
+        request_timeout: RequestTimeout = NOT_GIVEN,
+    ) -> SandboxNetworkPolicyData:
+        """Partially update policy fields, preserving every omitted field."""
+        response = await self._api.patch_network_policy(
+            self.sandbox_id,
+            allow_internet_access=allow_internet_access,
+            outbound_cidr_allowlist=outbound_cidr_allowlist,
+            outbound_domain_allowlist=outbound_domain_allowlist,
+            inbound_cidr_allowlist=inbound_cidr_allowlist,
+            add_outbound_domains=add_outbound_domains,
+            remove_outbound_domains=remove_outbound_domains,
+            timeout=request_timeout,
+        )
+        if response.data is None:
+            raise _missing_data("network policy patch", self.sandbox_id, self._metadata)
         return response.data
 
     async def is_running(self, *, request_timeout: RequestTimeout = NOT_GIVEN) -> bool:

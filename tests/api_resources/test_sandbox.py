@@ -28,20 +28,6 @@ def json_response(request: httpx.Request, payload: object, status_code: int = 20
     return httpx.Response(status_code, json=payload, request=request)
 
 
-@pytest.fixture(autouse=True)
-def _allow_unenforced_network_policy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Opt these tests into the network-policy parameters.
-
-    The client refuses those parameters by default because the service accepts
-    but does not enforce them (Omni #169). The plumbing underneath -- wire field
-    names, allowlist normalisation, the mutual-exclusion rule, response parsing
-    -- is still worth covering, so these tests opt in through the documented
-    escape hatch. The refusal itself is covered by the tests at the end of this
-    file, which clear the variable again.
-    """
-    monkeypatch.setenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", "1")
-
-
 def active_response(*, status: str = "active") -> dict[str, object]:
     return {
         "status": 200,
@@ -211,6 +197,10 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
         assert created.status == 202
         assert client.sandbox.api.retrieve(SANDBOX_ID).data.status == "active"  # type: ignore[union-attr]
         assert client.sandbox.api.set_ttl(SANDBOX_ID, 900).data.ttl_seconds == 900  # type: ignore[union-attr]
+        no_expiry = client.sandbox.api.set_ttl(SANDBOX_ID, 0).data
+        assert no_expiry is not None
+        assert no_expiry.ttl_seconds == 0
+        assert no_expiry.expires_at == ""
         assert client.sandbox.api.delete(SANDBOX_ID).status == 202
 
         raw = client.with_raw_response.sandbox.api.create(
@@ -273,6 +263,37 @@ async def test_async_low_level_lifecycle_parity_and_immediate_create() -> None:
         assert (await raw.parse()).data.status == "active"  # type: ignore[union-attr]
         async with client.with_streaming_response.sandbox.api.retrieve(SANDBOX_ID) as streamed:
             assert (await streamed.parse()).data.status == "active"  # type: ignore[union-attr]
+
+
+def test_create_zero_ttl_is_serialized() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return json_response(request, create_response(), 202)
+
+    with make_client(handler) as client:
+        client.sandbox.api.create(
+            sandbox_name="no-expiry", region="test-region", flavor_name="cpu-1", ttl_seconds=0
+        )
+    assert json.loads(captured[0].content)["ttlSeconds"] == 0
+
+
+def test_ttl_response_accepts_empty_expiry() -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return json_response(
+            request,
+            {"status": 200, "data": {"id": SANDBOX_ID, "ttlSeconds": 0, "expiresAt": ""}},
+        )
+
+    with make_client(handler) as client:
+        response = client.sandbox.api.set_ttl(SANDBOX_ID, 0)
+    assert response.data is not None
+    assert response.data.expires_at == ""
+    assert json.loads(captured[0].content) == {"ttlSeconds": 0}
 
 
 BYOC_IMAGE = "docker.io/myorg/sandbox:v1"
@@ -543,7 +564,7 @@ async def test_async_sandbox_labels_parity() -> None:
             ),
             "at most 10",
         ),
-        (lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", ttl_seconds=59), "between 60"),
+        (lambda api: api.create(sandbox_name="valid", region="r", flavor_name="f", ttl_seconds=59), "0 or between 60"),
         (
             lambda api: api.create(
                 sandbox_name="valid",
@@ -1204,6 +1225,7 @@ def test_network_policy_models_parse_wire_aliases() -> None:
                     "outboundCidrAllowlist": "1.1.1.1",
                     "outboundDomainAllowlist": "api.openai.com",
                     "inboundCidrAllowlist": "10.0.0.0/8",
+                    "enforcementStatus": "applied",
                 },
             },
             type_=SandboxNetworkPolicyResponse,
@@ -1216,6 +1238,7 @@ def test_network_policy_models_parse_wire_aliases() -> None:
     assert response.data.outbound_cidr_allowlist == "1.1.1.1"
     assert response.data.outbound_domain_allowlist == "api.openai.com"
     assert response.data.inbound_cidr_allowlist == "10.0.0.0/8"
+    assert response.data.enforcement_status == "applied"
 
 
 def _sandbox_create_ok(request: httpx.Request) -> httpx.Response:
@@ -1261,6 +1284,21 @@ def test_create_network_policy_kwargs_map_to_wire_fields() -> None:
         "flavorName": "cpu-1",
         "allowInternetAccess": False,
     }
+
+
+def test_sandbox_response_network_policy_readback() -> None:
+    from krutrim_client._models import construct_type
+
+    response = construct_type(
+        value={"id": SANDBOX_ID, "allowInternetAccess": False,
+               "outboundCidrAllowlist": "", "outboundDomainAllowlist": "api.example.com",
+               "inboundCidrAllowlist": ""},
+        type_=SandboxResponse,
+    )
+    assert response.allow_internet_access is False
+    assert response.outbound_cidr_allowlist == ""
+    assert response.outbound_domain_allowlist == "api.example.com"
+    assert response.inbound_cidr_allowlist == ""
 
 
 async def test_async_create_network_policy_kwargs_map_to_wire_fields() -> None:
@@ -1371,6 +1409,59 @@ async def test_async_update_network_policy_parity() -> None:
     assert json.loads(requests[2].content) == {"allowInternetAccess": False}
 
 
+def test_sync_patch_network_policy_contract_and_wrappers() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "PATCH"
+        assert request.url.path == f"/omni/sandbox/v1/sandbox/{SANDBOX_ID}/network"
+        return json_response(request, network_policy_response())
+
+    with make_client(handler) as client:
+        response = client.sandbox.api.patch_network_policy(
+            SANDBOX_ID, allow_internet_access=False, outbound_cidr_allowlist="",
+            add_outbound_domains=["new.example.com"], remove_outbound_domains=["old.example.com"],
+        )
+        assert response.data is not None and response.data.allow_internet_access is None
+        client.sandbox.api.patch_network_policy(SANDBOX_ID)
+        raw = client.with_raw_response.sandbox.api.patch_network_policy(SANDBOX_ID, outbound_domain_allowlist="")
+        assert raw.status_code == 200
+        with client.with_streaming_response.sandbox.api.patch_network_policy(SANDBOX_ID, remove_outbound_domains=[]):
+            pass
+    assert json.loads(requests[0].content) == {
+        "allowInternetAccess": False, "outboundCidrAllowlist": "",
+        "addOutboundDomains": ["new.example.com"], "removeOutboundDomains": ["old.example.com"],
+    }
+    assert json.loads(requests[1].content) == {}
+    assert json.loads(requests[2].content) == {"outboundDomainAllowlist": ""}
+    assert json.loads(requests[3].content) == {"removeOutboundDomains": []}
+
+
+async def test_async_patch_network_policy_parity() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return json_response(request, network_policy_response())
+
+    async with make_async_client(handler) as client:
+        response = await client.sandbox.api.patch_network_policy(SANDBOX_ID, allow_internet_access=False)
+        assert response.data is not None
+        raw = await client.with_raw_response.sandbox.api.patch_network_policy(
+            SANDBOX_ID, outbound_cidr_allowlist=""
+        )
+        assert (await raw.parse()).data is not None
+        async with client.with_streaming_response.sandbox.api.patch_network_policy(
+            SANDBOX_ID, add_outbound_domains=["x.example.com"]
+        ) as streamed:
+            assert (await streamed.parse()).data is not None
+    assert all(request.method == "PATCH" for request in requests)
+    assert json.loads(requests[0].content) == {"allowInternetAccess": False}
+    assert json.loads(requests[1].content) == {"outboundCidrAllowlist": ""}
+    assert json.loads(requests[2].content) == {"addOutboundDomains": ["x.example.com"]}
+
+
 def test_update_network_policy_validation_errors() -> None:
     with make_client(lambda request: (_ for _ in ()).throw(AssertionError(request))) as client:
         with pytest.raises(ValueError, match="identifier"):
@@ -1448,79 +1539,3 @@ def test_update_network_policy_missing_data_raises() -> None:
         sandbox = client.sandbox.connect(SANDBOX_ID)
         with pytest.raises(krutrim_client.SandboxException, match="network policy update"):
             sandbox.update_network_policy(allow_internet_access=True)
-
-
-# --- the network-policy refusal (Omni #169) ---------------------------------
-#
-# These deliberately clear the escape hatch set by the autouse fixture above, so
-# they assert what a caller who has not opted in actually experiences.
-
-
-@pytest.mark.parametrize(
-    "kwargs",
-    [
-        {"allow_internet_access": False},
-        {"allow_internet_access": True},
-        {"outbound_cidr_allowlist": ["10.0.0.0/8"]},
-        {"outbound_domain_allowlist": ["pypi.org"]},
-        {"inbound_cidr_allowlist": ["10.0.0.0/8"]},
-    ],
-)
-def test_create_refuses_unenforced_network_policy(
-    monkeypatch: pytest.MonkeyPatch, kwargs: dict[str, Any]
-) -> None:
-    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
-    client = KrutrimClient(api_key="k", base_url=BASE_URL)
-    with pytest.raises(NotImplementedError, match="not enforced"):
-        client.sandbox.api.create(
-            sandbox_name="probe", region="In-Bangalore-1", flavor_name="sandbox-nano", **kwargs
-        )
-
-
-def test_update_network_policy_refuses_unenforced_policy(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
-    client = KrutrimClient(api_key="k", base_url=BASE_URL)
-    with pytest.raises(NotImplementedError, match="not enforced"):
-        client.sandbox.api.update_network_policy(SANDBOX_ID, allow_internet_access=False)
-
-
-def test_refusal_message_names_the_escape_hatch(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
-    client = KrutrimClient(api_key="k", base_url=BASE_URL)
-    with pytest.raises(NotImplementedError) as excinfo:
-        client.sandbox.api.update_network_policy(SANDBOX_ID, outbound_domain_allowlist=["pypi.org"])
-    message = str(excinfo.value)
-    assert "KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY" in message
-    assert "#169" in message
-
-
-def test_create_without_policy_is_not_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The negative control: the guard must only fire when a policy is passed."""
-    monkeypatch.delenv("KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY", raising=False)
-    captured: dict[str, object] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        captured["body"] = json.loads(request.content)
-        return json_response(request, {"status": 202, "data": {"id": SANDBOX_ID}})
-
-    with httpx.Client(transport=httpx.MockTransport(handler)) as http_client:
-        client = KrutrimClient(api_key="k", base_url=BASE_URL, http_client=http_client)
-        client.sandbox.api.create(
-            sandbox_name="probe", region="In-Bangalore-1", flavor_name="sandbox-nano"
-        )
-
-    body = cast(dict, captured["body"])
-    assert body == {
-        "sandboxName": "probe",
-        "region": "In-Bangalore-1",
-        "flavorName": "sandbox-nano",
-    }
-    # asserted by exact equality above, and again by name here so a future wire
-    # rename cannot make this check pass vacuously
-    for field in (
-        "allowInternetAccess",
-        "outboundCidrAllowlist",
-        "outboundDomainAllowlist",
-        "inboundCidrAllowlist",
-    ):
-        assert field not in body
