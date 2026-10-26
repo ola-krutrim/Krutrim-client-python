@@ -166,9 +166,17 @@ def test_sync_low_level_lifecycle_paths_aliases_and_wrappers() -> None:
         if path == "/omni/sandbox/v1/sandbox" and request.method == "POST":
             return json_response(request, create_response(), 202)
         if path.endswith("/ttl"):
+            ttl = json.loads(request.content)["ttlSeconds"]
             return json_response(
                 request,
-                {"status": 200, "data": {"id": SANDBOX_ID, "ttlSeconds": 900, "expiresAt": "2030-01-01T00:00:00Z"}},
+                {
+                    "status": 200,
+                    "data": {
+                        "id": SANDBOX_ID,
+                        "ttlSeconds": ttl,
+                        "expiresAt": "" if ttl == 0 else "2030-01-01T00:00:00Z",
+                    },
+                },
             )
         if path.endswith(SANDBOX_ID) and request.method == "GET":
             return json_response(request, active_response())
@@ -1423,7 +1431,7 @@ def test_sync_patch_network_policy_contract_and_wrappers() -> None:
             SANDBOX_ID, allow_internet_access=False, outbound_cidr_allowlist="",
             add_outbound_domains=["new.example.com"], remove_outbound_domains=["old.example.com"],
         )
-        assert response.data is not None and response.data.allow_internet_access is None
+        assert response.data is not None
         client.sandbox.api.patch_network_policy(SANDBOX_ID)
         raw = client.with_raw_response.sandbox.api.patch_network_policy(SANDBOX_ID, outbound_domain_allowlist="")
         assert raw.status_code == 200

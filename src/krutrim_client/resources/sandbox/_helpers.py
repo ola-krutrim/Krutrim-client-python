@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import re
 from typing import Mapping, Sequence
 from pathlib import Path
