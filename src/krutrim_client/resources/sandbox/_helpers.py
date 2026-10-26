@@ -17,27 +17,6 @@ MAX_LABELS = 16
 MAX_LABEL_KEY_LEN = 63
 MAX_LABEL_VALUE_LEN = 255
 
-# The service accepts every network-policy parameter, echoes them back on the
-# update path, and enforces none of them: a sandbox created with
-# allow_internet_access=False still reaches the public internet. Measured
-# 2026-10-19 on In-Bangalore-1 and tracked as Omni #169.
-#
-# This client refuses the parameters rather than let a caller believe a sandbox
-# is network-restricted when it is not. Failing open on an isolation control is
-# worse than not offering one, because the caller cannot tell the difference.
-# Remove this guard when enforcement ships, not before.
-NETWORK_POLICY_ESCAPE_HATCH_ENV = "KRUTRIM_ALLOW_UNENFORCED_NETWORK_POLICY"
-
-NETWORK_POLICY_UNENFORCED_MESSAGE = (
-    "Sandbox network policy is accepted by the service but not enforced: outbound and "
-    "inbound traffic remain unrestricted regardless of what you pass, and only the "
-    "update response echoes the policy back (Omni #169, re-measured 2026-10-19). "
-    "This client refuses these parameters rather than report a restriction that does "
-    "not exist. Do not rely on them to isolate untrusted code. To send them anyway "
-    "for service-side testing, set " + NETWORK_POLICY_ESCAPE_HATCH_ENV + "=1."
-)
-
-
 def validate_identifier(value: str) -> str:
     if not value:
         raise ValueError(f"Expected a non-empty sandbox identifier but received {value!r}")
@@ -51,8 +30,8 @@ def validate_required_path(path: str) -> str:
 
 
 def validate_ttl(ttl_seconds: int) -> int:
-    if not 60 <= ttl_seconds <= 604800:
-        raise ValueError("Sandbox timeout must be between 60 and 604800 seconds")
+    if ttl_seconds != 0 and not 60 <= ttl_seconds <= 604800:
+        raise ValueError("Sandbox timeout must be 0 or between 60 and 604800 seconds")
     return ttl_seconds
 
 
@@ -137,16 +116,6 @@ def validate_network_policy(
     outbound_domain_allowlist: str | Sequence[str] | None,
     inbound_cidr_allowlist: str | Sequence[str] | None,
 ) -> None:
-    requested = (
-        allow_internet_access,
-        outbound_cidr_allowlist,
-        outbound_domain_allowlist,
-        inbound_cidr_allowlist,
-    )
-    if any(value is not None for value in requested) and not os.environ.get(
-        NETWORK_POLICY_ESCAPE_HATCH_ENV
-    ):
-        raise NotImplementedError(NETWORK_POLICY_UNENFORCED_MESSAGE)
     if allow_internet_access is False and any(
         value is not None for value in (outbound_cidr_allowlist, outbound_domain_allowlist, inbound_cidr_allowlist)
     ):

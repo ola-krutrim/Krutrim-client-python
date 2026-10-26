@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 from datetime import datetime
 
 from pydantic import Field as FieldInfo
@@ -143,9 +143,13 @@ class SandboxResponse(BaseModel):
     environment_variables: Optional[Dict[str, str]] = FieldInfo(alias="environmentVariables", default=None)
     labels: Optional[Dict[str, str]] = None
     ttl_seconds: Optional[int] = FieldInfo(alias="ttlSeconds", default=None)
-    expires_at: Optional[datetime] = FieldInfo(alias="expiresAt", default=None)
+    expires_at: Optional[Union[datetime, Literal[""]]] = FieldInfo(alias="expiresAt", default=None)
     created_at: Optional[datetime] = FieldInfo(alias="createdAt", default=None)
     updated_at: Optional[datetime] = FieldInfo(alias="updatedAt", default=None)
+    allow_internet_access: Optional[bool] = FieldInfo(alias="allowInternetAccess", default=None)
+    outbound_cidr_allowlist: Optional[str] = FieldInfo(alias="outboundCidrAllowlist", default=None)
+    outbound_domain_allowlist: Optional[str] = FieldInfo(alias="outboundDomainAllowlist", default=None)
+    inbound_cidr_allowlist: Optional[str] = FieldInfo(alias="inboundCidrAllowlist", default=None)
 
     @property
     def sandbox_id(self) -> Optional[str]:
@@ -219,7 +223,7 @@ class SandboxDeleteResponse(BaseModel):
 class SandboxTTLData(BaseModel):
     id: Optional[str] = None
     ttl_seconds: Optional[int] = FieldInfo(alias="ttlSeconds", default=None)
-    expires_at: Optional[datetime] = FieldInfo(alias="expiresAt", default=None)
+    expires_at: Optional[Union[datetime, Literal[""]]] = FieldInfo(alias="expiresAt", default=None)
 
     @property
     def sandbox_id(self) -> Optional[str]:
@@ -239,6 +243,7 @@ class SandboxNetworkPolicyData(BaseModel):
     outbound_cidr_allowlist: Optional[str] = FieldInfo(alias="outboundCidrAllowlist", default=None)
     outbound_domain_allowlist: Optional[str] = FieldInfo(alias="outboundDomainAllowlist", default=None)
     inbound_cidr_allowlist: Optional[str] = FieldInfo(alias="inboundCidrAllowlist", default=None)
+    enforcement_status: Optional[Literal["applied"]] = FieldInfo(alias="enforcementStatus", default=None)
 
     @property
     def sandbox_id(self) -> Optional[str]:

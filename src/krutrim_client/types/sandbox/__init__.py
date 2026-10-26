@@ -42,5 +42,6 @@ from .params import (
     SandboxCommandRunParams as SandboxCommandRunParams,
     SandboxProxyRequestParams as SandboxProxyRequestParams,
     SandboxNetworkPolicyParams as SandboxNetworkPolicyParams,
+    SandboxNetworkPatchParams as SandboxNetworkPatchParams,
     NetworkStorageAttachmentInput as NetworkStorageAttachmentInput,
 )

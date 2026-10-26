@@ -20,6 +20,8 @@ from .sandbox import (
     SandboxCommandResult as SandboxCommandResult,
     SandboxDeleteResponse as SandboxDeleteResponse,
     SandboxCommandResponse as SandboxCommandResponse,
+    SandboxNetworkPolicyData as SandboxNetworkPolicyData,
+    SandboxNetworkPolicyResponse as SandboxNetworkPolicyResponse,
     SandboxPortListResponse as SandboxPortListResponse,
     SandboxEntryListResponse as SandboxEntryListResponse,
     NetworkStorageAttachmentInput as NetworkStorageAttachmentInput,
