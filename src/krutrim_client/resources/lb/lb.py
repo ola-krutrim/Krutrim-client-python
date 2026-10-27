@@ -11,6 +11,7 @@ from ..._compat import cached_property
 from ..._regions import SUPPORTED_REGIONS, unsupported_region_error
 from ..._exceptions import APIStatusError
 from ...types.lb import (
+    add_listener_params,
     create_target_group_params,
     update_target_group_params,
     create_load_balancer_params,
@@ -24,6 +25,7 @@ from ..._response import (
     async_to_streamed_response_wrapper,
 )
 from ..._base_client import make_request_options
+from ...types.lb.add_listener_response import AddListenerResponse
 from ...types.lb.list_target_groups_response import ListTargetGroupsResponse
 from ...types.lb.create_target_group_response import CreateTargetGroupResponse
 from ...types.lb.delete_target_group_response import DeleteTargetGroupResponse
@@ -309,6 +311,52 @@ class LoadBalancerResource(SyncAPIResource):
                     timeout=timeout,
                 ),
                 cast_to=CreateLoadBalancerResponse,
+            )
+        except APIStatusError as e:
+            return LoadBalancerErrorResponse(e.status_code, e.body)
+
+    def add_listener(
+        self,
+        *,
+        loadbalancer_krn: str,
+        listener: add_listener_params.Listener,
+        x_region: str,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> AddListenerResponse:
+        """Add a listener to an existing load balancer with POST /api/v3/loadbalancer/listener.
+
+        ``x_region`` must match the region embedded in ``loadbalancer_krn``.
+        """
+        if not loadbalancer_krn:
+            raise ValueError("'loadbalancer_krn' must be a non-empty string.")
+        headers = self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        try:
+            return self._post(
+                "/api/v3/loadbalancer/listener",
+                body=maybe_transform(
+                    {
+                        "loadbalancer_krn": loadbalancer_krn,
+                        "listener": listener,
+                    },
+                    add_listener_params.AddListenerParams,
+                ),
+                options=make_request_options(
+                    extra_headers=headers,
+                    extra_query=extra_query,
+                    extra_body=extra_body,
+                    timeout=timeout,
+                ),
+                cast_to=AddListenerResponse,
             )
         except APIStatusError as e:
             return LoadBalancerErrorResponse(e.status_code, e.body)
@@ -691,6 +739,52 @@ class AsyncLoadBalancerResource(AsyncAPIResource):
         except APIStatusError as e:
             return LoadBalancerErrorResponse(e.status_code, e.body)
 
+    async def add_listener(
+        self,
+        *,
+        loadbalancer_krn: str,
+        listener: add_listener_params.Listener,
+        x_region: str,
+        k_customer_id: str | None = None,
+        x_account_id: str | None = None,
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> AddListenerResponse:
+        """Add a listener to an existing load balancer with POST /api/v3/loadbalancer/listener.
+
+        ``x_region`` must match the region embedded in ``loadbalancer_krn``.
+        """
+        if not loadbalancer_krn:
+            raise ValueError("'loadbalancer_krn' must be a non-empty string.")
+        headers = await self._headers(
+            k_customer_id=k_customer_id,
+            x_account_id=x_account_id,
+            x_region=x_region,
+            extra_headers=extra_headers,
+        )
+        try:
+            return await self._post(
+                "/api/v3/loadbalancer/listener",
+                body=await async_maybe_transform(
+                    {
+                        "loadbalancer_krn": loadbalancer_krn,
+                        "listener": listener,
+                    },
+                    add_listener_params.AddListenerParams,
+                ),
+                options=make_request_options(
+                    extra_headers=headers,
+                    extra_query=extra_query,
+                    extra_body=extra_body,
+                    timeout=timeout,
+                ),
+                cast_to=AddListenerResponse,
+            )
+        except APIStatusError as e:
+            return LoadBalancerErrorResponse(e.status_code, e.body)
+
     async def list_load_balancers_by_vpc(
         self,
         *,
@@ -841,6 +935,7 @@ class LoadBalancerResourceWithRawResponse:
         self.update_target_group = to_raw_response_wrapper(load_balancer.update_target_group)
         self.delete_target_group = to_raw_response_wrapper(load_balancer.delete_target_group)
         self.create_load_balancer = to_raw_response_wrapper(load_balancer.create_load_balancer)
+        self.add_listener = to_raw_response_wrapper(load_balancer.add_listener)
         self.list_load_balancers_by_vpc = to_raw_response_wrapper(load_balancer.list_load_balancers_by_vpc)
         self.update_load_balancer = to_raw_response_wrapper(load_balancer.update_load_balancer)
         self.delete_load_balancer = to_raw_response_wrapper(load_balancer.delete_load_balancer)
@@ -854,6 +949,7 @@ class AsyncLoadBalancerResourceWithRawResponse:
         self.update_target_group = async_to_raw_response_wrapper(load_balancer.update_target_group)
         self.delete_target_group = async_to_raw_response_wrapper(load_balancer.delete_target_group)
         self.create_load_balancer = async_to_raw_response_wrapper(load_balancer.create_load_balancer)
+        self.add_listener = async_to_raw_response_wrapper(load_balancer.add_listener)
         self.list_load_balancers_by_vpc = async_to_raw_response_wrapper(load_balancer.list_load_balancers_by_vpc)
         self.update_load_balancer = async_to_raw_response_wrapper(load_balancer.update_load_balancer)
         self.delete_load_balancer = async_to_raw_response_wrapper(load_balancer.delete_load_balancer)
@@ -867,6 +963,7 @@ class LoadBalancerResourceWithStreamingResponse:
         self.update_target_group = to_streamed_response_wrapper(load_balancer.update_target_group)
         self.delete_target_group = to_streamed_response_wrapper(load_balancer.delete_target_group)
         self.create_load_balancer = to_streamed_response_wrapper(load_balancer.create_load_balancer)
+        self.add_listener = to_streamed_response_wrapper(load_balancer.add_listener)
         self.list_load_balancers_by_vpc = to_streamed_response_wrapper(load_balancer.list_load_balancers_by_vpc)
         self.update_load_balancer = to_streamed_response_wrapper(load_balancer.update_load_balancer)
         self.delete_load_balancer = to_streamed_response_wrapper(load_balancer.delete_load_balancer)
@@ -880,6 +977,7 @@ class AsyncLoadBalancerResourceWithStreamingResponse:
         self.update_target_group = async_to_streamed_response_wrapper(load_balancer.update_target_group)
         self.delete_target_group = async_to_streamed_response_wrapper(load_balancer.delete_target_group)
         self.create_load_balancer = async_to_streamed_response_wrapper(load_balancer.create_load_balancer)
+        self.add_listener = async_to_streamed_response_wrapper(load_balancer.add_listener)
         self.list_load_balancers_by_vpc = async_to_streamed_response_wrapper(load_balancer.list_load_balancers_by_vpc)
         self.update_load_balancer = async_to_streamed_response_wrapper(load_balancer.update_load_balancer)
         self.delete_load_balancer = async_to_streamed_response_wrapper(load_balancer.delete_load_balancer)

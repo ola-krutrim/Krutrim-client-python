@@ -1,3 +1,5 @@
+from .add_listener_params import AddListenerParams as AddListenerParams
+from .add_listener_response import AddListenerResponse as AddListenerResponse
 from .create_target_group_params import CreateTargetGroupParams as CreateTargetGroupParams
 from .update_target_group_params import UpdateTargetGroupParams as UpdateTargetGroupParams
 from .create_load_balancer_params import CreateLoadBalancerParams as CreateLoadBalancerParams
@@ -44,6 +46,8 @@ except ImportError:
     pass
 
 __all__ = [
+    "AddListenerParams",
+    "AddListenerResponse",
     "CreateTargetGroupParams",
     "CreateTargetGroupResponse",
     "ListTargetGroupsResponse",

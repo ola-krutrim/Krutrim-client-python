@@ -14,7 +14,8 @@ from krutrim_client.types.lb.update_target_group_params import (
     Member as TargetGroupUpdateMember,
     HealthMonitor as TargetGroupUpdateHealthMonitor,
 )
-from krutrim_client.types.lb.create_load_balancer_params import LoadBalancerData
+from krutrim_client.types.lb.add_listener_params import AddListenerParams
+from krutrim_client.types.lb.create_load_balancer_params import LoadBalancerData, Listener
 from krutrim_client.types.lb.update_load_balancer_params import (
     PoolUpdate,
     RuleOperation,
@@ -118,6 +119,34 @@ NETWORK_LOAD_BALANCER_DATA: LoadBalancerData = {
             "l7_policies": [],
         }
     ],
+}
+
+ADD_LISTENER: Listener = {
+    "name": "http-listener",
+    "protocol": "HTTP",
+    "protocol_port": 8080,
+    "default_pool": True,
+    "pool_data": [
+        {
+            "name": "backend-pool",
+            "description": "",
+            "algorithm": "ROUND_ROBIN",
+            "protocol": "HTTP",
+            "target_group_name": "example-target-group",
+        }
+    ],
+    "l7_policies": [],
+}
+
+ADD_LISTENER_BODY: AddListenerParams = {
+    "loadbalancer_krn": LB_KRN,
+    "listener": ADD_LISTENER,
+}
+
+ADD_LISTENER_RESPONSE = {
+    "code": "add.listener",
+    "message": "listener added successfully",
+    "details": {},
 }
 
 LISTENER_UPDATE: ListenerUpdate = {
@@ -460,6 +489,26 @@ def test_create_network_load_balancer(client: KrutrimClient, respx_mock: MockRou
 
 
 @pytest.mark.respx(base_url=base_url)
+def test_add_listener(client: KrutrimClient, respx_mock: MockRouter) -> None:
+    route = respx_mock.post("/api/v3/loadbalancer/listener").mock(
+        return_value=httpx.Response(200, json=ADD_LISTENER_RESPONSE)
+    )
+
+    response = client.lb.add_listener(
+        loadbalancer_krn=LB_KRN,
+        listener=ADD_LISTENER,
+        k_customer_id=K_CUSTOMER_ID,
+        x_account_id=X_ACCOUNT_ID,
+        x_region=X_REGION,
+    )
+
+    assert response.code == "add.listener"
+    request = route.calls.last.request
+    _assert_request_headers(request)
+    assert json.loads(request.content) == ADD_LISTENER_BODY
+
+
+@pytest.mark.respx(base_url=base_url)
 def test_list_load_balancers_by_vpc(client: KrutrimClient, respx_mock: MockRouter) -> None:
     route = respx_mock.get("/api/v3/loadbalancer/getallbyvpc").mock(
         return_value=httpx.Response(200, json=LIST_LOAD_BALANCERS_RESPONSE)
@@ -551,6 +600,9 @@ async def test_async_load_balancer_endpoints(async_client: AsyncKrutrimClient, r
     create_load_balancer = respx_mock.post("/api/v3/loadbalancer").mock(
         return_value=httpx.Response(202, json=CREATE_LOAD_BALANCER_RESPONSE)
     )
+    add_listener = respx_mock.post("/api/v3/loadbalancer/listener").mock(
+        return_value=httpx.Response(200, json=ADD_LISTENER_RESPONSE)
+    )
     list_load_balancers = respx_mock.get("/api/v3/loadbalancer/getallbyvpc").mock(
         return_value=httpx.Response(200, json=LIST_LOAD_BALANCERS_RESPONSE)
     )
@@ -595,6 +647,13 @@ async def test_async_load_balancer_endpoints(async_client: AsyncKrutrimClient, r
         x_account_id=X_ACCOUNT_ID,
         x_region=X_REGION,
     )
+    await async_client.lb.add_listener(
+        loadbalancer_krn=LB_KRN,
+        listener=ADD_LISTENER,
+        k_customer_id=K_CUSTOMER_ID,
+        x_account_id=X_ACCOUNT_ID,
+        x_region=X_REGION,
+    )
     await async_client.lb.list_load_balancers_by_vpc(
         vpc_krn=VPC_KRN,
         k_customer_id=K_CUSTOMER_ID,
@@ -618,6 +677,7 @@ async def test_async_load_balancer_endpoints(async_client: AsyncKrutrimClient, r
     assert update_target_group.called
     assert delete_target_group.called
     assert create_load_balancer.called
+    assert add_listener.called
     assert list_load_balancers.called
     assert update_load_balancer.called
     assert delete_load_balancer.called
