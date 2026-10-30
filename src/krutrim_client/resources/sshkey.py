@@ -19,27 +19,33 @@ from .._response import (
 )
 
 from ..types.sshkey.sshkey_create_response import SshkeyCreateResponse
+from ..types.sshkey.sshkey_list_response import SshkeyListResponse
 
 __all__ = ["SshkeysResource", "AsyncSshkeysResource"]
 
 
-def _parse_list_sshkeys_response(response: httpx.Response) -> Any:
-    """Normalize list SSH keys responses.
+def _parse_list_sshkeys_response(response: httpx.Response) -> SshkeyListResponse:
+    """Parse GET /v2/sshkeys/{customer_id} to match the console curl response.
 
-    The API returns 204 No Content with an empty body when a region has no keys.
-    Treat that (and any other empty body) as an empty list so callers do not need
-    to call ``response.json()`` on a body-less success response.
+    Curl:
+      GET /v2/sshkeys/{customer_id}?sortBy=createdAt&sortOrder=desc&page=1&limit=10
+      Headers: Accept: */*, Content-Type: application/json, k-customer-id, x-region
+
+    200 → ``{"meta": {...}, "sshKeys": [...]}``
+    204 / empty body → ``SshkeyListResponse(ssh_keys=[])``
     """
     if response.status_code == 204:
-        return []
+        return SshkeyListResponse(ssh_keys=[])
     content = response.content or b""
     if not content.strip():
-        return []
+        return SshkeyListResponse(ssh_keys=[])
     try:
-        return response.json()
+        data: Any = response.json()
     except ValueError:
-        # JSONDecodeError is a ValueError subclass; empty/invalid body → empty list.
-        return []
+        return SshkeyListResponse(ssh_keys=[])
+    if data is None:
+        return SshkeyListResponse(ssh_keys=[])
+    return SshkeyListResponse.model_validate(data)
 
 
 class SshkeysResource(SyncAPIResource):
@@ -129,12 +135,17 @@ class SshkeysResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Any:
+    ) -> SshkeyListResponse:
         """
         List SSH keys for a customer.
 
-        Returns the parsed JSON body on success. When the API responds with
-        ``204 No Content`` (no keys in the region) or an empty body, returns ``[]``.
+        Matches the console curl:
+          ``GET /v2/sshkeys/{customer_id}?sortBy=createdAt&sortOrder=desc&page=1&limit=10``
+          with headers ``k-customer-id``, ``x-region``, ``Accept: */*``,
+          ``Content-Type: application/json``.
+
+        Returns a typed ``SshkeyListResponse`` (``meta`` + ``ssh_keys``).
+        When the API returns ``204 No Content`` (no keys), returns ``ssh_keys=[]``.
 
         Args:
           customer_id: The customer ID to list SSH keys for.
@@ -155,7 +166,11 @@ class SshkeysResource(SyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if not customer_id:
+            raise ValueError(f"Expected a non-empty value for `customer_id` but received {customer_id!r}")
         extra_headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/json",
             "x-region": x_region,
             "k-customer-id": customer_id,
             **(extra_headers or {}),
@@ -312,12 +327,17 @@ class AsyncSshkeysResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> Any:
+    ) -> SshkeyListResponse:
         """
         List SSH keys for a customer.
 
-        Returns the parsed JSON body on success. When the API responds with
-        ``204 No Content`` (no keys in the region) or an empty body, returns ``[]``.
+        Matches the console curl:
+          ``GET /v2/sshkeys/{customer_id}?sortBy=createdAt&sortOrder=desc&page=1&limit=10``
+          with headers ``k-customer-id``, ``x-region``, ``Accept: */*``,
+          ``Content-Type: application/json``.
+
+        Returns a typed ``SshkeyListResponse`` (``meta`` + ``ssh_keys``).
+        When the API returns ``204 No Content`` (no keys), returns ``ssh_keys=[]``.
 
         Args:
           customer_id: The customer ID to list SSH keys for.
@@ -338,7 +358,11 @@ class AsyncSshkeysResource(AsyncAPIResource):
 
           timeout: Override the client-level default timeout for this request, in seconds
         """
+        if not customer_id:
+            raise ValueError(f"Expected a non-empty value for `customer_id` but received {customer_id!r}")
         extra_headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/json",
             "x-region": x_region,
             "k-customer-id": customer_id,
             **(extra_headers or {}),
