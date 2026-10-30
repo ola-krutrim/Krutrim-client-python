@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import httpx
 
 from .._types import NOT_GIVEN, Body, Query, Headers, NotGiven, NoneType
@@ -19,6 +21,25 @@ from .._response import (
 from ..types.sshkey.sshkey_create_response import SshkeyCreateResponse
 
 __all__ = ["SshkeysResource", "AsyncSshkeysResource"]
+
+
+def _parse_list_sshkeys_response(response: httpx.Response) -> Any:
+    """Normalize list SSH keys responses.
+
+    The API returns 204 No Content with an empty body when a region has no keys.
+    Treat that (and any other empty body) as an empty list so callers do not need
+    to call ``response.json()`` on a body-less success response.
+    """
+    if response.status_code == 204:
+        return []
+    content = response.content or b""
+    if not content.strip():
+        return []
+    try:
+        return response.json()
+    except ValueError:
+        # JSONDecodeError is a ValueError subclass; empty/invalid body → empty list.
+        return []
 
 
 class SshkeysResource(SyncAPIResource):
@@ -108,9 +129,12 @@ class SshkeysResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> httpx.Response:
+    ) -> Any:
         """
-        List SSH keys for a customer
+        List SSH keys for a customer.
+
+        Returns the parsed JSON body on success. When the API responds with
+        ``204 No Content`` (no keys in the region) or an empty body, returns ``[]``.
 
         Args:
           customer_id: The customer ID to list SSH keys for.
@@ -142,16 +166,20 @@ class SshkeysResource(SyncAPIResource):
             "page": page,
             "limit": limit,
         }
-        return self._get(
-            f"/v2/sshkeys/{customer_id}",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=query,
-                extra_body=extra_body,
-                timeout=timeout,
+        response = cast(
+            httpx.Response,
+            self._get(
+                f"/v2/sshkeys/{customer_id}",
+                options=make_request_options(
+                    extra_headers=extra_headers,
+                    extra_query=query,
+                    extra_body=extra_body,
+                    timeout=timeout,
+                ),
+                cast_to=httpx.Response,
             ),
-            cast_to=httpx.Response,
         )
+        return _parse_list_sshkeys_response(response)
 
     def delete_sshkey(
         self,
@@ -284,9 +312,12 @@ class AsyncSshkeysResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
-    ) -> httpx.Response:
+    ) -> Any:
         """
-        List SSH keys for a customer
+        List SSH keys for a customer.
+
+        Returns the parsed JSON body on success. When the API responds with
+        ``204 No Content`` (no keys in the region) or an empty body, returns ``[]``.
 
         Args:
           customer_id: The customer ID to list SSH keys for.
@@ -318,16 +349,20 @@ class AsyncSshkeysResource(AsyncAPIResource):
             "page": page,
             "limit": limit,
         }
-        return await self._get(
-            f"/v2/sshkeys/{customer_id}",
-            options=make_request_options(
-                extra_headers=extra_headers,
-                extra_query=query,
-                extra_body=extra_body,
-                timeout=timeout,
+        response = cast(
+            httpx.Response,
+            await self._get(
+                f"/v2/sshkeys/{customer_id}",
+                options=make_request_options(
+                    extra_headers=extra_headers,
+                    extra_query=query,
+                    extra_body=extra_body,
+                    timeout=timeout,
+                ),
+                cast_to=httpx.Response,
             ),
-            cast_to=httpx.Response,
         )
+        return _parse_list_sshkeys_response(response)
 
     async def delete_sshkey(
         self,
