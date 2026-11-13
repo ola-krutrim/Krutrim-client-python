@@ -8,6 +8,7 @@ from typing_extensions import TypeAlias
 
 import httpx
 
+from ..sandbox_service import sandbox as sandbox_service
 from .api import (
     SandboxAPIResource,
     AsyncSandboxAPIResource,
@@ -73,6 +74,42 @@ def _attach_cleanup_error(exc: BaseException, cleanup_error: BaseException) -> N
 
 
 class SandboxResource(SyncAPIResource):
+    @cached_property
+    def sandboxes(self) -> sandbox_service.SandboxesResource:
+        return sandbox_service.SandboxesResource(self._client)
+
+    @cached_property
+    def templates(self) -> sandbox_service.TemplatesResource:
+        return sandbox_service.TemplatesResource(self._client)
+
+    @cached_property
+    def flavors(self) -> sandbox_service.FlavorsResource:
+        return sandbox_service.FlavorsResource(self._client)
+
+    @cached_property
+    def operations(self) -> sandbox_service.OperationsResource:
+        return sandbox_service.OperationsResource(self._client)
+
+    @cached_property
+    def commands(self) -> sandbox_service.CommandsResource:
+        return sandbox_service.CommandsResource(self._client)
+
+    @cached_property
+    def files(self) -> sandbox_service.FilesResource:
+        return sandbox_service.FilesResource(self._client)
+
+    @cached_property
+    def network(self) -> sandbox_service.NetworkResource:
+        return sandbox_service.NetworkResource(self._client)
+
+    @cached_property
+    def ports(self) -> sandbox_service.PortsResource:
+        return sandbox_service.PortsResource(self._client)
+
+    @cached_property
+    def terminal(self) -> sandbox_service.TerminalResource:
+        return sandbox_service.TerminalResource(self._client)
+
     @cached_property
     def api(self) -> SandboxAPIResource:
         return SandboxAPIResource(self._client)
@@ -208,6 +245,42 @@ class SandboxResource(SyncAPIResource):
 
 
 class AsyncSandboxResource(AsyncAPIResource):
+    @cached_property
+    def sandboxes(self) -> sandbox_service.AsyncSandboxesResource:
+        return sandbox_service.AsyncSandboxesResource(self._client)
+
+    @cached_property
+    def templates(self) -> sandbox_service.AsyncTemplatesResource:
+        return sandbox_service.AsyncTemplatesResource(self._client)
+
+    @cached_property
+    def flavors(self) -> sandbox_service.AsyncFlavorsResource:
+        return sandbox_service.AsyncFlavorsResource(self._client)
+
+    @cached_property
+    def operations(self) -> sandbox_service.AsyncOperationsResource:
+        return sandbox_service.AsyncOperationsResource(self._client)
+
+    @cached_property
+    def commands(self) -> sandbox_service.AsyncCommandsResource:
+        return sandbox_service.AsyncCommandsResource(self._client)
+
+    @cached_property
+    def files(self) -> sandbox_service.AsyncFilesResource:
+        return sandbox_service.AsyncFilesResource(self._client)
+
+    @cached_property
+    def network(self) -> sandbox_service.AsyncNetworkResource:
+        return sandbox_service.AsyncNetworkResource(self._client)
+
+    @cached_property
+    def ports(self) -> sandbox_service.AsyncPortsResource:
+        return sandbox_service.AsyncPortsResource(self._client)
+
+    @cached_property
+    def terminal(self) -> sandbox_service.AsyncTerminalResource:
+        return sandbox_service.AsyncTerminalResource(self._client)
+
     @cached_property
     def api(self) -> AsyncSandboxAPIResource:
         return AsyncSandboxAPIResource(self._client)
@@ -889,6 +962,15 @@ class AsyncSandboxProxy:
 class SandboxResourceWithRawResponse:
     def __init__(self, sandbox: SandboxResource) -> None:
         self._sandbox = sandbox
+        self.sandboxes = sandbox.sandboxes.with_raw_response
+        self.templates = sandbox.templates.with_raw_response
+        self.flavors = sandbox.flavors.with_raw_response
+        self.operations = sandbox.operations.with_raw_response
+        self.commands = sandbox.commands.with_raw_response
+        self.files = sandbox.files.with_raw_response
+        self.network = sandbox.network.with_raw_response
+        self.ports = sandbox.ports.with_raw_response
+        self.terminal = sandbox.terminal.with_raw_response
 
     @cached_property
     def api(self) -> SandboxAPIResourceWithRawResponse:
@@ -898,6 +980,15 @@ class SandboxResourceWithRawResponse:
 class AsyncSandboxResourceWithRawResponse:
     def __init__(self, sandbox: AsyncSandboxResource) -> None:
         self._sandbox = sandbox
+        self.sandboxes = sandbox.sandboxes.with_raw_response
+        self.templates = sandbox.templates.with_raw_response
+        self.flavors = sandbox.flavors.with_raw_response
+        self.operations = sandbox.operations.with_raw_response
+        self.commands = sandbox.commands.with_raw_response
+        self.files = sandbox.files.with_raw_response
+        self.network = sandbox.network.with_raw_response
+        self.ports = sandbox.ports.with_raw_response
+        self.terminal = sandbox.terminal.with_raw_response
 
     @cached_property
     def api(self) -> AsyncSandboxAPIResourceWithRawResponse:
@@ -907,6 +998,15 @@ class AsyncSandboxResourceWithRawResponse:
 class SandboxResourceWithStreamingResponse:
     def __init__(self, sandbox: SandboxResource) -> None:
         self._sandbox = sandbox
+        self.sandboxes = sandbox.sandboxes.with_streaming_response
+        self.templates = sandbox.templates.with_streaming_response
+        self.flavors = sandbox.flavors.with_streaming_response
+        self.operations = sandbox.operations.with_streaming_response
+        self.commands = sandbox.commands.with_streaming_response
+        self.files = sandbox.files.with_streaming_response
+        self.network = sandbox.network.with_streaming_response
+        self.ports = sandbox.ports.with_streaming_response
+        self.terminal = sandbox.terminal.with_streaming_response
 
     @cached_property
     def api(self) -> SandboxAPIResourceWithStreamingResponse:
@@ -916,6 +1016,15 @@ class SandboxResourceWithStreamingResponse:
 class AsyncSandboxResourceWithStreamingResponse:
     def __init__(self, sandbox: AsyncSandboxResource) -> None:
         self._sandbox = sandbox
+        self.sandboxes = sandbox.sandboxes.with_streaming_response
+        self.templates = sandbox.templates.with_streaming_response
+        self.flavors = sandbox.flavors.with_streaming_response
+        self.operations = sandbox.operations.with_streaming_response
+        self.commands = sandbox.commands.with_streaming_response
+        self.files = sandbox.files.with_streaming_response
+        self.network = sandbox.network.with_streaming_response
+        self.ports = sandbox.ports.with_streaming_response
+        self.terminal = sandbox.terminal.with_streaming_response
 
     @cached_property
     def api(self) -> AsyncSandboxAPIResourceWithStreamingResponse:

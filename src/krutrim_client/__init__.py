@@ -40,6 +40,7 @@ from ._exceptions import (
 from ._base_client import DefaultHttpxClient, DefaultAsyncHttpxClient
 from ._utils._logs import setup_logging as _setup_logging
 from .resources.sandbox import Sandbox, AsyncSandbox
+from .resources.sandbox_service import SandboxStreamError, SandboxOperationError, SandboxOperationTimeoutError
 
 __all__ = [
     "types",
@@ -58,6 +59,9 @@ __all__ = [
     "APIConnectionError",
     "APIResponseValidationError",
     "SandboxException",
+    "SandboxStreamError",
+    "SandboxOperationError",
+    "SandboxOperationTimeoutError",
     "SandboxTimeoutError",
     "BadRequestError",
     "AuthenticationError",
