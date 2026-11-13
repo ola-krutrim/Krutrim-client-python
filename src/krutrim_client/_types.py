@@ -13,6 +13,8 @@ from typing import (
     Mapping,
     TypeVar,
     Callable,
+    Iterable,
+    AsyncIterable,
     Optional,
     Sequence,
 )
@@ -93,7 +95,11 @@ else:
     NoneType = type(None)
 
 
+RawRequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+
+
 class RequestOptions(TypedDict, total=False):
+    content: RawRequestContent
     headers: Headers
     max_retries: int
     timeout: float | Timeout | None
