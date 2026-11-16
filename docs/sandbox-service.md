@@ -2,8 +2,7 @@
 
 Use an IAM bearer token with the existing `api_key` option or
 `KRUTRIMCLIENT_API_KEY`. Set the gateway **origin** as the client base URL; resource
-methods add `/sandbox/v1`. R1 staging uses
-`https://r1.staging.olakrutrim.com`. Pass `x_region="In-Bangalore-1"` on each
+methods add `/sandbox/v1`. Pass `x_region="In-Bangalore-1"` on each
 call. The gateway establishes account/customer identity. The SDK does not send
 identity headers on your behalf or refresh expired tokens.
 
